@@ -49,13 +49,17 @@ from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 from dotenv import load_dotenv
 
-# Agent system imports
+# Agent system imports (defer warning until logger is initialized)
+AGENT_SYSTEM_AVAILABLE = False
 try:
-    from bot.agent_wrapper import AgentSystemWrapper
+    from agent_wrapper import AgentSystemWrapper
     AGENT_SYSTEM_AVAILABLE = True
 except ImportError:
-    AGENT_SYSTEM_AVAILABLE = False
-    log.warning("Agent system not available - using legacy logic only")
+    try:
+        from bot.agent_wrapper import AgentSystemWrapper
+        AGENT_SYSTEM_AVAILABLE = True
+    except ImportError:
+        pass  # Will log warning after logger initialization
 from py_clob_client.client import ClobClient
 from py_clob_client.clob_types import OrderArgs
 from py_clob_client.order_builder.constants import BUY, SELL
@@ -294,6 +298,10 @@ logging.basicConfig(
     ]
 )
 log = logging.getLogger(__name__)
+
+# Log agent system availability
+if not AGENT_SYSTEM_AVAILABLE:
+    log.warning("⚠️  Agent system not available - using legacy logic only")
 
 # =============================================================================
 # RALPH REGIME ADAPTER - CONFIGURATION OVERRIDE SYSTEM
