@@ -277,6 +277,16 @@ EXCHANGE_SYMBOLS = {
 # State directory
 STATE_DIR = "./v12_state"
 
+# Logging
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(message)s',
+    handlers=[
+        logging.StreamHandler()
+    ]
+)
+log = logging.getLogger(__name__)
+
 # =============================================================================
 # RALPH REGIME ADAPTER - CONFIGURATION OVERRIDE SYSTEM
 # =============================================================================
@@ -308,16 +318,6 @@ if _ralph_overrides:
             old_value = globals()[param]
             globals()[param] = value
             log.info(f"  🔄 {param}: {old_value} → {value}")
-
-# Logging
-logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s - %(message)s',
-    handlers=[
-        logging.StreamHandler()
-    ]
-)
-log = logging.getLogger(__name__)
 
 
 # =============================================================================
