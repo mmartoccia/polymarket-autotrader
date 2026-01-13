@@ -1,0 +1,38 @@
+# Environment & Secrets
+.env
+*.key
+*.pem
+
+# State Files (local to each deployment)
+state/trading_state.json
+state/timeframe_trades.json
+state/*.json
+
+# Logs
+*.log
+logs/
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+venv/
+env/
+ENV/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Backups
+*.backup
+*.bak

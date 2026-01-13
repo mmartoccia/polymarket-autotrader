@@ -1,0 +1,25 @@
+polymarket-autotrader/
+├── bot/
+│   ├── momentum_bot_v12.py          # Main production bot
+│   ├── timeframe_tracker.py         # Multi-timeframe analysis
+│   └── ralph_regime_adapter.py      # Regime detection
+├── dashboard/
+│   └── live_dashboard.py            # Real-time terminal monitoring
+├── utils/
+│   ├── redeem_winners.py            # Manual redemption
+│   ├── cleanup_losers.py            # Clean worthless positions
+│   ├── check_15min_markets.py       # Market discovery
+│   └── check_balance.py             # Balance checker
+├── state/
+│   ├── .gitkeep                     # Keep directory in git
+│   └── README.md                    # Explain state files (not in git)
+├── scripts/
+│   └── deploy.sh                    # VPS deployment script
+├── config/
+│   └── .env.example                 # Environment template
+├── docs/
+│   ├── SETUP.md                     # Setup instructions
+│   └── DEPLOYMENT.md                # Deployment guide
+├── .gitignore
+├── requirements.txt
+└── README.md

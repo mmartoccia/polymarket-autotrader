@@ -1,0 +1,19 @@
+# Polymarket AutoTrader Dependencies
+
+# Polymarket SDK
+py-clob-client>=0.23.0
+
+# Web3 & Blockchain
+web3>=6.0.0
+eth-account>=0.10.0
+
+# HTTP & APIs
+requests>=2.31.0
+aiohttp>=3.9.0
+
+# Utilities
+python-dotenv>=1.0.0
+
+# Optional: For enhanced features
+# numpy>=1.24.0
+# pandas>=2.0.0
