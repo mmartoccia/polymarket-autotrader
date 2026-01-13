@@ -48,6 +48,14 @@ from collections import deque
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 from dotenv import load_dotenv
+
+# Agent system imports
+try:
+    from bot.agent_wrapper import AgentSystemWrapper
+    AGENT_SYSTEM_AVAILABLE = True
+except ImportError:
+    AGENT_SYSTEM_AVAILABLE = False
+    log.warning("Agent system not available - using legacy logic only")
 from py_clob_client.client import ClobClient
 from py_clob_client.clob_types import OrderArgs
 from py_clob_client.order_builder.constants import BUY, SELL
@@ -1519,7 +1527,7 @@ def get_usdc_balance() -> float:
 def run_bot():
     """Main bot loop with v12.1 Future Window enhancements."""
     log.info("=" * 60)
-    log.info("MOMENTUM BOT v12.1 - FUTURE WINDOW ENHANCED")
+    log.info("MOMENTUM BOT v12.1 - FUTURE WINDOW ENHANCED + AGENT SYSTEM")
     log.info("=" * 60)
     log.info("v12 Core Improvements:")
     log.info("  • Lower entry: Max $0.30 (fee economics)")
@@ -1586,6 +1594,20 @@ def run_bot():
 
     # Initialize stop-loss manager
     stop_loss_mgr = StopLossManager(client, guardian)
+
+    # Initialize agent system (log-only mode for now)
+    agent_system = None
+    if AGENT_SYSTEM_AVAILABLE:
+        try:
+            agent_system = AgentSystemWrapper()  # Uses config/agent_config.py settings
+            log.info(f"🤖 Agent System: {'ENABLED' if agent_system.enabled else 'LOG-ONLY'}")
+            log.info(f"  Consensus Threshold: {agent_system.engine.consensus_threshold}")
+            log.info(f"  Agents: {len(agent_system.engine.agents)} experts + {len(agent_system.engine.veto_agents)} veto")
+        except Exception as e:
+            log.error(f"Agent system init failed: {e}")
+            agent_system = None
+    else:
+        log.info("Agent system not available - using legacy logic only")
 
     # Track bets per epoch
     epoch_trades: Dict[str, Dict[int, List[str]]] = {c: {} for c in CRYPTOS}
@@ -1892,6 +1914,37 @@ def run_bot():
                 log.info(f"  Signal: {signal_strength:.2f} | RSI: {rsi_value:.0f}{trend_info}")
                 log.info(f"  Entry: ${entry_price:.2f} | Size: ${size:.2f}")
                 log.info(f"  Mode: {state.mode} | Losses: {state.consecutive_losses}")
+
+                # Consult agent system (log-only for now)
+                if agent_system:
+                    try:
+                        agent_should_trade, agent_direction, agent_confidence, agent_reason = agent_system.make_decision(
+                            crypto=crypto,
+                            epoch=current_epoch,
+                            prices={
+                                'btc': price_feed.latest_prices.get('btc', 0),
+                                'eth': price_feed.latest_prices.get('eth', 0),
+                                'sol': price_feed.latest_prices.get('sol', 0),
+                                'xrp': price_feed.latest_prices.get('xrp', 0)
+                            },
+                            orderbook={
+                                'yes': {'price': prices['Up']['ask'], 'ask': prices['Up']['ask']},
+                                'no': {'price': prices['Down']['ask'], 'ask': prices['Down']['ask']}
+                            },
+                            positions=guardian.open_positions,
+                            balance=state.current_balance,
+                            time_in_epoch=time_in_epoch,
+                            rsi=rsi_value,
+                            regime=tf_tracker.get_market_conditions(crypto).trend_score if tf_tracker else 0.0,
+                            mode=state.mode
+                        )
+
+                        agreement = "✓ AGREE" if (agent_should_trade and agent_direction == direction) else "✗ DISAGREE"
+                        log.info(f"  🤖 Agents {agreement}: {agent_direction if agent_should_trade else 'SKIP'} @ {agent_confidence:.0%}")
+                        log.info(f"     Reason: {agent_reason}")
+
+                    except Exception as e:
+                        log.warning(f"  Agent consultation failed: {e}")
 
                 result = place_order(client, token_id, shares, entry_price)
 
