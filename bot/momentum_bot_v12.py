@@ -277,6 +277,38 @@ EXCHANGE_SYMBOLS = {
 # State directory
 STATE_DIR = "./v12_state"
 
+# =============================================================================
+# RALPH REGIME ADAPTER - CONFIGURATION OVERRIDE SYSTEM
+# =============================================================================
+# Ralph can write parameter overrides to this file to adapt to market regimes
+RALPH_OVERRIDE_FILE = "./state/ralph_overrides.json"
+
+def load_ralph_overrides():
+    """Load parameter overrides from Ralph regime adapter."""
+    override_path = Path(__file__).parent.parent / RALPH_OVERRIDE_FILE.lstrip('./')
+
+    if not override_path.exists():
+        return {}
+
+    try:
+        with open(override_path, 'r') as f:
+            overrides = json.load(f)
+            log.info(f"📋 Loaded {len(overrides)} Ralph overrides: {overrides.get('strategy_focus', 'unknown')}")
+            return overrides
+    except Exception as e:
+        log.warning(f"Failed to load Ralph overrides: {e}")
+        return {}
+
+# Apply Ralph overrides to configuration
+_ralph_overrides = load_ralph_overrides()
+if _ralph_overrides:
+    # Update globals with overrides
+    for param, value in _ralph_overrides.items():
+        if param in globals() and param.isupper():
+            old_value = globals()[param]
+            globals()[param] = value
+            log.info(f"  🔄 {param}: {old_value} → {value}")
+
 # Logging
 logging.basicConfig(
     level=logging.INFO,

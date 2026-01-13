@@ -12,9 +12,9 @@ import subprocess
 from datetime import datetime
 from market_regime_detector import MarketRegimeDetector, get_current_prices
 
-BOT_FILE = "/opt/polymarket-bot/momentum_bot_v12_enhanced.py"
-STATE_FILE = "/opt/polymarket-bot/.ralph_regime_state.json"
-LOG_FILE = "/opt/polymarket-bot/ralph_regime.log"
+OVERRIDE_FILE = "/opt/polymarket-autotrader/state/ralph_overrides.json"
+STATE_FILE = "/opt/polymarket-autotrader/state/ralph_regime_state.json"
+LOG_FILE = "/opt/polymarket-autotrader/ralph_regime.log"
 
 class RalphRegimeAdapter:
     """Ralph loop for adaptive parameter tuning based on market regime."""
@@ -80,33 +80,14 @@ class RalphRegimeAdapter:
         return regime, changed
 
     def apply_parameters(self, params: dict):
-        """Apply parameters to bot by modifying the file."""
-        self.log("Applying new parameters to bot...")
+        """Apply parameters by writing override file (bot will reload on restart)."""
+        self.log("Writing parameter overrides...")
 
-        # Read bot file
-        with open(BOT_FILE, 'r') as f:
-            content = f.read()
+        # Write overrides to JSON file
+        with open(OVERRIDE_FILE, 'w') as f:
+            json.dump(params, f, indent=2)
 
-        # Apply each parameter
-        import re
-        for param, value in params.items():
-            if param == 'strategy_focus':
-                continue  # Skip meta parameter
-
-            pattern = f"^{param} = .*$"
-
-            if isinstance(value, str):
-                replacement = f"{param} = \"{value}\""
-            else:
-                replacement = f"{param} = {value}"
-
-            content = re.sub(pattern, replacement, content, flags=re.MULTILINE)
-
-        # Write back
-        with open(BOT_FILE, 'w') as f:
-            f.write(content)
-
-        self.log(f"  Applied {len(params)-1} parameters")
+        self.log(f"  Written {len(params)} parameters to override file")
 
     def restart_bot(self):
         """Restart the trading bot service."""
@@ -127,7 +108,7 @@ class RalphRegimeAdapter:
     def check_performance(self) -> dict:
         """Check bot performance metrics."""
         try:
-            with open("/opt/polymarket-bot/v12_state/trading_state.json", 'r') as f:
+            with open("/opt/polymarket-autotrader/state/trading_state.json", 'r') as f:
                 state = json.load(f)
 
             return {
