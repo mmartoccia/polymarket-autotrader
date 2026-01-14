@@ -20,9 +20,10 @@ The bot uses a **contrarian fade + momentum confirmation** approach:
 
 ### Current Performance
 
-- **Live Balance:** $161.99 (as of Jan 13, 2026)
-- **Starting Balance:** $35.23 (Jan 13 start of day)
-- **Daily Return:** +360% (+$127)
+- **Live Balance:** $7.21 (as of Jan 14, 2026)
+- **Peak Balance:** $161.99 (Jan 13, 2026)
+- **Recent Event:** -95% drawdown from trend filter bias (fixed Jan 14)
+- **Current Status:** Live trading with fixed trend filter
 - **Trading Since:** January 2026
 - **Deployment:** Vultr VPS (Mexico City) - 24/7 operation
 
@@ -503,7 +504,11 @@ With 6.3% round-trip fees at 50% probability:
 ### Historical Performance
 
 - **Jan 13, 2026:** +437% ($35 → $189) - Peak day
-- **Drawdown:** Had false 40% drawdown from peak tracking issue (now fixed)
+- **Jan 14, 2026:** -95% ($157 → $7) - Trend filter bias caused directional imbalance
+  - Issue: 96.5% UP bias due to asymmetric filtering in weak positive trends
+  - Root cause: Trend filter blocked 319 DOWN bets, 0 UP bets
+  - Fix: Added STRONG_TREND_THRESHOLD = 1.0 to allow both directions in weak trends
+  - Status: Fixed and deployed
 - **Best trades:** Contrarian fades at $0.06-$0.13 entries
 
 ---
@@ -629,6 +634,50 @@ ssh root@216.238.85.11 "cd /opt/polymarket-autotrader && ./scripts/deploy.sh"
   - Bot exit detection
 
 - **v10 and earlier** - Historical iterations
+
+---
+
+## Known Issues and Fixes
+
+### Jan 14, 2026: Trend Filter Directional Bias
+
+**Issue:** Trend filter created 96.5% UP bias in weak positive trends
+- Blocked 319 DOWN bets, 0 UP bets during Jan 13-14 session
+- Crypto had weak upward trend (scores 0.70-1.00)
+- Markets were choppy within slight uptrend → UP trades lost to mean reversion
+- Result: Lost $149.54 (-95.4%) in ~12 hours
+
+**Root Cause:** Asymmetric filtering in `TREND_FILTER_ENABLED` logic
+```python
+# Old behavior (asymmetric):
+if direction == "Down" and trend_score > -MIN_TREND_SCORE:
+    # Always blocked DOWN when trend slightly positive
+    continue
+```
+
+**Fix Applied:** Added `STRONG_TREND_THRESHOLD = 1.0`
+```python
+# New behavior (symmetric):
+if abs(trend_score) >= STRONG_TREND_THRESHOLD:
+    # Only filter on STRONG trends
+    if direction == "Down" and trend_score > -MIN_TREND_SCORE:
+        continue
+else:
+    # Weak trends: allow BOTH directions
+    pass
+```
+
+**Strategy:**
+- **Choppy markets** (trend < 0.15): Skip entirely
+- **Weak trends** (0.15-1.0): Allow BOTH directions (prevents bias)
+- **Strong trends** (> 1.0): Apply directional filter
+
+**Monitoring:**
+- Directional balance should be 40-60% over 50+ trades
+- If >70% same direction → further tuning needed
+- Win rate should improve from ~5% to 50-60%
+
+**Status:** Fixed and deployed Jan 14, 2026 14:00 UTC
 
 ---
 
