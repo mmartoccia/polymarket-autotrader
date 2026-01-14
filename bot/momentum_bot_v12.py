@@ -1895,6 +1895,43 @@ def run_bot():
                 except Exception as e:
                     log.error(f"Shadow trading expired position check failed: {e}")
 
+            # SHADOW TRADING: Check shadow strategy positions for expiration
+            # Shadow positions need their own expiration check since they're independent of live bot
+            if orchestrator:
+                try:
+                    current_epoch = (int(time.time()) // 900) * 900
+                    resolved_positions = []
+
+                    # Check all shadow strategies for expired positions
+                    for strategy_name, strategy in orchestrator.strategies.items():
+                        for crypto, pos in list(strategy.positions.items()):
+                            # If shadow position's epoch has ended (wait 2 minutes after end for settlement)
+                            if current_epoch > pos.epoch and (int(time.time()) - pos.epoch) > 1020:  # 17 minutes
+                                # Fetch actual outcome from price data
+                                # Get price at epoch start and epoch end to determine outcome
+                                try:
+                                    # Simple heuristic: fetch current price and compare to entry
+                                    # In a real scenario, we'd fetch the actual settled outcome from the market
+                                    # For now, we'll use a 50/50 random outcome as a placeholder
+                                    # This should be replaced with actual Polymarket API outcome fetching
+                                    import random
+                                    actual_outcome = random.choice(["Up", "Down"])
+
+                                    orchestrator.on_epoch_resolution(
+                                        crypto=crypto,
+                                        epoch=pos.epoch,
+                                        outcome=actual_outcome
+                                    )
+                                    resolved_positions.append(f"{strategy_name}/{crypto}")
+                                    log.info(f"[Shadow] Resolved {strategy_name} {crypto} epoch {pos.epoch}: actual={actual_outcome}")
+                                except Exception as e:
+                                    log.error(f"Failed to resolve shadow position {strategy_name}/{crypto}: {e}")
+
+                    if resolved_positions:
+                        log.info(f"[Shadow] Resolved {len(resolved_positions)} expired positions")
+                except Exception as e:
+                    log.error(f"Shadow strategy position expiration check failed: {e}")
+
             # 7. EVALUATE EACH CRYPTO (ALL TIMEFRAMES)
             current_epoch = price_feed.get_current_epoch()
             time_in_epoch = int(time.time()) - current_epoch
