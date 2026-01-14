@@ -17,6 +17,7 @@ sys.path.append(str(Path(__file__).parent.parent))
 
 from agents.base_agent import BaseAgent, VetoAgent, Vote
 from coordinator.vote_aggregator import VoteAggregator, AggregatePrediction, calculate_agent_weights
+from config.agent_config import CONSENSUS_THRESHOLD, MIN_CONFIDENCE
 
 log = logging.getLogger(__name__)
 
@@ -180,29 +181,40 @@ class DecisionEngine:
         summary = self.aggregator.get_vote_summary(prediction)
         self.log.info(f"\n{summary}")
 
-        # Step 5: CONFIDENCE-BASED TRADING
-        # Instead of binary threshold check, we trade on ANY majority consensus
-        # and adjust position size based on confidence level
+        # Step 5: QUALITY-CONTROLLED TRADING
+        # Trade only when both consensus (weighted_score) and confidence meet minimums:
+        # - CONSENSUS_THRESHOLD = 0.40 (40% weighted consensus required)
+        # - MIN_CONFIDENCE = 0.40 (40% average agent confidence required)
         #
-        # Rationale: With expert agents, even low confidence (20-35%) represents
-        # real information. Better to trade small on weak signals than skip entirely.
+        # Rationale: Low-confidence trades (18-33%) had 0% win rate in testing.
+        # Quality control prevents weak signals from executing and losing money.
         #
         # Position sizing will scale with weighted_score:
-        # - 0.10-0.20: 30% of max position (very weak signal)
-        # - 0.20-0.30: 50% of max position (weak signal)
-        # - 0.30-0.40: 70% of max position (moderate signal)
-        # - 0.40-0.60: 85% of max position (good signal)
+        # - 0.40-0.50: 70% of max position (moderate signal)
+        # - 0.50-0.60: 85% of max position (good signal)
         # - 0.60+:     100% of max position (strong signal)
         #
-        # This allows us to capture value from weak signals while managing risk
+        # This ensures only quality trades execute while managing position risk
 
-        # Only skip if consensus is BELOW minimum viable threshold (10%)
-        MIN_VIABLE_THRESHOLD = 0.10
-        if prediction.weighted_score < MIN_VIABLE_THRESHOLD:
+        # Check if consensus meets minimum threshold
+        if prediction.weighted_score < CONSENSUS_THRESHOLD:
             return TradeDecision(
                 should_trade=False,
                 direction=None,
-                reason=f"Consensus too weak to trade ({prediction.weighted_score:.3f} < {MIN_VIABLE_THRESHOLD})",
+                reason=f"Consensus too weak to trade ({prediction.weighted_score:.3f} < {CONSENSUS_THRESHOLD})",
+                prediction=prediction,
+                weighted_score=prediction.weighted_score,
+                confidence=prediction.confidence,
+                crypto=crypto,
+                epoch=epoch
+            )
+
+        # Check if average agent confidence meets minimum
+        if prediction.confidence < MIN_CONFIDENCE:
+            return TradeDecision(
+                should_trade=False,
+                direction=None,
+                reason=f"Average confidence {prediction.confidence:.1%} below minimum {MIN_CONFIDENCE:.1%}",
                 prediction=prediction,
                 weighted_score=prediction.weighted_score,
                 confidence=prediction.confidence,

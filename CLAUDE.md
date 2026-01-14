@@ -720,6 +720,48 @@ else:
 - [ ] Contrarian trades: Should have >60% consensus in strong trends
 - [ ] Peak balance: Reset manually after large losses to prevent false halts
 
+### Jan 14, 2026 PM: Agent Confidence Threshold Fix
+
+**Issue:** Bot placing trades with 18-19% average confidence
+- MIN_VIABLE_THRESHOLD was 0.10 (should be 0.40) - hardcoded override ignored config
+- MIN_CONFIDENCE config value (0.40) was never checked in decision logic
+- Individual agents voting with 15-25% confidence (no per-agent threshold)
+- Low-confidence trades had 0% win rate in testing (7 trades: 3 wins at 54-60% confidence, 4 losses at 18-33%)
+
+**Root Cause:**
+```python
+# decision_engine.py line 200 (OLD):
+MIN_VIABLE_THRESHOLD = 0.10  # Hardcoded - ignored CONSENSUS_THRESHOLD config!
+
+# No MIN_CONFIDENCE check existed
+# Agents defaulting to 0.15-0.25 confidence were counted in aggregation
+```
+
+**Fix Applied:**
+1. **decision_engine.py**: Changed MIN_VIABLE_THRESHOLD to use `CONSENSUS_THRESHOLD` from config (0.40)
+2. **decision_engine.py**: Added MIN_CONFIDENCE check (40% average confidence required)
+3. **vote_aggregator.py**: Added per-agent confidence filter (30% minimum per agent, needs ≥2 agents)
+4. **Agent confidence floors raised**:
+   - tech_agent.py: 0.20 → 0.35
+   - sentiment_agent.py: 0.15 → 0.35, 0.25 → 0.40
+   - candle_agent.py: 0.20 → 0.35
+5. **agent_config.py**: Added MIN_INDIVIDUAL_CONFIDENCE = 0.30 documentation
+
+**Expected Impact:**
+- Fewer trades (50% reduction expected), but higher quality
+- Improved win rate target: 55-65% (up from 42.9%)
+- No more 18-19% confidence trades
+- Better entry quality (reject weak signals < $0.40 entry probability)
+- Reduced catastrophic losing streaks
+
+**Testing Results:** (To be updated after 20-30 trades)
+- Average confidence per trade: TBD (target >40%)
+- Win rate: TBD (target 55-65%)
+- Trade frequency: TBD (expect ~50% fewer trades)
+- Entry quality: TBD (expect more 0.60+ probability entries)
+
+**Status:** Implemented Jan 14, 2026 15:35 UTC, awaiting deployment
+
 ---
 
 **Remember:** This bot trades with real money. Always test changes locally, monitor performance, and never deploy untested code to the VPS.

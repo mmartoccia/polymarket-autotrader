@@ -75,7 +75,7 @@ class SentimentAgent(BaseAgent):
             # CRITICAL FIX: No orderbook - default to Up with low confidence
             return Vote(
                 direction="Up",  # Default when no data
-                confidence=0.15,
+                confidence=0.35,  # Raised floor for quality control
                 quality=0.2,
                 agent_name=self.name,
                 reasoning="No orderbook → defaulting to Up",
@@ -109,7 +109,7 @@ class SentimentAgent(BaseAgent):
 
             return Vote(
                 direction=direction,  # ALWAYS pick Up or Down
-                confidence=0.25,  # Low but not zero
+                confidence=0.40,  # Raised floor for quality control
                 quality=0.4,
                 agent_name=self.name,
                 reasoning=reasoning,

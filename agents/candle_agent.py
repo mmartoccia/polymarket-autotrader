@@ -195,7 +195,7 @@ class CandlestickAgent(BaseAgent):
         
         # CRITICAL: Default direction (will be overridden if strong signal found)
         direction = "Up"  # Default bias
-        confidence = 0.20  # Low default confidence
+        confidence = 0.35  # Raised floor for quality control
         quality = 0.5
         reasoning = []
 

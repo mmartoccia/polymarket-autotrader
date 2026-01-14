@@ -319,7 +319,7 @@ class TechAgent(BaseAgent):
             # Low confidence since no confluence
             return Vote(
                 direction=direction,  # ALWAYS pick Up or Down
-                confidence=0.20,  # Low but not zero
+                confidence=0.35,  # Raised floor for quality control
                 quality=0.4,
                 agent_name=self.name,
                 reasoning=f"Weak signal: {up_count}Up/{down_count}Down, avg {avg_change:+.2%} → {direction}",

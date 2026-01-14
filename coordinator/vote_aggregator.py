@@ -116,6 +116,21 @@ class VoteAggregator:
         if len(votes) < self.min_agents:
             self.log.warning(f"Only {len(votes)} agents voted (min: {self.min_agents})")
 
+        # Filter votes below minimum individual confidence (quality control)
+        MIN_INDIVIDUAL_CONFIDENCE = 0.30
+        valid_votes = [v for v in votes if v.confidence >= MIN_INDIVIDUAL_CONFIDENCE]
+
+        # Check if we have enough high-quality votes
+        if len(valid_votes) < 2:
+            self.log.warning(
+                f"Only {len(valid_votes)} agents meet {MIN_INDIVIDUAL_CONFIDENCE:.0%} confidence threshold "
+                f"(filtered {len(votes) - len(valid_votes)} low-confidence votes)"
+            )
+            return self._empty_prediction()
+
+        # Use filtered votes for aggregation
+        votes = valid_votes
+
         # Count votes by direction
         up_votes = [v for v in votes if v.direction == "Up"]
         down_votes = [v for v in votes if v.direction == "Down"]
