@@ -217,12 +217,34 @@ python3 utils/cleanup_losers.py
 
 ### Issue: Winners Not Auto-Redeeming
 
-Check if auto-redeem service is running:
-```bash
-systemctl status auto-redeem  # If service exists
-# Or manually redeem:
-python3 utils/redeem_winners.py
+**Finding Redeemable Positions:**
+
+The Polymarket API returns positions with these key fields:
+- `redeemable: true` - Position is ready to be redeemed
+- `curPrice: 0.99+` - Position value is near $1.00 (winning)
+- `size > 0` - You have shares
+- `value = size * curPrice` - Current redemption value
+
+**To check for redeemable positions:**
+```python
+resp = requests.get(
+    "https://data-api.polymarket.com/positions",
+    params={"user": WALLET, "limit": 50},
+    timeout=10
+)
+
+for pos in resp.json():
+    size = float(pos.get("size", 0))
+    cur_price = float(pos.get("curPrice", 0))
+    redeemable = pos.get("redeemable", False)
+    value = size * cur_price
+
+    # Ready to redeem if:
+    if (redeemable or cur_price >= 0.99) and value >= 1.0:
+        print(f"REDEEM: {pos['title']} = ${value:.2f}")
 ```
+
+**Note:** If the API shows no redeemable positions but the dashboard shows pending redemptions, the positions may have been auto-redeemed already or are still settling on-chain.
 
 ---
 
