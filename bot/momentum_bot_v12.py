@@ -1905,17 +1905,25 @@ def run_bot():
                     # Check all shadow strategies for expired positions
                     for strategy_name, strategy in orchestrator.strategies.items():
                         for crypto, pos in list(strategy.positions.items()):
-                            # If shadow position's epoch has ended (wait 2 minutes after end for settlement)
-                            if current_epoch > pos.epoch and (int(time.time()) - pos.epoch) > 1020:  # 17 minutes
-                                # Fetch actual outcome from price data
-                                # Get price at epoch start and epoch end to determine outcome
+                            # If shadow position's epoch has ended (wait 2 minutes after end for data availability)
+                            if current_epoch > pos.epoch and (int(time.time()) - pos.epoch) > 1020:  # 17 minutes (15min epoch + 2min buffer)
+                                # Fetch actual outcome from exchange price data
                                 try:
-                                    # Simple heuristic: fetch current price and compare to entry
-                                    # In a real scenario, we'd fetch the actual settled outcome from the market
-                                    # For now, we'll use a 50/50 random outcome as a placeholder
-                                    # This should be replaced with actual Polymarket API outcome fetching
-                                    import random
-                                    actual_outcome = random.choice(["Up", "Down"])
+                                    # Import outcome fetcher (lazy import to avoid circular dependencies)
+                                    from simulation.outcome_fetcher import OutcomeFetcher
+
+                                    # Get actual market outcome from exchange historical data
+                                    fetcher = OutcomeFetcher()
+                                    outcome_result = fetcher.get_epoch_outcome(crypto, pos.epoch)
+
+                                    if outcome_result:
+                                        actual_outcome = outcome_result.direction
+                                        log.info(f"[Shadow] {crypto.upper()} epoch {pos.epoch}: ${outcome_result.start_price:.2f} -> ${outcome_result.end_price:.2f} ({outcome_result.change_pct:+.3f}%) = {actual_outcome}")
+                                    else:
+                                        # Fallback to random if we can't fetch real data
+                                        import random
+                                        actual_outcome = random.choice(["Up", "Down"])
+                                        log.warning(f"[Shadow] Could not fetch outcome for {crypto} epoch {pos.epoch}, using random: {actual_outcome}")
 
                                     orchestrator.on_epoch_resolution(
                                         crypto=crypto,
@@ -1926,6 +1934,8 @@ def run_bot():
                                     log.info(f"[Shadow] Resolved {strategy_name} {crypto} epoch {pos.epoch}: actual={actual_outcome}")
                                 except Exception as e:
                                     log.error(f"Failed to resolve shadow position {strategy_name}/{crypto}: {e}")
+                                    import traceback
+                                    log.error(traceback.format_exc())
 
                     if resolved_positions:
                         log.info(f"[Shadow] Resolved {len(resolved_positions)} expired positions")
