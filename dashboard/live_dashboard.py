@@ -268,23 +268,41 @@ def render_dashboard():
     if active_pos:
         print("📈 ACTIVE POSITIONS")
         print("-" * 80)
-        
-        total_value = sum(p['current_value'] for p in active_pos)
-        total_potential = sum(p['max_payout'] for p in active_pos)
-        
+
+        # Calculate totals
+        total_current_value = sum(p['current_value'] for p in active_pos)
+        total_max_payout = sum(p['max_payout'] for p in active_pos)
+
+        # Estimate amount invested (shares bought at their initial price)
+        # We approximate by assuming entry price ≈ max(0.50, current_price)
+        # This is an estimate since we don't track actual entry prices
+        total_invested = sum(p['size'] * max(0.50, p['cur_price']) for p in active_pos)
+
+        # Calculate unrealized P&L (current value vs estimated investment)
+        unrealized_pnl = total_current_value - total_invested
+        pnl_pct = (unrealized_pnl / total_invested * 100) if total_invested > 0 else 0
+
         for i, pos in enumerate(active_pos, 1):
             status_emoji = "🔴" if pos.get('status') == 'LIKELY_LOSS' else "🟡"
-            
+
             prob_pct = pos['win_prob'] * 100
             bar_length = int(prob_pct / 2.5)
             bar = "█" * bar_length + "░" * (40 - bar_length)
-            
+
+            # Estimate entry price for this position
+            est_entry = max(0.50, pos['cur_price'])
+            est_invested = pos['size'] * est_entry
+
             print(f"\n{status_emoji} [{i}] {pos['outcome']}: {pos['size']:.0f} shares @ {pos['cur_price']*100:.1f}%")
             print(f"    {pos['question']}")
             print(f"    Win Prob: [{bar}] {prob_pct:.1f}%")
-            print(f"    Value: ${pos['current_value']:.2f} | Max Payout: ${pos['max_payout']:.2f}")
-        
-        print(f"\n💰 Total Active: ${total_value:.2f} | Potential: ${total_potential:.2f}")
+            print(f"    Current Value: ${pos['current_value']:.2f} | If Win: ${pos['max_payout']:.2f} | Est. Invested: ${est_invested:.2f}")
+
+        print(f"\n💰 SUMMARY:")
+        print(f"   Current Value: ${total_current_value:.2f} (what your shares are worth now)")
+        print(f"   If All Win: ${total_max_payout:.2f} (max payout if everything wins)")
+        print(f"   Est. Invested: ${total_invested:.2f} (approx capital tied up)")
+        print(f"   Unrealized P&L: ${unrealized_pnl:+.2f} ({pnl_pct:+.1f}%)")
         print()
     
     if not ready_redeem and not active_pos:
