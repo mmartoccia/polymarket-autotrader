@@ -10,7 +10,7 @@ Controls behavior of the multi-expert consensus trading system.
 # =============================================================================
 
 # Master enable/disable switch
-AGENT_SYSTEM_ENABLED = False  # Set True to enable agent decisions, False for log-only
+AGENT_SYSTEM_ENABLED = True  # Set True to enable agent decisions, False for log-only
 
 # Consensus requirements
 CONSENSUS_THRESHOLD = 0.40     # Minimum weighted score to trade (lowered from 0.65 to allow trading)
@@ -216,9 +216,9 @@ DEPLOYMENT_MODES = {
     },
     'moderate': {
         'AGENT_SYSTEM_ENABLED': True,
-        'CONSENSUS_THRESHOLD': 0.65,
-        'MIN_CONFIDENCE': 0.50,
-        'description': 'Balanced threshold (recommended)'
+        'CONSENSUS_THRESHOLD': 0.40,
+        'MIN_CONFIDENCE': 0.40,
+        'description': 'Balanced threshold (lowered to allow trading)'
     },
     'aggressive': {
         'AGENT_SYSTEM_ENABLED': True,
