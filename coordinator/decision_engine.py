@@ -224,10 +224,18 @@ class DecisionEngine:
             )
 
         # Step 8: Check veto agents
+        # Add prediction data to context for veto checks
+        veto_data = {
+            **data,  # Include all original data
+            'direction': prediction.direction,
+            'weighted_score': prediction.weighted_score,
+            'confidence': prediction.confidence
+        }
+
         is_vetoed, veto_reasons = self.aggregator.check_vetoes(
             self.veto_agents,
             crypto,
-            data
+            veto_data
         )
 
         if is_vetoed:

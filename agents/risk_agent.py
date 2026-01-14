@@ -200,6 +200,11 @@ class RiskAgent(VetoAgent):
         if should_veto:
             return True, f"Regime filter: {reason}"
 
+        # Check 7: Extreme contrarian filter - prevent low-probability gambles
+        should_veto, reason = self._check_extreme_contrarian(direction, data)
+        if should_veto:
+            return True, f"Contrarian filter: {reason}"
+
         # All checks passed
         return False, ""
 
@@ -408,6 +413,41 @@ class RiskAgent(VetoAgent):
         # Strong bear trend - veto Up bets
         if regime < -0.5 and direction == "Up":
             return True, f"Strong bear trend ({regime:.2f}) - blocking Up bet"
+
+        return False, ""
+
+    def _check_extreme_contrarian(self, direction: str, data: dict) -> Tuple[bool, str]:
+        """
+        Prevent extreme contrarian bets without strong consensus.
+
+        Contrarian trading (betting against the crowd) works when:
+        1. Market has overreacted emotionally
+        2. Technical indicators show reversal brewing
+        3. We have information edge the market doesn't
+
+        When entry price is <$0.15 (>85% market consensus against us),
+        we need VERY strong confirmation from our agents (>60% weighted consensus).
+
+        Without strong confirmation, this is just gambling on low-probability outcomes.
+        """
+        orderbook = data.get('orderbook', {})
+
+        # Get entry price for proposed direction
+        direction_data = orderbook.get(direction, {})
+        entry_price = float(direction_data.get('price', direction_data.get('ask', 0.50)))
+
+        # If entry price is <$0.15, this is extreme contrarian
+        # (market thinks this outcome has <15% probability)
+        if entry_price < 0.15:
+            # Get weighted consensus score
+            weighted_score = data.get('weighted_score', 0.0)
+
+            # Require >60% weighted consensus for extreme contrarian bets
+            if weighted_score < 0.60:
+                return True, (
+                    f"Extreme contrarian entry (${entry_price:.2f}, {entry_price*100:.0f}% probability) "
+                    f"needs >60% agent consensus (have {weighted_score:.1%})"
+                )
 
         return False, ""
 
