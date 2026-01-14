@@ -82,9 +82,9 @@ class SentimentAgent(BaseAgent):
                 details={}
             )
 
-        # Extract prices
-        up_data = orderbook.get('yes', orderbook.get('Up', {}))
-        down_data = orderbook.get('no', orderbook.get('Down', {}))
+        # Extract prices (check both 'Up'/'Down' and legacy 'yes'/'no' keys)
+        up_data = orderbook.get('Up', orderbook.get('yes', {}))
+        down_data = orderbook.get('Down', orderbook.get('no', {}))
 
         up_price = float(up_data.get('price', up_data.get('ask', 0.50)))
         down_price = float(down_data.get('price', down_data.get('ask', 0.50)))

@@ -1793,8 +1793,9 @@ def run_bot():
                                     'xrp': price_feed.current_prices.get('xrp', 0)
                                 },
                                 orderbook={
-                                    'yes': {'price': prices['Up']['ask'], 'ask': prices['Up']['ask']},
-                                    'no': {'price': prices['Down']['ask'], 'ask': prices['Down']['ask']}
+                                    # Use 'Up'/'Down' keys directly to match Polymarket outcomes
+                                    'Up': {'price': prices['Up']['ask'], 'ask': prices['Up']['ask']},
+                                    'Down': {'price': prices['Down']['ask'], 'ask': prices['Down']['ask']}
                                 },
                                 positions=guardian.open_positions,
                                 balance=state.current_balance,
@@ -2130,8 +2131,9 @@ def run_bot():
                                 'xrp': price_feed.current_prices.get('xrp', 0)
                             },
                             orderbook={
-                                'yes': {'price': prices['Up']['ask'], 'ask': prices['Up']['ask']},
-                                'no': {'price': prices['Down']['ask'], 'ask': prices['Down']['ask']}
+                                # Use 'Up'/'Down' keys directly to match Polymarket outcomes
+                                'Up': {'price': prices['Up']['ask'], 'ask': prices['Up']['ask']},
+                                'Down': {'price': prices['Down']['ask'], 'ask': prices['Down']['ask']}
                             },
                             positions=guardian.open_positions,
                             balance=state.current_balance,
