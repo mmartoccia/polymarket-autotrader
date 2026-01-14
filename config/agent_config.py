@@ -293,11 +293,23 @@ ENABLE_SHADOW_TRADING = True  # Set False to disable simulation system
 #                      momentum_focused, no_regime_adjustment, equal_weights_static,
 #                      high_confidence_only, low_barrier
 SHADOW_STRATEGIES = [
+    # Original strategies (kept for comparison)
     'conservative',           # High thresholds (0.75/0.60) - fewer trades
     'aggressive',             # Lower thresholds (0.55/0.45) - more trades
-    'contrarian_focused',     # Boost SentimentAgent - fade overpriced
-    'momentum_focused',       # Boost TechAgent - follow confluence
-    'no_regime_adjustment',   # Disable regime weight adjustments
+
+    # Inverse strategies (trade OPPOSITE direction)
+    'inverse_consensus',      # Trade opposite of all agents
+    'inverse_momentum',       # Fade momentum signals
+    'inverse_sentiment',      # Go with crowd instead of fading
+
+    # Extreme thresholds
+    'ultra_conservative',     # Only perfect setups (0.85/0.75)
+    'ultra_aggressive',       # Take everything (0.25/0.25)
+
+    # Single agent isolation
+    'tech_only',             # Technical/momentum only
+    'sentiment_only',        # Contrarian/sentiment only
+    'regime_only',           # Market regime only
 ]
 
 # Shadow trading configuration

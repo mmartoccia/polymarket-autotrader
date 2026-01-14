@@ -206,6 +206,140 @@ STRATEGY_LIBRARY = {
         }
     ),
 
+    # === INVERSE/CONTRARIAN STRATEGIES (Trade OPPOSITE of consensus) ===
+
+    'inverse_consensus': StrategyConfig(
+        name='inverse_consensus',
+        description='Trade OPPOSITE direction of agent consensus (contrarian)',
+        consensus_threshold=0.40,
+        min_confidence=0.40,
+        min_individual_confidence=0.30,
+        agent_weights={
+            'TechAgent': -1.0,      # NEGATIVE weights = inverse direction
+            'SentimentAgent': -1.0,
+            'RegimeAgent': -1.0,
+            'CandlestickAgent': -1.0
+        }
+    ),
+
+    'inverse_momentum': StrategyConfig(
+        name='inverse_momentum',
+        description='Fade momentum - trade against strong directional moves',
+        consensus_threshold=0.40,
+        min_confidence=0.40,
+        min_individual_confidence=0.30,
+        agent_weights={
+            'TechAgent': -1.5,      # Strongly fade momentum
+            'SentimentAgent': 1.0,  # Keep sentiment normal
+            'RegimeAgent': -1.0,
+            'CandlestickAgent': -0.8
+        }
+    ),
+
+    'inverse_sentiment': StrategyConfig(
+        name='inverse_sentiment',
+        description='Fade sentiment - go with the crowd instead of against',
+        consensus_threshold=0.40,
+        min_confidence=0.40,
+        min_individual_confidence=0.30,
+        agent_weights={
+            'TechAgent': 1.0,
+            'SentimentAgent': -1.5,  # Invert sentiment (go with crowd)
+            'RegimeAgent': 1.0,
+            'CandlestickAgent': 1.0
+        }
+    ),
+
+    # === EXTREME THRESHOLDS (Very selective vs Very aggressive) ===
+
+    'ultra_conservative': StrategyConfig(
+        name='ultra_conservative',
+        description='Extremely high thresholds - only perfect setups',
+        consensus_threshold=0.85,  # Very high consensus required
+        min_confidence=0.75,       # Very high confidence required
+        min_individual_confidence=0.60,
+        max_position_pct=0.08,     # Smaller positions
+        agent_weights={
+            'TechAgent': 1.0,
+            'SentimentAgent': 1.0,
+            'RegimeAgent': 1.0,
+            'CandlestickAgent': 1.0
+        }
+    ),
+
+    'ultra_aggressive': StrategyConfig(
+        name='ultra_aggressive',
+        description='Very low thresholds - take every signal',
+        consensus_threshold=0.25,  # Low bar
+        min_confidence=0.25,       # Low confidence OK
+        min_individual_confidence=0.15,
+        max_position_pct=0.25,     # Bigger positions
+        agent_weights={
+            'TechAgent': 1.2,
+            'SentimentAgent': 1.2,
+            'RegimeAgent': 0.5,  # Ignore regime warnings
+            'CandlestickAgent': 1.0
+        }
+    ),
+
+    # === SINGLE AGENT STRATEGIES (Isolate each agent's performance) ===
+
+    'tech_only': StrategyConfig(
+        name='tech_only',
+        description='Technical analysis only - momentum/confluence signals',
+        consensus_threshold=0.30,  # Lower since only 1 agent
+        min_confidence=0.35,
+        min_individual_confidence=0.30,
+        agent_weights={
+            'TechAgent': 1.0,
+            'SentimentAgent': 0.0,  # Disabled
+            'RegimeAgent': 0.0,     # Disabled
+            'CandlestickAgent': 0.0  # Disabled
+        }
+    ),
+
+    'sentiment_only': StrategyConfig(
+        name='sentiment_only',
+        description='Sentiment/contrarian only - fade overpriced sides',
+        consensus_threshold=0.30,
+        min_confidence=0.35,
+        min_individual_confidence=0.30,
+        agent_weights={
+            'TechAgent': 0.0,
+            'SentimentAgent': 1.0,
+            'RegimeAgent': 0.0,
+            'CandlestickAgent': 0.0
+        }
+    ),
+
+    'regime_only': StrategyConfig(
+        name='regime_only',
+        description='Regime analysis only - market structure signals',
+        consensus_threshold=0.30,
+        min_confidence=0.35,
+        min_individual_confidence=0.30,
+        agent_weights={
+            'TechAgent': 0.0,
+            'SentimentAgent': 0.0,
+            'RegimeAgent': 1.0,
+            'CandlestickAgent': 0.0
+        }
+    ),
+
+    'random_baseline': StrategyConfig(
+        name='random_baseline',
+        description='Random 50/50 trades as baseline (all agents zero weight)',
+        consensus_threshold=0.01,  # Always trade (baseline)
+        min_confidence=0.01,
+        min_individual_confidence=0.01,
+        agent_weights={
+            'TechAgent': 0.0,
+            'SentimentAgent': 0.0,
+            'RegimeAgent': 0.0,
+            'CandlestickAgent': 0.0
+        }
+    ),
+
     'high_confidence_only': StrategyConfig(
         name='high_confidence_only',
         description='Extreme quality filter - only highest confidence trades',
