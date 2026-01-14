@@ -102,27 +102,34 @@ def get_positions():
 
         for p in all_positions:
             size = float(p.get('size', 0))
-            value = float(p.get('value', 0))
+            if size < 0.01:
+                continue
 
-            if size > 0:
-                # Extract crypto from market name
-                market = p.get('market', '')
-                crypto = '?'
-                if 'Bitcoin' in market or 'BTC' in market:
-                    crypto = 'BTC'
-                elif 'Ethereum' in market or 'ETH' in market:
-                    crypto = 'ETH'
-                elif 'Solana' in market or 'SOL' in market:
-                    crypto = 'SOL'
-                elif 'XRP' in market or 'Ripple' in market:
-                    crypto = 'XRP'
+            # Use curPrice (current probability) - more reliable than 'value' field
+            cur_price = float(p.get('curPrice', 0))
+            current_value = size * cur_price
 
-                p['crypto'] = crypto
+            # Extract crypto from title (more reliable than market field)
+            title = p.get('title', p.get('market', ''))
+            crypto = '?'
+            if 'Bitcoin' in title or 'BTC' in title:
+                crypto = 'BTC'
+            elif 'Ethereum' in title or 'ETH' in title:
+                crypto = 'ETH'
+            elif 'Solana' in title or 'SOL' in title:
+                crypto = 'SOL'
+            elif 'XRP' in title or 'Ripple' in title:
+                crypto = 'XRP'
 
-                if value > 0:
-                    active.append(p)
-                else:
-                    losing.append(p)
+            p['crypto'] = crypto
+            p['current_value'] = current_value
+            p['cur_price'] = cur_price
+
+            # Active if curPrice > 1% AND value > $0.10 (matches live_dashboard logic)
+            if cur_price > 0.01 and current_value >= 0.10:
+                active.append(p)
+            else:
+                losing.append(p)
 
         return {
             'active': active,
@@ -252,24 +259,28 @@ def run_dashboard():
                         crypto = p['crypto']
                         outcome = p.get('outcome', '?')
                         size = float(p.get('size', 0))
-                        value = float(p.get('value', 0))
+                        cur_price = p.get('cur_price', 0)
+                        current_value = p.get('current_value', 0)
                         entry = float(p.get('avg_entry_price', 0))
                         cost = size * entry
-                        pnl = value - cost
-                        market = p.get('market', 'Unknown')
+                        pnl = current_value - cost
+                        title = p.get('title', p.get('market', 'Unknown'))
 
-                        # Extract time from market name if present
-                        market_short = market
-                        if ' - ' in market:
-                            parts = market.split(' - ')
+                        # Extract time from title if present
+                        market_short = title
+                        if ' - ' in title:
+                            parts = title.split(' - ')
                             if len(parts) >= 2:
                                 market_short = parts[-1][:MARKET_NAME_LENGTH]  # Last part (time range)
                         else:
-                            market_short = market[:MARKET_NAME_LENGTH]
+                            market_short = title[:MARKET_NAME_LENGTH]
 
-                        status_icon = "📈" if pnl > 0 else "📉"
-                        print(f"│   {status_icon} {crypto:>3} {outcome:>4}: {market_short}")
-                        print(f"│        {size:>3.0f} shares @ ${entry:.3f} → ${value:.2f} ({format_pnl(pnl)})")
+                        # Show win probability with icon
+                        win_prob = int(cur_price * 100)
+                        status_icon = "📈" if win_prob >= 50 else "📉"
+
+                        print(f"│   {status_icon} {crypto:>3} {outcome:>4} ({win_prob}%): {market_short}")
+                        print(f"│        {size:>3.0f} shares @ ${entry:.3f} → ${current_value:.2f} ({format_pnl(pnl)})")
                 else:
                     print("│ \033[93mNo active positions with value\033[0m")
 
