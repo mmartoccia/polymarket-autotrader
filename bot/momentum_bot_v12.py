@@ -1910,9 +1910,10 @@ def run_bot():
                     # Check all shadow strategies for expired positions
                     for strategy_name, strategy in orchestrator.strategies.items():
                         if strategy.positions:
-                            log.info(f"[Shadow Check] {strategy_name}: {len(strategy.positions)} positions - {list(strategy.positions.keys())}")
+                            log.info(f"[Shadow Check] {strategy_name}: {len(strategy.positions)} positions")
 
-                        for crypto, pos in list(strategy.positions.items()):
+                        for position_key, pos in list(strategy.positions.items()):
+                            crypto, epoch_from_key = position_key  # Unpack (crypto, epoch) tuple
                             age_seconds = int(time.time()) - pos.epoch
                             log.info(f"[Shadow Check] {strategy_name} {crypto} epoch {pos.epoch}: {age_seconds}s old (need 1020s)")
 

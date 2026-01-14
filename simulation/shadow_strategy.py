@@ -106,7 +106,7 @@ class ShadowStrategy:
         # Virtual state
         self.balance = starting_balance
         self.starting_balance = starting_balance
-        self.positions: Dict[str, Position] = {}  # crypto → Position
+        self.positions: Dict[tuple, Position] = {}  # (crypto, epoch) → Position
         self.trade_history: List[Trade] = []
         
         # Initialize agent system with strategy-specific config
@@ -234,7 +234,7 @@ class ShadowStrategy:
         
         # Update state
         self.balance -= size
-        self.positions[crypto] = position
+        self.positions[(crypto, decision['epoch'])] = position
         self.trade_history.append(Trade.from_position(position))
         self.total_trades += 1
         
@@ -244,23 +244,20 @@ class ShadowStrategy:
     def resolve_position(self, crypto: str, epoch: int, outcome: str) -> Optional[float]:
         """
         Resolve hypothetical position after epoch ends.
-        
+
         Args:
             crypto: Cryptocurrency
             epoch: Epoch timestamp
             outcome: Actual market direction ("Up" or "Down")
-        
+
         Returns:
             PnL for this trade (None if no position)
         """
-        if crypto not in self.positions:
+        position_key = (crypto, epoch)
+        if position_key not in self.positions:
             return None
-        
-        pos = self.positions[crypto]
-        
-        # Check if this is the right epoch
-        if pos.epoch != epoch:
-            return None
+
+        pos = self.positions[position_key]
         
         # Determine win/loss
         won = (pos.direction == outcome)
@@ -288,7 +285,7 @@ class ShadowStrategy:
                 break
         
         # Remove position
-        del self.positions[crypto]
+        del self.positions[position_key]
         
         print(f"[{self.name}] {result_emoji} {crypto} {pos.direction} (actual: {outcome}) | "
               f"PnL: ${pnl:+.2f} | Balance: ${self.balance:.2f}")

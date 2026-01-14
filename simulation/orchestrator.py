@@ -111,10 +111,11 @@ class SimulationOrchestrator:
             # Execute trade if decision is positive
             if decision['should_trade']:
                 strategy.execute_trade(decision, market_data)
-                
-                # Log trade to database
-                if crypto in strategy.positions:
-                    pos = strategy.positions[crypto]
+
+                # Log trade to database (use tuple key)
+                position_key = (crypto, epoch)
+                if position_key in strategy.positions:
+                    pos = strategy.positions[position_key]
                     self.db.log_trade(
                         decision_id=decision_id,
                         strategy=name,
@@ -324,9 +325,9 @@ class SimulationOrchestrator:
                 if direction_row:
                     position.direction = direction_row[0]
 
-                # Restore position to strategy
+                # Restore position to strategy (use (crypto, epoch) tuple as key)
                 strategy = self.strategies[strategy_name]
-                strategy.positions[crypto] = position
+                strategy.positions[(crypto, epoch)] = position
 
                 # Adjust balance (subtract position size)
                 strategy.balance -= size
