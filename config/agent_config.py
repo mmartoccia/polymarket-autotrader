@@ -229,7 +229,7 @@ DEPLOYMENT_MODES = {
 }
 
 # Current deployment mode
-CURRENT_MODE = 'log_only'  # Change to 'moderate' for live trading
+CURRENT_MODE = 'moderate'  # Agents now control trading decisions
 
 
 def apply_mode(mode_name: str):
