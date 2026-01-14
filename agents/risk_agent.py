@@ -195,6 +195,11 @@ class RiskAgent(VetoAgent):
         if self.current_mode == "halted":
             return True, "Bot is in HALTED mode"
 
+        # Check 6: Regime filter - prevent counter-trend trades
+        should_veto, reason = self._check_regime_filter(crypto, direction, data)
+        if should_veto:
+            return True, f"Regime filter: {reason}"
+
         # All checks passed
         return False, ""
 
@@ -371,6 +376,38 @@ class RiskAgent(VetoAgent):
                     f"{direction} exposure {exposure_pct*100:.1f}% "
                     f"exceeds {MAX_DIRECTIONAL_EXPOSURE_PCT*100}%"
                 )
+
+        return False, ""
+
+    def _check_regime_filter(self, crypto: str, direction: str, data: dict) -> Tuple[bool, str]:
+        """
+        Check if trade conflicts with strong market regime.
+
+        Prevents counter-trend trades in strong trends:
+        - In strong bull trend (>0.5): Don't allow Down bets
+        - In strong bear trend (<-0.5): Don't allow Up bets
+
+        This prevents contrarian strategies from fighting strong trends.
+        """
+        regime = data.get('regime', 0.0)
+
+        # Convert regime to numeric if it's a string
+        if isinstance(regime, str):
+            regime_lower = regime.lower()
+            if 'bull' in regime_lower:
+                regime = 0.7  # Strong bull
+            elif 'bear' in regime_lower:
+                regime = -0.7  # Strong bear
+            else:
+                regime = 0.0  # Neutral
+
+        # Strong bull trend - veto Down bets
+        if regime > 0.5 and direction == "Down":
+            return True, f"Strong bull trend ({regime:.2f}) - blocking Down bet"
+
+        # Strong bear trend - veto Up bets
+        if regime < -0.5 and direction == "Up":
+            return True, f"Strong bear trend ({regime:.2f}) - blocking Up bet"
 
         return False, ""
 
