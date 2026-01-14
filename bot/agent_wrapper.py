@@ -84,7 +84,7 @@ class AgentSystemWrapper:
         self.tech_agent = TechAgent(name="TechAgent", weight=1.0)
         self.sentiment_agent = SentimentAgent(name="SentimentAgent", weight=1.0)
         self.regime_agent = RegimeAgent(name="RegimeAgent", weight=1.0)
-        self.candle_agent = CandlestickAgent(name="CandlestickAgent", weight=1.0)
+        self.candle_agent = CandlestickAgent()  # Has its own default name
         self.risk_agent = RiskAgent(name="RiskAgent", weight=1.0)
 
         # Initialize decision engine with 4 expert agents
