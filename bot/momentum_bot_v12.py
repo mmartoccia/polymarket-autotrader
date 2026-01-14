@@ -1836,11 +1836,8 @@ def run_bot():
                         # Verify with Guardian (risk checks)
                             can_open, block_reason = guardian.can_open_position(
                                 crypto=crypto,
-                                direction=direction,
-                                size=size,
-                                entry_price=entry_price,
-                                balance=state.current_balance,
-                                mode=state.mode
+                                epoch=current_epoch,
+                                direction=direction
                             )
 
                             if not can_open:
