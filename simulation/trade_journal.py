@@ -9,10 +9,13 @@ Provides queryable history for performance analysis and strategy comparison.
 import sqlite3
 import json
 import time
+import logging
 from typing import List, Dict, Optional, Any
 from dataclasses import asdict
 
 from .strategy_configs import StrategyConfig
+
+log = logging.getLogger(__name__)
 
 
 class TradeJournalDB:
