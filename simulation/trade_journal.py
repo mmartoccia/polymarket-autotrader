@@ -40,8 +40,16 @@ class TradeJournalDB:
         self.conn.row_factory = sqlite3.Row  # Enable dict-like access
 
         # Enable Write-Ahead Logging for better concurrent access
-        self.conn.execute("PRAGMA journal_mode=WAL")
-        self.conn.execute("PRAGMA synchronous=NORMAL")  # Balance between safety and speed
+        # Try to enable WAL mode, but don't fail if database is locked
+        try:
+            self.conn.execute("PRAGMA journal_mode=WAL")
+            self.conn.execute("PRAGMA synchronous=NORMAL")  # Balance between safety and speed
+            log.info("[TradeJournal] Enabled WAL mode")
+        except sqlite3.OperationalError as e:
+            # Database might be locked by another process
+            # WAL mode is persistent, so if it was enabled before, we're good
+            log.warning(f"[TradeJournal] Could not set WAL mode (database may be locked): {e}")
+            log.warning(f"[TradeJournal] Continuing anyway - WAL mode may already be enabled")
 
         self._create_tables()
     
