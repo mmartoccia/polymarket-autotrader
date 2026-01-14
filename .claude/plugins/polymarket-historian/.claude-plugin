@@ -1,0 +1,30 @@
+{
+  "name": "polymarket-historian",
+  "version": "1.0.0",
+  "description": "Trade historian and pattern analyzer for Polymarket AutoTrader. Continuously collects trade data, identifies winning patterns, and generates strategy recommendations.",
+  "author": "Polymarket AutoTrader Team",
+  "commands": {
+    "historian-analyze": {
+      "description": "Analyze trade history and identify winning patterns",
+      "file": "commands/historian-analyze.sh"
+    },
+    "historian-report": {
+      "description": "Generate comprehensive performance report with recommendations",
+      "file": "commands/historian-report.sh"
+    },
+    "historian-collect": {
+      "description": "Collect and snapshot current trade data",
+      "file": "commands/historian-collect.sh"
+    },
+    "historian-patterns": {
+      "description": "Extract winning patterns by strategy, crypto, time, regime",
+      "file": "commands/historian-patterns.sh"
+    }
+  },
+  "hooks": {
+    "post-task": {
+      "description": "Auto-collect trade data after each task completion",
+      "file": "hooks/post-task-collect.sh"
+    }
+  }
+}
