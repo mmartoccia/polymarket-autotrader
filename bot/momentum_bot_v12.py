@@ -1783,7 +1783,7 @@ def run_bot():
 
                     # Ask agents to make decision
                         try:
-                            agent_should_trade, direction, confidence, reason = agent_system.make_decision(
+                            agent_should_trade, direction, confidence, reason, weighted_score = agent_system.make_decision(
                                 crypto=crypto,
                                 epoch=current_epoch,
                                 prices={
@@ -1810,7 +1810,7 @@ def run_bot():
                                 continue
 
                         # Agents said TRADE - set up the order
-                            log.info(f"  [{crypto.upper()}] 🤖 AGENTS TRADE {direction.upper()}: {confidence:.0%} confidence")
+                            log.info(f"  [{crypto.upper()}] 🤖 AGENTS TRADE {direction.upper()}: {confidence:.0%} confidence, {weighted_score:.1%} consensus")
                             log.info(f"     Reason: {reason}")
 
                         # Get entry price and token from agent decision
@@ -1825,11 +1825,12 @@ def run_bot():
                             signal_strength = confidence
                             strategy = "agent_consensus"
 
-                        # Calculate position size using agent system
+                        # Calculate position size using agent system with confidence-based scaling
                             size = agent_system.get_position_size(
                                 confidence=confidence,
                                 balance=state.current_balance,
-                                consecutive_losses=state.consecutive_losses
+                                consecutive_losses=state.consecutive_losses,
+                                weighted_score=weighted_score  # Use weighted consensus for position sizing
                             )
 
                         # Verify with Guardian (risk checks)
@@ -2122,7 +2123,7 @@ def run_bot():
                 # Consult agent system (log-only for now)
                 if agent_system:
                     try:
-                        agent_should_trade, agent_direction, agent_confidence, agent_reason = agent_system.make_decision(
+                        agent_should_trade, agent_direction, agent_confidence, agent_reason, agent_weighted_score = agent_system.make_decision(
                             crypto=crypto,
                             epoch=current_epoch,
                             prices={
@@ -2144,7 +2145,7 @@ def run_bot():
                         )
 
                         agreement = "✓ AGREE" if (agent_should_trade and agent_direction == direction) else "✗ DISAGREE"
-                        log.info(f"  🤖 Agents {agreement}: {agent_direction if agent_should_trade else 'SKIP'} @ {agent_confidence:.0%}")
+                        log.info(f"  🤖 Agents {agreement}: {agent_direction if agent_should_trade else 'SKIP'} @ {agent_confidence:.0%} ({agent_weighted_score:.1%} consensus)")
                         log.info(f"     Reason: {agent_reason}")
 
                     except Exception as e:

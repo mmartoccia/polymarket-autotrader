@@ -180,25 +180,29 @@ class DecisionEngine:
         summary = self.aggregator.get_vote_summary(prediction)
         self.log.info(f"\n{summary}")
 
-        # Step 5: Check consensus threshold
-        if not self.aggregator.meets_threshold(prediction):
-            return TradeDecision(
-                should_trade=False,
-                direction=None,
-                reason=f"Consensus threshold not met ({prediction.weighted_score:.3f} < {self.consensus_threshold})",
-                prediction=prediction,
-                weighted_score=prediction.weighted_score,
-                confidence=prediction.confidence,
-                crypto=crypto,
-                epoch=epoch
-            )
+        # Step 5: CONFIDENCE-BASED TRADING
+        # Instead of binary threshold check, we trade on ANY majority consensus
+        # and adjust position size based on confidence level
+        #
+        # Rationale: With expert agents, even low confidence (20-35%) represents
+        # real information. Better to trade small on weak signals than skip entirely.
+        #
+        # Position sizing will scale with weighted_score:
+        # - 0.10-0.20: 30% of max position (very weak signal)
+        # - 0.20-0.30: 50% of max position (weak signal)
+        # - 0.30-0.40: 70% of max position (moderate signal)
+        # - 0.40-0.60: 85% of max position (good signal)
+        # - 0.60+:     100% of max position (strong signal)
+        #
+        # This allows us to capture value from weak signals while managing risk
 
-        # Step 6: Check minimum confidence
-        if prediction.confidence < self.min_confidence:
+        # Only skip if consensus is BELOW minimum viable threshold (10%)
+        MIN_VIABLE_THRESHOLD = 0.10
+        if prediction.weighted_score < MIN_VIABLE_THRESHOLD:
             return TradeDecision(
                 should_trade=False,
                 direction=None,
-                reason=f"Confidence too low ({prediction.confidence:.1%} < {self.min_confidence:.1%})",
+                reason=f"Consensus too weak to trade ({prediction.weighted_score:.3f} < {MIN_VIABLE_THRESHOLD})",
                 prediction=prediction,
                 weighted_score=prediction.weighted_score,
                 confidence=prediction.confidence,

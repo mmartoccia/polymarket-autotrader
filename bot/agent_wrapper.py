@@ -132,11 +132,12 @@ class AgentSystemWrapper:
             mode: Trading mode (normal, conservative, etc.)
 
         Returns:
-            (should_trade, direction, confidence, reason)
+            (should_trade, direction, confidence, reason, weighted_score)
             - should_trade: bool
             - direction: "Up", "Down", or None
-            - confidence: float 0.0-1.0
+            - confidence: float 0.0-1.0 (average agent confidence)
             - reason: str (explanation)
+            - weighted_score: float 0.0-1.0 (consensus strength for position sizing)
         """
         # Prepare data for agents
         data = {
@@ -161,35 +162,65 @@ class AgentSystemWrapper:
         # If not enabled, return False (log-only mode)
         if not self.enabled:
             log.info(f"  [LOG-ONLY] Would have traded: {decision.should_trade}")
-            return False, None, 0.0, "Log-only mode"
+            return False, None, 0.0, "Log-only mode", 0.0
 
         return (
             decision.should_trade,
             decision.direction,
             decision.confidence,
-            decision.reason
+            decision.reason,
+            decision.weighted_score  # Return weighted_score for position sizing
         )
 
     def get_position_size(self,
                          confidence: float,
                          balance: float,
-                         consecutive_losses: int = 0) -> float:
+                         consecutive_losses: int = 0,
+                         weighted_score: float = None) -> float:
         """
-        Calculate position size using RiskAgent.
+        Calculate position size using RiskAgent with confidence-based scaling.
 
         Args:
-            confidence: Signal confidence (0.0-1.0)
+            confidence: Signal confidence (0.0-1.0) - average agent confidence
             balance: Current balance
             consecutive_losses: Number of consecutive losses
+            weighted_score: Weighted consensus score (0.0-1.0) - used for scaling
 
         Returns:
             Position size in USD
         """
-        return self.risk_agent.calculate_position_size(
-            signal_strength=confidence,
+        # Use weighted_score for position sizing if provided, otherwise use confidence
+        # Weighted score represents the STRENGTH of consensus (quality × confidence × weight)
+        signal_strength = weighted_score if weighted_score is not None else confidence
+
+        # Apply confidence-based scaling:
+        # - 0.10-0.20: 30% of normal size (very weak signal)
+        # - 0.20-0.30: 50% of normal size (weak signal)
+        # - 0.30-0.40: 70% of normal size (moderate signal)
+        # - 0.40-0.60: 85% of normal size (good signal)
+        # - 0.60+:     100% of normal size (strong signal)
+        if signal_strength < 0.20:
+            scale_multiplier = 0.30
+        elif signal_strength < 0.30:
+            scale_multiplier = 0.50
+        elif signal_strength < 0.40:
+            scale_multiplier = 0.70
+        elif signal_strength < 0.60:
+            scale_multiplier = 0.85
+        else:
+            scale_multiplier = 1.00
+
+        # Calculate base position size
+        base_size = self.risk_agent.calculate_position_size(
+            signal_strength=signal_strength,
             balance=balance,
             consecutive_losses=consecutive_losses
         )
+
+        # Apply confidence scaling
+        scaled_size = base_size * scale_multiplier
+
+        return scaled_size
 
     def record_outcome(self,
                       crypto: str,
