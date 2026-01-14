@@ -293,6 +293,9 @@ ENABLE_SHADOW_TRADING = True  # Set False to disable simulation system
 #                      momentum_focused, no_regime_adjustment, equal_weights_static,
 #                      high_confidence_only, low_barrier
 SHADOW_STRATEGIES = [
+    # Baseline (coin flip)
+    'random_baseline',        # Random 50/50 trades (NO agents)
+
     # Original strategies (kept for comparison)
     'conservative',           # High thresholds (0.75/0.60) - fewer trades
     'aggressive',             # Lower thresholds (0.55/0.45) - more trades
