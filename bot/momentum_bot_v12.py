@@ -1902,11 +1902,22 @@ def run_bot():
                     current_epoch = (int(time.time()) // 900) * 900
                     resolved_positions = []
 
+                    # Debug: count total positions
+                    total_positions = sum(len(s.positions) for s in orchestrator.strategies.values())
+                    if total_positions > 0:
+                        log.info(f"[Shadow Check] Checking {total_positions} positions for expiration")
+
                     # Check all shadow strategies for expired positions
                     for strategy_name, strategy in orchestrator.strategies.items():
+                        if strategy.positions:
+                            log.info(f"[Shadow Check] {strategy_name}: {len(strategy.positions)} positions - {list(strategy.positions.keys())}")
+
                         for crypto, pos in list(strategy.positions.items()):
+                            age_seconds = int(time.time()) - pos.epoch
+                            log.info(f"[Shadow Check] {strategy_name} {crypto} epoch {pos.epoch}: {age_seconds}s old (need 1020s)")
+
                             # If shadow position's epoch has ended (wait 2 minutes after end for data availability)
-                            if current_epoch > pos.epoch and (int(time.time()) - pos.epoch) > 1020:  # 17 minutes (15min epoch + 2min buffer)
+                            if current_epoch > pos.epoch and age_seconds > 1020:  # 17 minutes (15min epoch + 2min buffer)
                                 # Fetch actual outcome from exchange price data
                                 try:
                                     # Import outcome fetcher (lazy import to avoid circular dependencies)
