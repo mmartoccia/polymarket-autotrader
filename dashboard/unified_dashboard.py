@@ -134,6 +134,39 @@ def get_recent_agent_decisions():
     except:
         return []
 
+def get_recent_trades_with_confidence():
+    """Get recent trades with confidence scores from bot logs."""
+    try:
+        cmd = f'''ssh -i {SSH_KEY} root@{VPS_IP} "tail -500 {LOG_FILE} | grep -B1 'ORDER PLACED' | grep -E 'Confidence:|ORDER PLACED' | tail -20" 2>/dev/null'''
+        result = os.popen(cmd).read().strip()
+
+        trades = []
+        lines = result.split('\n') if result else []
+
+        i = 0
+        while i < len(lines):
+            line = lines[i]
+            # Look for pattern: "Confidence: XX% | Strategy: agent_consensus"
+            if 'Confidence:' in line and 'Strategy:' in line:
+                # Extract crypto, direction, confidence from context
+                parts = line.split('|')
+                confidence = 0
+                for part in parts:
+                    if 'Confidence:' in part:
+                        try:
+                            confidence = int(part.split(':')[1].strip().rstrip('%'))
+                        except:
+                            pass
+
+                # Check if next line is ORDER PLACED
+                if i + 1 < len(lines) and 'ORDER PLACED' in lines[i + 1]:
+                    trades.append({'confidence': confidence, 'line': line})
+            i += 1
+
+        return trades[-5:]  # Last 5 trades
+    except:
+        return []
+
 def format_pnl(value):
     """Format P&L with color."""
     if value > 0:
@@ -217,9 +250,20 @@ def run_dashboard():
                         entry = float(p.get('avg_entry_price', 0))
                         cost = size * entry
                         pnl = value - cost
+                        market = p.get('market', 'Unknown')
+
+                        # Extract time from market name if present
+                        market_short = market
+                        if ' - ' in market:
+                            parts = market.split(' - ')
+                            if len(parts) >= 2:
+                                market_short = parts[-1][:45]  # Last part (time range)
+                        else:
+                            market_short = market[:45]
 
                         status_icon = "📈" if pnl > 0 else "📉"
-                        print(f"│   {status_icon} {crypto:>3} {outcome:>4}: {size:>3.0f} shares @ ${entry:.3f} → ${value:.2f} ({format_pnl(pnl)})")
+                        print(f"│   {status_icon} {crypto:>3} {outcome:>4}: {market_short}")
+                        print(f"│        {size:>3.0f} shares @ ${entry:.3f} → ${value:.2f} ({format_pnl(pnl)})")
                 else:
                     print("│ \033[93mNo active positions with value\033[0m")
 
@@ -267,6 +311,54 @@ def run_dashboard():
                     print(f"│ {decision}")
             else:
                 print("│ No recent decisions found")
+
+            print("└" + "─" * 99 + "┘")
+            print()
+
+            # Recent Trades with Confidence Section
+            print("┌─ 📈 RECENT TRADES & CONFIDENCE " + "─" * 64 + "┐")
+
+            recent_trades = get_recent_trades_with_confidence()
+            if recent_trades:
+                for trade in recent_trades:
+                    conf = trade['confidence']
+                    line = trade['line']
+
+                    # Extract crypto and direction from line
+                    crypto = "?"
+                    direction = "?"
+                    if '[BTC]' in line or 'BTC' in line:
+                        crypto = 'BTC'
+                    elif '[ETH]' in line or 'ETH' in line:
+                        crypto = 'ETH'
+                    elif '[SOL]' in line or 'SOL' in line:
+                        crypto = 'SOL'
+                    elif '[XRP]' in line or 'XRP' in line:
+                        crypto = 'XRP'
+
+                    if 'Up' in line:
+                        direction = 'Up'
+                    elif 'Down' in line:
+                        direction = 'Down'
+
+                    # Color code confidence
+                    if conf >= 60:
+                        conf_str = f"\033[92m{conf}%\033[0m"  # Green
+                        conf_bar = "█" * 6
+                    elif conf >= 40:
+                        conf_str = f"\033[93m{conf}%\033[0m"  # Yellow
+                        conf_bar = "█" * 4 + "░" * 2
+                    elif conf >= 20:
+                        conf_str = f"\033[91m{conf}%\033[0m"  # Red
+                        conf_bar = "█" * 2 + "░" * 4
+                    else:
+                        conf_str = f"\033[91m{conf}%\033[0m"  # Red
+                        conf_bar = "█" * 1 + "░" * 5
+
+                    arrow = "↗" if direction == "Up" else "↘"
+                    print(f"│ {crypto:>3} {arrow} {direction:>4}  [{conf_bar}] {conf_str}")
+            else:
+                print("│ No recent trades found")
 
             print("└" + "─" * 99 + "┘")
             print()
