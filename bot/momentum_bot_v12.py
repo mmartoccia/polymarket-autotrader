@@ -2225,7 +2225,9 @@ def run_bot():
             save_state(state)
             break
         except Exception as e:
+            import traceback
             log.error(f"Error: {e}")
+            log.error(f"Traceback: {traceback.format_exc()}")
             time.sleep(5)
 
 
