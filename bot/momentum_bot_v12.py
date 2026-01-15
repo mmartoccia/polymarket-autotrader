@@ -2051,6 +2051,81 @@ def run_bot():
                             if agent_should_trade:
                                 log.info(f"  Direction: {direction} | Confidence: {confidence:.1%}")
                                 log.info(f"  Reason: {reason}")
+                            else:
+                                # ML says skip - continue to next crypto
+                                continue
+
+                            # ML says TRADE - get entry price and token
+                            if direction == "Up":
+                                entry_price = prices["Up"]["ask"]
+                                token_id = prices["Up"]["token_id"]
+                            else:
+                                entry_price = prices["Down"]["ask"]
+                                token_id = prices["Down"]["token_id"]
+
+                            # Set strategy name
+                            signal_strength = confidence
+                            strategy = "ml_random_forest"
+
+                            # Calculate position size using agent system's sizing logic
+                            if agent_system:
+                                size = agent_system.get_position_size(
+                                    confidence=confidence,
+                                    balance=state.current_balance,
+                                    consecutive_losses=state.consecutive_losses,
+                                    weighted_score=weighted_score
+                                )
+                            else:
+                                # Fallback if no agent system
+                                size = min(state.current_balance * 0.10, 15.0)
+
+                            # Verify with Guardian (risk checks)
+                            can_open, block_reason = guardian.can_open_position(
+                                crypto=crypto,
+                                epoch=current_epoch,
+                                direction=direction
+                            )
+
+                            if not can_open:
+                                log.warning(f"  [{crypto.upper()}] BLOCKED: {block_reason}")
+                                continue
+
+                            # Calculate shares
+                            shares = int(size / entry_price)
+                            if shares < 1:
+                                log.warning(f"  [{crypto.upper()}] Size too small for 1 share")
+                                continue
+
+                            # Log the trade details
+                            log.info(f"\n*** [{crypto.upper()}] ML DECISION: {direction} ***")
+                            log.info(f"  Confidence: {confidence:.0%} | Strategy: {strategy}")
+                            log.info(f"  Entry: ${entry_price:.2f} | Size: ${size:.2f} ({shares} shares)")
+                            log.info(f"  Mode: {state.mode} | Losses: {state.consecutive_losses}")
+
+                            # Place the order
+                            result = place_order(client, token_id, shares, entry_price)
+
+                            if result:
+                                log.info(f"  ORDER PLACED: {result.get('status')}")
+                                epoch_trades[crypto][current_epoch].append(result)
+
+                                # Track position
+                                position_data = {
+                                    "crypto": crypto,
+                                    "direction": direction,
+                                    "entry_price": entry_price,
+                                    "shares": shares,
+                                    "size_usd": size,
+                                    "epoch": current_epoch,
+                                    "strategy": strategy,
+                                    "confidence": confidence,
+                                    "token_id": token_id
+                                }
+                                guardian.add_position(position_data)
+                                state.last_trade_time = time.time()
+
+                            # Continue to next crypto (skip old bot logic)
+                            continue
 
                         except Exception as e:
                             log.error(f"[ML Bot] Failed to get ML decision for {crypto}: {e}")
