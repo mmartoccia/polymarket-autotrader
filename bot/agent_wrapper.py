@@ -13,6 +13,8 @@ sys.path.append(str(Path(__file__).parent.parent))
 from agents import TechAgent, RiskAgent, SentimentAgent, RegimeAgent, CandlestickAgent
 from agents.time_pattern_agent import TimePatternAgent
 from agents.gambler_agent import GamblerAgent
+from agents.voting.orderbook_agent import OrderBookAgent
+from agents.voting.funding_rate_agent import FundingRateAgent
 from coordinator import DecisionEngine
 from config import agent_config
 import logging
@@ -102,8 +104,9 @@ class AgentSystemWrapper:
         self.risk_agent = RiskAgent(name="RiskAgent", weight=1.0)
         self.gambler_agent = GamblerAgent(name="GamblerAgent", weight=1.0)
 
-        # Build agent list
+        # Build agent list (base 4 agents)
         agents = [self.tech_agent, self.sentiment_agent, self.regime_agent, self.candle_agent]
+        agent_names = ["Tech", "Sentiment", "Regime", "Candlestick"]
 
         # Optionally add TimePatternAgent
         if include_time_pattern:
@@ -112,12 +115,35 @@ class AgentSystemWrapper:
                 weight=agent_weights.get('TimePatternAgent', 1.0)
             )
             agents.append(self.time_pattern_agent)
-            agent_count = "5 AGENTS"
-            agent_list = "Tech, Sentiment, Regime, Candlestick, TimePattern (+ Risk, Gambler veto)"
+            agent_names.append("TimePattern")
         else:
             self.time_pattern_agent = None
-            agent_count = "4 AGENTS"
-            agent_list = "Tech, Sentiment, Regime, Candlestick (+ Risk, Gambler veto)"
+
+        # Add OrderBookAgent if configured
+        if 'OrderBookAgent' in agent_weights and agent_weights['OrderBookAgent'] > 0:
+            self.orderbook_agent = OrderBookAgent(
+                name="OrderBookAgent",
+                weight=agent_weights.get('OrderBookAgent', 1.0)
+            )
+            agents.append(self.orderbook_agent)
+            agent_names.append("OrderBook")
+        else:
+            self.orderbook_agent = None
+
+        # Add FundingRateAgent if configured
+        if 'FundingRateAgent' in agent_weights and agent_weights['FundingRateAgent'] > 0:
+            self.funding_rate_agent = FundingRateAgent(
+                name="FundingRateAgent",
+                weight=agent_weights.get('FundingRateAgent', 1.0)
+            )
+            agents.append(self.funding_rate_agent)
+            agent_names.append("FundingRate")
+        else:
+            self.funding_rate_agent = None
+
+        # Build summary
+        agent_count = f"{len(agents)} AGENTS"
+        agent_list = ", ".join(agent_names) + " (+ Risk, Gambler veto)"
 
         # Initialize decision engine
         self.engine = DecisionEngine(
