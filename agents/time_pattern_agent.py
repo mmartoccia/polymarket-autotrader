@@ -176,8 +176,23 @@ class TimePatternAgent(BaseAgent):
         elif down_valid:
             pattern = down_pattern
         else:
-            # Neither pattern meets requirements
-            return None
+            # Neither pattern meets requirements - return Neutral vote with minimal confidence
+            # This ensures TimePatternAgent always provides a vote when configured
+            return BaseVote(
+                direction="Neutral",
+                confidence=0.10,  # Very low confidence = abstain without breaking vote count
+                quality=0.10,
+                agent_name=self.name,
+                reasoning=f"⏭️ No significant pattern for {crypto.upper()} @ {hour:02d}:00 UTC (abstain)",
+                details={
+                    'win_rate': 0.5,
+                    'edge': 0.0,
+                    'sample_size': 0,
+                    'p_value': 1.0,
+                    'statistical_confidence': 'insufficient',
+                    'hour': hour
+                }
+            )
 
         # Convert to BaseVote format expected by coordinator
         reasoning = self._format_reasoning(pattern)
