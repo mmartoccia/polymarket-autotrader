@@ -666,3 +666,43 @@ User confirmed: Pause new features, focus on validation and stability first. Deb
   - **Alternative design:** Move orchestrator.on_market_data() OUTSIDE agent decision block to log all market scans
   - **Validation blocked:** Cannot assess Phase 1 agents without data (chicken-and-egg problem)
 ---
+## Iteration 18 - Ensemble Predictor (Week 6-7 Phase 4)
+- Implemented ensemble predictor combining XGBoost, Random Forest, and Logistic Regression
+- Files changed:
+  - ml/ensemble.py (NEW - 410+ lines)
+  - tests/test_ensemble.py (NEW - 18 unit tests, all passing)
+  - PRD.md (marked "Build ensemble predictor" complete)
+- Key features:
+  - 3 voting methods: soft (average probabilities), weighted (accuracy-weighted), majority (vote count)
+  - Automatic model loading from ml/models/ directory
+  - Handles StandardScaler for Logistic Regression
+  - Batch prediction support
+  - Confidence calculation from probability
+  - Per-model prediction breakdown
+  - CLI tool for testing
+- Test results:
+  - All 3 models loaded successfully (100% accuracy each)
+  - Soft voting: 100% accuracy on 711 samples
+  - Weighted voting: 100% accuracy
+  - Majority voting: 100% accuracy
+  - All voting methods agree (due to overfitting)
+- Learnings for future iterations:
+  - **Ensemble voting methods:** Soft (recommended) averages probabilities, Weighted uses accuracy weights, Majority counts votes
+  - **Confidence scaling:** (probability - 0.5) * 2 scales [0.5, 1.0] → [0, 1] confidence
+  - **Model loading pattern:** Load model + results.json metadata + optional scaler (Logistic only)
+  - **Batch prediction:** Iterate over feature matrix, call predict() per sample
+  - **EnsemblePrediction dataclass:** direction, probability, confidence, model_predictions, voting_method
+  - **1D vs 2D features:** Always convert 1D to 2D with reshape(1, -1) for sklearn compatibility
+  - **Tie-breaking:** Majority voting falls back to soft voting on ties (even number of models)
+  - **Model weights:** Use validation accuracy as weight (all 1.0 currently due to overfitting)
+  - **Model agreement:** All 3 models agree on direction (market_wide_direction dominates all models)
+  - **Overfitting confirmed:** 100% accuracy across all methods proves overfitting issue
+  - **CLI tool pattern:** argparse + load models + test predictions + print results
+  - **ModelInfo dataclass:** Tracks model metadata (name, paths, weight, accuracy, AUC)
+  - **Scaler handling:** Only Logistic Regression needs scaler, store separately from model
+  - **Feature compatibility:** Ensemble expects 14 features in same order as training data
+  - **Next step:** Implement MLAgent to integrate ensemble into live trading
+  - **Week 6-7 progress:** 4 of 7 tasks complete (3 models trained + ensemble built)
+  - **Remaining:** MLAgent implementation, shadow testing, strategy comparison
+---
+
