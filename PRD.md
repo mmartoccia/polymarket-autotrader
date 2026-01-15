@@ -1,468 +1,213 @@
-# ML Bot Production Stabilization - PRD
-
-**Status:** URGENT - Critical Bugs Blocking ML Performance
-**Created:** January 15, 2026
-**Priority:** P0 - Production Down
-**Owner:** Development Team
-
----
+# Performance Optimization PRD - Polymarket AutoTrader
 
 ## Executive Summary
 
-The ML Random Forest trading bot is **deployed and profitable** (60% win rate), but **critical bugs are causing conflicting trades** that negate the edge. We need immediate fixes to stabilize the system before it can prove its full potential.
+**Current State (Jan 15, 2026):**
+- Balance: $254.61
+- Win Rate: 56-60% (above 53% breakeven)
+- ML Random Forest bot operational
+- 7 agents deployed: Tech, Sentiment, Regime, Candlestick, TimePattern, OrderBook, FundingRate
+- Shadow testing: 27 strategies running in parallel
 
-**Current Status:**
-- ✅ ML model working (67.3% test accuracy → 60% live)
-- ✅ Order placement fixed
-- ✅ Auto-redemption fixed
-- ✅ Trade logging implemented
-- ✅ **FIXED: Conflicting positions bug** (added live API position check)
+**Goal:** Optimize existing system performance through data-driven improvements
 
-**Immediate Goal:** Deploy fixes and collect 50+ clean trades to validate ML performance.
+**Timeline:** 4 weeks (4 phases)
 
----
-
-## Problem Statement
-
-### Critical Issue: Conflicting Positions
-
-**Observed Behavior:**
-All 4 cryptos (BTC, ETH, SOL, XRP) have BOTH Up AND Down positions for the same epoch (11:30-11:45 AM ET).
-
-**Example:**
-- XRP 11:30-11:45: Up (40.7 shares @ $0.43) AND Down (15.8 shares @ $0.57)
-- BTC 11:30-11:45: Up (26.6 shares @ $0.42) AND Down (31.7 shares @ $0.57)
-
-**Impact:**
-- Net loss: $14.18 on these 8 conflicting positions
-- ML edge is negated when betting both sides
-- Unprofitable even with 60% directional accuracy
-
-**Root Cause (Hypothesis):**
-1. Multiple code paths still active (ML + agent fallback?)
-2. Correlation protection not working correctly
-3. Guardian not tracking positions properly
-4. Race condition in order placement
+**Target Metrics:**
+- Win Rate: 60-65% (from 56%)
+- Monthly ROI: +20-30% (from +10-20%)
+- Automated optimization: Continuous
 
 ---
 
-## Immediate Priorities (Next 24 Hours)
+## Current Architecture
 
-### ✅ P0: Fix Conflicting Positions Bug (COMPLETED)
+### ML Bot
+- Algorithm: Random Forest Classifier
+- Test Accuracy: 67.3%
+- Live Win Rate: 56-60%
+- Features: 14 engineered features (price momentum, volatility, orderbook, regime)
 
-**Status:** FIXED - Iteration 1-2 (Jan 15, 2026)
+### Agent System
+- **TechAgent:** Price confluence across exchanges (Binance, Kraken, Coinbase)
+- **SentimentAgent:** Contrarian fade on overpriced sides (>70%)
+- **RegimeAgent:** Market regime detection (BULL/BEAR/CHOPPY)
+- **CandlestickAgent:** 15-minute candlestick patterns
+- **TimePatternAgent:** Intra-epoch timing signals
+- **OrderBookAgent:** Bid/ask spread and depth analysis
+- **FundingRateAgent:** Perpetual swap funding rates
 
-**Acceptance Criteria:**
-- ✅ Bot can only hold 1 position per crypto per epoch (either Up OR Down, not both)
-- ✅ Explicit validation before order placement: check existing positions for same crypto/epoch
-- ✅ If position exists, log clear rejection message: "Already have [direction] position on [crypto] epoch [time]"
-- ✅ No agent system fallback when ML is enabled (pure ML mode)
+### Shadow Testing System
+- 27 parallel strategies running
+- Virtual trading (no real money risk)
+- Real-time performance comparison
+- Database: `simulation/trade_journal.db` (SQLite)
 
-**Implementation Steps:**
-1. ✅ Add position conflict check before every order - Guardian.check_live_position_conflicts()
-2. ✅ Query live positions from Polymarket API - https://data-api.polymarket.com/positions
-3. ✅ Match by crypto + direction - Parses title/outcome fields
-4. ✅ Reject order if conflict detected - Returns (True, conflict_message)
-5. ✅ Add comprehensive logging for debugging - log.warning/error for conflicts
+### Position Sizing
+- Current: Fixed tiers (5-15% based on balance)
+- Next: Kelly Criterion (mathematically optimal)
 
-**Testing:**
-- Deploy fix to VPS
-- Monitor next 2 hours for conflicts
-- Verify only 1 position per crypto per epoch
-- Check logs for rejection messages
-
-**Success Metrics:**
-- Zero conflicting positions in next 10 trades
-- Clean directional bets only
-
----
-
-### ✅ P1: Add Position Conflict Protection (Guardian Enhancement) (COMPLETED)
-
-**Status:** FIXED - Iteration 1 (included in P0 fix)
-
-**Why:** Guardian was tracking internal positions but not querying live blockchain state.
-
-**Changes Implemented:**
-```python
-class Guardian:
-    def check_live_position_conflicts(self, crypto, direction):
-        # Query live Polymarket API for current positions
-        # Check for conflicts by crypto + direction
-        # Returns (has_conflict, conflict_message)
-
-    def can_open_position(self, crypto, epoch, direction):
-        # PRIORITY 1: Check live API first
-        has_conflict, msg = self.check_live_position_conflicts(crypto, direction)
-        if has_conflict:
-            return False, msg
-        # ... existing checks
-```
-
-**Testing:**
-- ✅ Unit test created: test_conflict_check.py (5/5 scenarios pass)
-- Integration test: deploy and verify no conflicts in live trading
+### Trading Thresholds
+- Current: 0.75 consensus, 0.60 confidence
+- Next: Test 0.80/0.70 for higher selectivity
 
 ---
 
-### ✅ P2: Disable Agent System Fallback (Pure ML Mode) (COMPLETED)
+## Phase 1: Per-Agent Performance Tracking (Week 1)
 
-**Status:** FIXED - Iteration 2 (Jan 15, 2026)
+### Goal
+Identify which of the 7 agents contribute positively vs negatively to win rate.
 
-**Why:** Any fallback to agents risks conflicting decisions.
+### Tasks
+1. Create `analytics/agent_performance_tracker.py`
+2. Extend `simulation/trade_journal.py` schema
+3. Add agent enable/disable flags to `config/agent_config.py`
+4. Query and analyze agent performance
+5. Disable underperforming agents (<50% win rate)
 
-**Changes Implemented:**
-1. ✅ ML path does `continue` at line 2240 (skips agents)
-2. ✅ ML exception handler does `continue` (doesn't fall through)
-3. ✅ Added explicit guard in agent path to double-check ML mode
+### Success Metrics
+- [ ] Tracking system operational (100+ trades logged)
+- [ ] 1-2 underperforming agents identified and disabled
+- [ ] Win rate improves by 1-2% after disabling bad agents
 
-**Code Added:**
-```python
-# Line ~2250 (bot/momentum_bot_v12.py):
-elif agent_system and agent_system.enabled:
-    # SAFETY: Ensure we never run agents when ML mode is active
-    if use_ml_bot and ML_BOT_AVAILABLE:
-        log.warning(f"Skipping agent decision - ML mode active")
-        continue
-    # Agent code only runs when ML disabled
-    ...
-```
-
-**Testing:**
-- ✅ Code review: ML path continues, agents can't run
-- ✅ Explicit guard added for safety
-- Deploy and verify: should be ZERO agent decisions when ML enabled
+### Expected Impact
++2-3% win rate improvement by removing low-performing agents.
 
 ---
 
-## Secondary Priorities (Next 48 Hours)
+## Phase 2: Selective Trading Enhancement (Week 2)
 
-### ✅ P3: Validate Trade Logging is Working (COMPLETED)
+### Goal
+Test higher thresholds (0.80/0.70) to reduce trade frequency but increase win rate.
 
-**Status:** FIXED - Iteration 3 (Jan 15, 2026)
+### Tasks
+1. Add "ultra_selective" strategy to `simulation/strategy_configs.py`
+2. Shadow test over 100+ trades
+3. Compare metrics: win rate, trade frequency, Sharpe ratio, drawdown
+4. If validated (win rate ≥65%, Sharpe ≥1.5): promote to live (staged 25% → 50% → 100%)
+5. If not validated: keep current thresholds, document learnings
 
-**Goal:** Confirm ML trades are being logged to `simulation/trade_journal.db`
+### Success Metrics
+- [ ] Shadow strategy tested (100+ trades)
+- [ ] If validated: win rate 65%+, 5-10 trades/day
+- [ ] If not: keep current thresholds
 
-**Issues Found:**
-1. ❌ Database file was empty (0 bytes) - never initialized
-2. ❌ `log_ml_trade_direct()` function had incompatible schema:
-   - Missing `size` column (required by trades table)
-   - Missing `weighted_score` column (required by trades table)
-   - Would fail silently on every trade attempt
-
-**Fixes Applied:**
-1. ✅ Created `validate_trade_logging.py` script to check database health
-2. ✅ Database now auto-initializes with correct schema if empty
-3. ✅ Fixed `log_ml_trade_direct()` to include all required columns:
-   - Added `size` parameter (defaults to `shares * entry_price`)
-   - Added `weighted_score` parameter (defaults to `confidence`)
-   - Added error logging (was failing silently before)
-4. ✅ Created `test_ml_logging.py` to verify logging works
-
-**Validation:**
-```bash
-python3 validate_trade_logging.py  # Passes all checks
-python3 test_ml_logging.py         # Tests logging function
-```
-
-**Result:**
-- ✅ Database initialized with correct schema
-- ✅ ML trades can now be logged successfully
-- ✅ Test trade logged and verified in database
-
-**Next:** Deploy to VPS and monitor live trades being logged
+### Expected Impact
+5-10 trades/day at 65%+ win rate (vs 15-20 trades/day at 56-60%).
 
 ---
 
-### ✅ P4: Add Monitoring & Alerts (COMPLETED)
+## Phase 3: Kelly Criterion Position Sizing (Week 3)
 
-**Status:** FIXED - Iteration 4 (Jan 15, 2026)
+### Goal
+Implement mathematically optimal position sizing based on edge.
 
-**Goal:** Automated health checks and alerting for production ML bot
+### Tasks
+1. Create `bot/position_sizer.py` with Kelly Criterion logic
+2. Integrate into `Guardian.calculate_position_size()` in `bot/momentum_bot_v12.py`
+3. Shadow test Kelly sizing vs fixed sizing (100+ trades)
+4. Compare: ROI, Sharpe ratio, max drawdown, bankroll growth
+5. If validated (20-30% higher ROI, same drawdown): promote to live
 
-**Implementation:**
-Created `scripts/monitor.sh` - automated monitoring script that checks:
+### Success Metrics
+- [ ] Kelly sizing implemented and shadow tested (100+ trades)
+- [ ] If validated: 20-30% higher ROI with same drawdown
+- [ ] If not: keep fixed sizing, document learnings
 
-1. ✅ **Bot Process Status** - Verifies bot is running
-2. ✅ **Position Conflict Alert** - Scans logs for CONFLICT messages
-3. ✅ **Balance Drop Alert** - Tracks balance, alerts if >10% drop in 15min
-4. ✅ **Order Placement Failures** - Alerts if >3 consecutive failures
-5. ✅ **ML Decision Failures** - Alerts if >5 ML exceptions detected
-
-**Features:**
-- Color-coded output (green/yellow/red)
-- Two alert levels: WARNING, CRITICAL
-- Balance history tracking (24h window)
-- Alert file for persistent notifications
-- Cron-ready (runs every 5 minutes)
-
-**Files Created:**
-- `scripts/monitor.sh` - Main monitoring script
-- `scripts/MONITORING.md` - Complete documentation
-- `state/balance_history.txt` - Historical balance data (auto-created)
-- `monitor_alerts.txt` - Alert log (auto-created)
-
-**Usage:**
-```bash
-# Manual run
-./scripts/monitor.sh
-
-# Install cron (every 5 minutes)
-crontab -e
-*/5 * * * * /opt/polymarket-autotrader/scripts/monitor.sh >> /opt/polymarket-autotrader/monitor.log 2>&1
-
-# View alerts
-tail -f monitor_alerts.txt
-```
-
-**Extension Points:**
-- Email notifications (add to send_alert function)
-- Slack webhooks (see MONITORING.md)
-- Custom thresholds (edit script variables)
+### Expected Impact
++10-20% ROI improvement by betting more on high-confidence trades, less on low-confidence.
 
 ---
 
-## Success Criteria (Week 1)
+## Phase 4: Automated Optimization Infrastructure (Week 4)
 
-### Day 1 (Today) - Critical Fixes
-- ✅ No conflicting positions in next 20 trades
-- ✅ Pure ML decisions only (no agent fallback)
-- ✅ Trade logging confirmed working
+### Goal
+Build automated strategy promotion workflow + alert system for degradation.
 
-### Day 2-3 - Data Collection
-- ✅ Collect 50+ resolved trades with ML-only logic
-- ✅ Track win rate, P&L, confidence levels
-- ✅ No system crashes or halts
+### Tasks
 
-### Day 4-7 - Performance Validation
-- ✅ Calculate actual win rate (target: 55-65%)
-- ✅ Compare live vs shadow ML strategies
-- ✅ Statistical significance test (chi-square p<0.05)
-- ✅ Validate 60% win rate hypothesis
+#### 4A: Automated Strategy Promotion
+1. Create `simulation/auto_promoter.py`
+2. Logic: Auto-promote shadow strategies that beat live by 5%+ over 100 trades
+3. Staged rollout: 25% → 50% → 100% allocation
+4. Auto-rollback if win rate drops below 50%
 
-**Go/No-Go Decision (Day 7):**
-- **GO:** Win rate >55% sustained → continue ML trading, increase capital
-- **NO-GO:** Win rate <50% → investigate model, retrain, or revert to agents
+#### 4B: Alert System
+1. Create `analytics/alert_system.py`
+2. Alerts:
+   - Win rate drops below 50% (20-trade window)
+   - Balance drops 20%+ from peak
+   - Shadow strategy outperforms by 10%+ (100+ trades)
+   - Daily loss exceeds $30 or 20% of balance
+   - Agent consensus fails (all agents <30% confidence)
+3. Notifications: Log to file + optional email/Slack webhook
+
+### Success Metrics
+- [ ] Auto-promotion logic operational
+- [ ] Alert system preventing losses (caught ≥1 degradation event)
+- [ ] Continuous optimization running (no manual intervention)
+- [ ] Overall win rate: 60-65%
+- [ ] Monthly ROI: +20-30%
+
+### Expected Impact
+Continuous optimization without manual work. Early warnings prevent catastrophic losses.
 
 ---
 
 ## Risk Management
 
-### Current Safeguards (Keeping Active)
-1. ✅ 30% drawdown halt (automatic stop)
-2. ✅ Position sizing limits (5-15% per trade)
-3. ✅ Correlation limits (max 4 positions total)
-4. ✅ Guardian risk checks before every trade
+### Shadow Testing Protocol
+- All changes shadow tested first (100+ trades minimum)
+- Statistical significance required (chi-square p<0.05)
+- Staged rollout: 25% → 50% → 100%
+- Auto-rollback if win rate drops below 50%
 
-### New Safeguards (Adding)
-1. **Epoch Conflict Prevention:** Max 1 position per crypto per epoch
-2. **Pure ML Mode:** No agent fallback when ML enabled
-3. **Real-time Monitoring:** 5-minute conflict checks
-4. **Conservative Threshold:** Keep 55% confidence minimum
+### Monitoring
+- Daily win rate checks (20-trade rolling window)
+- Balance tracking (alert on 20%+ drawdown)
+- Shadow strategy performance comparison
+- Per-agent contribution analysis
 
 ### Rollback Plan
-If critical issues persist after fixes:
-1. Stop bot immediately (manual halt file)
-2. Set `USE_ML_BOT=false` in systemd service
-3. Revert to agent consensus mode (last stable config)
-4. Redeem all positions
-5. Investigate offline before re-enabling
+- Keep old PRDs archived (can reference historical decisions)
+- Git history preserves all iterations
+- Config-driven changes (easy to revert via flags)
+- Shadow testing prevents production breakage
 
 ---
 
-## Known Issues (Tracking)
+## Success Criteria
 
-### Critical (P0)
-1. ✅ **Conflicting positions bug** - Both Up/Down same epoch - **FIXED**
-   - Status: Fixed in iterations 1-2 (Jan 15, 2026)
-   - Root cause: Guardian not querying live API, relied on internal list
-   - Solution: Added check_live_position_conflicts() method
-   - Ready for deployment testing
+### Week 1
+- [ ] Per-agent tracking operational
+- [ ] 100+ trades logged with agent attribution
+- [ ] 1-2 underperforming agents identified and disabled
+- [ ] Win rate improves by 1-2%
 
-### High (P1)
-2. ⚠️ **Peak balance tracking** - Includes unrealized positions, causes false halts
-   - Workaround: Manual reset via script
-   - Long-term fix: Track realized cash only
+### Week 2
+- [ ] Higher threshold strategy tested (100+ trades)
+- [ ] If validated: win rate 65%+, fewer trades
+- [ ] If not: keep current thresholds
 
-### Medium (P2)
-3. ⚠️ **Minimum order size errors** - Some ML trades too small (3 shares < 5 minimum)
-   - Impact: Missed trading opportunities
-   - Fix: Increase minimum sizing to 5 shares
+### Week 3
+- [ ] Kelly sizing tested (100+ trades)
+- [ ] If validated: 20-30% higher ROI
+- [ ] If not: keep fixed sizing
 
-### Low (P3)
-4. ℹ️ **sklearn version warning** - Model trained on 1.7.2, running on 1.8.0
-   - Impact: None (predictions work correctly)
-   - Fix: Retrain models with 1.8.0 (low priority)
-
----
-
-## Technical Debt
-
-### Code Cleanup Needed
-1. Remove unused agent system code when `USE_ML_BOT=true`
-2. Simplify Guardian position tracking (single source of truth)
-3. Consolidate trade logging (eliminate duplicate paths)
-4. Add comprehensive unit tests for order placement
-
-### Documentation Needed
-1. ML deployment checklist
-2. Debugging guide for position conflicts
-3. Manual redemption procedure
-4. Emergency rollback steps
+### Month End
+- [ ] Overall win rate: 60-65% (from 56%)
+- [ ] Monthly ROI: +20-30% (from +10-20%)
+- [ ] Automated promotion working
+- [ ] Alert system operational
+- [ ] Shadow testing continuous (5-10 strategies)
 
 ---
 
-## Metrics & KPIs
+## Open Questions (For Later)
 
-### Real-time Tracking
-- **Balance:** Track every 15 minutes
-- **Open Positions:** Count and direction per crypto
-- **ML Confidence:** Average per trade
-- **Order Success Rate:** Orders placed / ML TRADE decisions
+1. Should we enable OnChain/Social agents after validating existing 7?
+2. Are per-regime ML models worth the complexity?
+3. What's the optimal shadow strategy count (27 now)?
+4. Trade frequency vs quality - what's the optimal balance?
 
-### Daily Reporting
-- **Trades Placed:** Count per day
-- **Win Rate:** Resolved wins / total resolved
-- **P&L:** Daily gain/loss
-- **Drawdown:** Max intraday drawdown
-
-### Weekly Analysis
-- **Cumulative Win Rate:** 7-day rolling average
-- **ROI:** Weekly return on starting balance
-- **Per-Crypto Performance:** BTC/ETH/SOL/XRP win rates
-- **Confidence Calibration:** Actual win rate by confidence bucket
-
----
-
-## Dependencies
-
-### External Systems
-- Polymarket CLOB API (order placement)
-- Polymarket Data API (position tracking)
-- Polygon RPC (balance checks, redemptions)
-- Exchange APIs (Binance, Kraken, Coinbase for price feeds)
-
-### Internal Systems
-- ML Random Forest model (trained Jan 14, 2026)
-- Shadow trading system (strategy comparison)
-- Trade journal database (SQLite logging)
-- Guardian risk management (position limits)
-
-### Environment
-- VPS: 216.238.85.11 (Vultr Mexico City)
-- Python: 3.12 (venv)
-- Bot: momentum_bot_v12.py (ML mode enabled)
-- Service: systemd (polymarket-bot.service)
-
----
-
-## Timeline
-
-### Immediate (Next 4 Hours)
-- ⏰ **16:30-17:00:** Investigate conflicting positions root cause
-- ⏰ **17:00-18:00:** Implement position conflict check
-- ⏰ **18:00-18:30:** Deploy and test fix
-- ⏰ **18:30-20:30:** Monitor next 8 trades for conflicts
-
-### Short-term (Next 24 Hours)
-- ⏰ **Day 1 Evening:** Confirm zero conflicts in 20+ trades
-- ⏰ **Day 1 Night:** Let bot run overnight with monitoring
-- ⏰ **Day 2 Morning:** Review overnight performance, adjust if needed
-
-### Medium-term (Week 1)
-- ⏰ **Day 2-3:** Collect 50+ resolved trades
-- ⏰ **Day 4:** Statistical analysis (chi-square test)
-- ⏰ **Day 5-7:** Performance validation and reporting
-- ⏰ **Day 7:** Go/No-Go decision meeting
-
----
-
-## Communication Plan
-
-### Stakeholders
-- **User (Product Owner):** Real-time updates on critical fixes
-- **Development Team:** Technical details and code reviews
-- **Agent Team:** Focused PRD for autonomous execution
-
-### Update Frequency
-- **Critical Issues:** Immediate (Slack/Discord)
-- **Daily Standup:** 9:00 AM - Progress, blockers, plan
-- **Weekly Review:** Sunday evening - Performance analysis
-
-### Escalation Path
-1. **Minor issues:** Log and fix in next sprint
-2. **Major issues:** Stop trading, investigate immediately
-3. **Critical issues:** Manual intervention, user notification
-
----
-
-## Open Questions
-
-1. **Is agent system completely disabled when USE_ML_BOT=true?**
-   - Need to verify no code paths can trigger agent decisions
-   - Check all exception handlers for agent fallback
-
-2. **Why are positions still conflicting after guardian.add_position fix?**
-   - Is there a race condition?
-   - Multiple scan cycles placing orders before position update?
-   - Guardian not querying live positions correctly?
-
-3. **Should we add a hard limit: max 1 position per crypto globally?**
-   - Would prevent all conflicts but reduce trading frequency
-   - Trade-off: safety vs opportunity
-
-4. **Is the ML model directionally accurate on these conflicting positions?**
-   - If we just took the first ML decision (ignore second), would we win?
-   - This would validate model quality separate from system bugs
-
----
-
-## Appendix
-
-### Deployment History (Jan 15, 2026)
-
-**16:00 UTC:** ML bot deployed to production
-- Commit: 7943a75 - Added order placement logic
-
-**16:05 UTC:** Bug #1 discovered - ML not placing orders
-- Fixed: Added complete order execution flow
-
-**16:10 UTC:** Bug #2 discovered - Auto-redemption not working
-- Fixed: Check every cycle instead of epoch-gated
-
-**16:15 UTC:** Bug #3 discovered - Agent fallback causing conflicts
-- Fixed: Removed guardian.add_position() call
-
-**16:20 UTC:** Bug #4 discovered - Conflicts still occurring
-- Status: Under investigation (CURRENT)
-
-### Performance Data
-
-**ML Model:**
-- Training: 711 samples, 10 features
-- Test Accuracy: 67.3%
-- Live Win Rate: 60% (5 trades resolved)
-
-**Recent Trading:**
-- Balance Start: $242.44 (after redemptions)
-- Balance Current: $176.78
-- Loss: $65.66 (due to conflicting positions bug)
-- Pending Value: $102.74 (8 positions)
-
-### Key Files Modified Today
-
-1. `bot/momentum_bot_v12.py`
-   - Added ML order placement logic (lines 2058-2128)
-   - Added direct SQLite logging (lines 73-104)
-   - Removed guardian.add_position call (line 2152)
-   - Fixed AutoRedeemer epoch gating (lines 1269-1275)
-
-2. `bot/ml_bot_adapter.py`
-   - ML decision adapter (unchanged today)
-
-3. `simulation/trade_journal.db`
-   - SQLite database for trade logging (needs validation)
-
----
-
-**Next Step:** Team to investigate conflicting positions bug and implement fix within 4 hours.
+**Decision:** Address these AFTER completing 4-week optimization roadmap.

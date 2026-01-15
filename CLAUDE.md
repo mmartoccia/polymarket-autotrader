@@ -36,6 +36,11 @@ The bot now uses **ML Random Forest** model (as of Jan 15, 2026):
 - **Trading Since:** January 2026
 - **Deployment:** Vultr VPS (Mexico City) - 24/7 operation
 
+**Current Focus:** Performance optimization (Jan 15, 2026)
+- Goal: Improve win rate from 56% to 60-65%
+- Approach: Per-agent tracking, selective trading, Kelly sizing, automated promotion
+- Timeline: 4-week optimization roadmap (see PRD.md)
+
 ---
 
 ## Architecture
@@ -391,6 +396,40 @@ Bot maintains persistent state in `state/trading_state.json`:
 ```
 
 **Critical:** State persists across restarts. Reset state file if peak_balance gets too high.
+
+### 7. Optimization Roadmap (Jan 15, 2026)
+
+**Current Performance:**
+- Win Rate: 56-60% (above 53% breakeven)
+- Balance: $254.61 (recovered from $7.09 this morning)
+- Shadow Trading: 27 strategies running in parallel
+
+**4-Week Optimization Plan:**
+1. **Week 1:** Per-agent performance tracking
+   - Identify which agents help vs hurt
+   - Disable underperformers (<50% win rate)
+   - Expected: +2-3% win rate improvement
+
+2. **Week 2:** Selective trading enhancement
+   - Shadow test higher thresholds (0.80/0.70)
+   - Target: 5-10 trades/day at 65%+ win rate
+   - Expected: Better risk-adjusted returns
+
+3. **Week 3:** Kelly Criterion position sizing
+   - Mathematically optimal sizing based on edge
+   - Expected: +10-20% ROI improvement
+
+4. **Week 4:** Automated optimization infrastructure
+   - Auto-promotion of outperforming shadow strategies
+   - Alert system for performance degradation
+   - Expected: Continuous optimization without manual work
+
+**Target Metrics:**
+- Win Rate: 60-65% (from 56%)
+- Monthly ROI: +20-30% (from +10-20%)
+- Automated: Yes (continuous optimization)
+
+**See PRD.md for full details.**
 
 ---
 
@@ -867,6 +906,12 @@ ssh root@216.238.85.11 "cd /opt/polymarket-autotrader && ./scripts/deploy.sh"
 ---
 
 ## Version History
+
+- **Optimization Focus** (Jan 15, 2026) - Current direction
+  - 4-week roadmap: Per-agent tracking, selective trading, Kelly sizing, automation
+  - Shadow trading system fixed (now broadcasting in both ML and agent modes)
+  - PRD restructured: Focus on optimization over complexity
+  - User-approved priorities: Quality over quantity, data-driven decisions
 
 - **v12.1** (Jan 13, 2026) - Current production
   - Future window trading

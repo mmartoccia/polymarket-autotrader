@@ -1,0 +1,236 @@
+# Polymarket AutoTrader - Progress Log
+
+**Project Start:** January 15, 2026 16:30 UTC
+**Current Phase:** ML Bot Production Stabilization
+**Status:** Critical Bug Fix - Conflicting Positions
+
+---
+
+## Current Iteration - Emergency Stabilization (Jan 15, 2026)
+
+**Goal:** Fix conflicting positions bug blocking ML bot profitability
+
+**Context:**
+- ML Random Forest model deployed to production
+- Model shows 60% win rate (matches 67.3% test accuracy)
+- Critical bug: Bot placing both Up AND Down on same crypto/epoch
+- Result: Negating ML edge, causing losses despite correct predictions
+
+**Bugs Fixed Today:**
+1. ✅ ML not placing orders - Added order execution logic
+2. ✅ Auto-redemption broken - Fixed epoch gating
+3. ✅ Agent fallback causing conflicts - Removed guardian.add_position()
+4. ✅ **FIXED:** Conflicting positions - Added live API position check
+
+**Current Stats:**
+- Balance: $176.78
+- Pending: 8 positions (4 cryptos × 2 directions each = CONFLICT)
+- Win Rate: 60% on resolved trades
+- Loss from bugs: ~$65 today
+
+**Next Actions:**
+1. ✅ Investigate why conflicts still occurring - Root cause found
+2. ✅ Add explicit position conflict check - Implemented
+3. ✅ Disable agent system completely when ML enabled - Added explicit guard
+4. Deploy and validate fix
+
+---
+
+## Iteration 1 - Fix Conflicting Positions Bug (P0)
+- What was implemented:
+  - Added Guardian.check_live_position_conflicts() method
+  - Queries Polymarket Data API for live positions before each trade
+  - Detects conflicts by crypto + direction (same OR opposite)
+  - Returns detailed conflict messages for logging
+  - Modified Guardian.can_open_position() to call conflict check first
+
+- Files changed:
+  - bot/momentum_bot_v12.py (lines 720-780)
+    - New method: check_live_position_conflicts()
+    - Updated: can_open_position() to prioritize live API check
+  - test_conflict_check.py (new file for validation)
+
+- Learnings for future iterations:
+  - Guardian's internal position list (self.open_positions) was out of sync with blockchain
+  - Must query live Polymarket API to get current positions
+  - Position titles contain crypto name (e.g., "BTC will go up")
+  - Position outcome field contains direction ("Up" or "Down")
+  - Need to check for BOTH same direction AND opposite direction conflicts
+  - Positions with size < 0.01 should be ignored (negligible/rounding)
+  - API failures should not block trades (return False on error)
+  - The agent system already skips when ML mode active (line 2240 continue)
+
+- Gotchas encountered:
+  - Cannot easily parse exact epoch timestamp from position titles
+  - Using crypto + direction matching instead of epoch matching
+  - This is sufficient since we only trade 15-min markets
+  - API status code 400 means wallet not found or invalid params
+
+- Useful context:
+  - Polymarket Data API: https://data-api.polymarket.com/positions?user=WALLET
+  - Position structure: {title, outcome, size, curPrice, conditionId, ...}
+  - Guardian.can_open_position() is called at line 2178 before placing ML orders
+  - The conflict check happens BEFORE correlation/limit checks (highest priority)
+
+---
+
+## Iteration 2 - Disable Agent System Fallback (P2)
+- What was implemented:
+  - Added explicit guard in agent system path to check if ML mode is active
+  - Logs warning and continues if USE_ML_BOT=true and agents try to run
+  - Double safety: ML path already does continue, now agents also check
+
+- Files changed:
+  - bot/momentum_bot_v12.py (line ~2250)
+    - Added safety check: if use_ml_bot, skip agents completely
+
+- Learnings for future iterations:
+  - The elif structure already prevented agents when ML ran successfully
+  - But if someone modifies the code flow, this guard prevents accidents
+  - Explicit is better than implicit for critical safety checks
+  - The use_ml_bot variable is checked at line 2041 (from env var USE_ML_BOT)
+
+- Gotchas encountered:
+  - Need to check both use_ml_bot AND ML_BOT_AVAILABLE flags
+  - The ML_BOT_AVAILABLE flag is set at import time (line ~60)
+  - If ML imports fail, ML_BOT_AVAILABLE=False and agents should run
+
+---
+
+## Summary - All Critical Tasks Complete (Jan 15, 2026)
+
+**Completed:**
+- ✅ P0: Fix Conflicting Positions Bug (Iteration 1)
+- ✅ P1: Guardian Enhancement (Iteration 1)
+- ✅ P2: Disable Agent System Fallback (Iteration 2)
+
+**Implementation:**
+- Added Guardian.check_live_position_conflicts() to query Polymarket API
+- Detects conflicts by crypto + direction (same OR opposite)
+- Added explicit guard in agent path to prevent fallback
+- Created test suite (test_conflict_check.py) - 5/5 passing
+- Updated PRD.md status and documentation
+
+**Files Modified:**
+- bot/momentum_bot_v12.py (3 commits)
+- PRD.md (2 commits)
+- progress.txt (this file)
+- test_conflict_check.py (new)
+
+**Next Steps (Deployment & Validation):**
+1. Deploy to VPS: `ssh root@216.238.85.11 && cd /opt/polymarket-autotrader && ./scripts/deploy.sh`
+2. Monitor logs for conflicts: `tail -f bot.log | grep -E "CONFLICT|BLOCKED"`
+3. Verify no conflicting positions in next 20 trades
+4. ✅ P3: Validate trade logging (COMPLETED)
+5. P4: Add monitoring scripts (secondary priority)
+
+**Ready for deployment:** All immediate coding tasks complete.
+The bot should now reject conflicting orders with clear error messages.
+
+---
+
+## Iteration 3 - Validate Trade Logging (P3)
+- What was implemented:
+  - Created validate_trade_logging.py script to check database health
+  - Fixed empty database (0 bytes) by adding auto-initialization
+  - Fixed log_ml_trade_direct() function with incompatible schema
+  - Added missing 'size' and 'weighted_score' columns to INSERT statement
+  - Added error logging (was failing silently before)
+  - Created test_ml_logging.py to verify function works
+
+- Files changed:
+  - bot/momentum_bot_v12.py (lines 76-127)
+    - Updated log_ml_trade_direct() signature to accept size and weighted_score
+    - Added default calculation: size = shares * entry_price
+    - Added default: weighted_score = confidence
+    - Changed INSERT to include size, shares, confidence, weighted_score
+    - Added error logging on exception
+  - validate_trade_logging.py (new file)
+    - Checks database existence and size
+    - Validates schema matches expected tables/columns
+    - Counts ML trades and shows recent ones
+    - Auto-initializes database if empty
+  - test_ml_logging.py (new file)
+    - Tests logging function with sample trade
+    - Verifies data is correctly stored in database
+  - PRD.md (marked P3 as complete)
+
+- Learnings for future iterations:
+  - The log_ml_trade_direct() function was silently failing on every trade
+  - Database file existed but was 0 bytes (never initialized)
+  - TradeJournalDB expects: decision_id, strategy, crypto, epoch, direction, entry_price, size, shares, confidence, weighted_score, timestamp
+  - Old code was missing 'size' and 'weighted_score' columns
+  - Need to calculate size from shares * entry_price
+  - Can use confidence as default for weighted_score
+  - Database initialization happens in TradeJournalDB.__init__ via _create_tables()
+  - SQLite accepts NULL for optional columns like decision_id
+
+- Gotchas encountered:
+  - Cannot import momentum_bot_v12.py in test scripts (requires too many dependencies)
+  - Solution: Define function inline in test script
+  - Database file can exist (0 bytes) but not be initialized
+  - Need explicit schema creation before first INSERT
+  - Exception handling was returning False but not logging why
+
+- Useful context:
+  - validate_trade_logging.py can be run anytime to check database health
+  - test_ml_logging.py creates a test trade to verify logging works
+  - The trades table has UNIQUE constraint on (strategy, crypto, epoch)
+  - This prevents duplicate trades for same crypto/epoch
+  - Database location: simulation/trade_journal.db
+  - Schema matches TradeJournalDB class in simulation/trade_journal.py
+
+---
+
+## Iteration 4 - Add Monitoring & Alerts (P4)
+- What was implemented:
+  - Created scripts/monitor.sh - automated health monitoring
+  - Checks 5 critical metrics: process status, conflicts, balance, order failures, ML exceptions
+  - Alert system with WARNING and CRITICAL severity levels
+  - Balance history tracking (24h rolling window)
+  - Cron-ready for automated execution every 5 minutes
+  - Created comprehensive MONITORING.md documentation
+
+- Files changed:
+  - scripts/monitor.sh (new file)
+    - check_bot_running() - verifies momentum_bot_v12.py process
+    - check_position_conflicts() - scans logs for CONFLICT messages
+    - check_balance_drop() - tracks balance changes over 15min window
+    - check_order_failures() - counts ORDER FAILED messages
+    - check_ml_exceptions() - counts ML Bot errors
+    - send_alert() - logs alerts to monitor_alerts.txt
+  - scripts/MONITORING.md (new file)
+    - Complete usage documentation
+    - Cron installation instructions
+    - Alert severity definitions
+    - Extension examples (email, Slack)
+  - PRD.md (marked P4 as complete)
+
+- Learnings for future iterations:
+  - Shell script needed to track balance over time (Python would restart each run)
+  - balance_history.txt stores timestamp + balance for historical comparison
+  - Auto-cleanup keeps only last 24 hours of balance history
+  - Use awk to find balance from specific time window
+  - bc -l for floating point comparison in bash
+  - grep -i for case-insensitive pattern matching
+  - pgrep -f matches full command line (not just process name)
+  - Cron jobs should redirect both stdout and stderr to log file
+
+- Gotchas encountered:
+  - Need to handle missing files gracefully (bot may be starting)
+  - Balance history empty on first run - skip comparison
+  - Python one-liners work for JSON parsing in bash
+  - ANSI color codes work in terminal but not in cron logs
+  - Process check needs full script name: momentum_bot_v12.py
+
+- Useful context:
+  - Monitor script is idempotent - safe to run repeatedly
+  - All checks return 0 (pass) or 1 (fail) for easy composition
+  - Alert file accumulates all alerts (manual cleanup recommended)
+  - Balance history auto-prunes old data (>24h)
+  - Script designed for VPS deployment (systemd + cron)
+  - Can extend send_alert() for email/Slack without changing check logic
+
+---
+
+_This is a fresh start. Previous iterations archived in progress_old.txt_
