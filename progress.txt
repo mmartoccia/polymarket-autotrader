@@ -32,5 +32,61 @@ NEXT STEPS:
 - Implement US-TG-009: Daily summaries
 - Deploy and test
 
-STATUS: Ready to begin implementation
+STATUS: Core bot implemented, ready for deployment
+========================================
+
+ITERATION 1 - Jan 15, 2026 (Evening)
+========================================
+
+COMPLETED:
+✅ US-TG-001: Bot initialization and authentication
+- Created telegram_bot/ directory structure
+- Implemented authentication (only authorized user ID can interact)
+- /start and /help commands working
+- Error handling and logging
+
+✅ US-TG-002: Balance query command (/balance)
+- Shows current balance, day start, peak balance
+- Displays daily P&L with percentage
+- Verifies blockchain balance via RPC call
+- Formatted with Markdown and emojis
+
+✅ US-TG-003: Positions query command (/positions)
+- Fetches active positions from Polymarket API
+- Shows epoch start price vs current price
+- Displays win/loss status for each position
+- Includes unrealized P&L summary
+- Limits to 10 positions for message size
+
+✅ US-TG-004: Status query command (/status)
+- Shows bot mode (NORMAL/CONSERVATIVE/etc)
+- Lists enabled agents
+- Displays 24h trade count from database
+- Shows current win/loss streak
+
+✅ US-TG-005: Statistics query command (/stats)
+- Total trades, wins, losses, win rate
+- Total P&L and average P&L per trade
+- Best and worst trades
+- Current streak
+
+FILES CREATED:
+- telegram_bot/__init__.py
+- telegram_bot/telegram_notifier.py (212 lines)
+- telegram_bot/message_formatter.py (316 lines)
+
+DEPENDENCIES ADDED:
+- python-telegram-bot>=20.7
+
+TESTING:
+⏳ Local testing pending
+⏳ VPS deployment pending
+
+NEXT STEPS:
+1. Deploy to VPS
+2. Install dependencies: pip install python-telegram-bot
+3. Test all commands via Telegram
+4. Week 2: Implement real-time notifications (US-TG-006 to US-TG-008)
+5. Week 3: Daily summaries and bot controls (US-TG-009, US-TG-010)
+
 ========================================

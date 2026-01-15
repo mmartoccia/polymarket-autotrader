@@ -14,6 +14,9 @@ aiohttp>=3.9.0
 # Utilities
 python-dotenv>=1.0.0
 
+# Telegram Bot
+python-telegram-bot>=20.7
+
 # Social Sentiment Analysis (Week 3 agents)
 praw>=7.7.0                    # Reddit API client
 pytrends>=4.9.0                # Google Trends
