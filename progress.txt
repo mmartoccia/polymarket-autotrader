@@ -58,3 +58,33 @@
   - Shadow system now has 6 strategies specifically for testing new Phase 1 agents
 ---
 
+## Iteration 4 - Deploy Phase 1 Agents to VPS
+- Integrated OrderBookAgent and FundingRateAgent into live bot via AgentSystemWrapper
+- Files changed:
+  - bot/agent_wrapper.py (added OrderBook + FundingRate agent imports and initialization logic)
+  - PRD.md (marked "Deploy to VPS" task complete)
+- Deployment process:
+  1. Updated agent_wrapper.py to import OrderBookAgent and FundingRateAgent
+  2. Added conditional initialization based on agent_weights configuration
+  3. Verified all 25 tests pass locally (12 OrderBook + 13 FundingRate)
+  4. Committed and pushed to GitHub (commit 1500fe3)
+  5. SSH'd to VPS and ran ./scripts/deploy.sh
+  6. Cleared Python cache (.pyc files) to ensure fresh module loading
+  7. Verified agents initialized: "Tech, Sentiment, Regime, Candlestick, OrderBook, FundingRate"
+- Current VPS status:
+  - Bot service: active (running)
+  - Agents loaded: 6 agents (4 legacy + 2 Phase 1) for strategies with new agents enabled
+  - Shadow strategies: 17 strategies running (6 Phase 1-specific strategies included)
+  - Trading status: HALTED (50.4% drawdown - needs manual peak balance reset)
+- Learnings for future iterations:
+  - AgentSystemWrapper uses config/agent_config.py by default (no args needed)
+  - New agents are conditionally loaded based on AGENT_WEIGHTS dict (weight > 0)
+  - Shadow strategies can have different agent configurations (some 4 agents, some 6 agents)
+  - Python bytecode cache must be cleared after updating agent code (.pyc files)
+  - VPS deployment script (./scripts/deploy.sh) handles: git pull, service restart, status check
+  - Agent initialization logging shows "N AGENTS" count and agent list for verification
+  - Deployment mode (moderate/conservative/aggressive) only affects thresholds, not which agents load
+  - Live bot agent configuration is separate from shadow strategy configurations
+  - Agents are ready to trade once drawdown is reset (bot currently halted, not a deployment issue)
+---
+

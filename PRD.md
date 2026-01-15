@@ -449,7 +449,7 @@ CREATE TABLE alerts (
 - [x] Implement FundingRateAgent (Binance futures API)
 - [x] Write unit tests
 - [x] Add to shadow strategies
-- [ ] Deploy to VPS
+- [x] Deploy to VPS
 - [ ] Monitor for 50+ trades each
 
 **Success Metric:** +3-5% win rate improvement in shadow testing
