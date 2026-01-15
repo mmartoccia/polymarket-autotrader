@@ -475,7 +475,7 @@ CREATE TABLE alerts (
 - [x] Extract 2,884 epochs from epoch_history.db
 - [x] Build feature engineering pipeline (14 features)
 - [x] Create train/validation/test splits (time-based)
-- [ ] Run feature importance analysis
+- [x] Run feature importance analysis
 - [ ] Document feature definitions
 - [ ] Create feature extraction module for live trading
 

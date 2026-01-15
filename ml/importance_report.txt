@@ -1,0 +1,31 @@
+================================================================================
+FEATURE IMPORTANCE ANALYSIS - RANDOM_FOREST
+================================================================================
+
+Model Performance:
+  Accuracy:  100.00%
+  ROC AUC:   1.000
+
+All Features (Ranked by Importance):
+Rank   Feature                        Importance   Category    
+--------------------------------------------------------------------------------
+1      market_wide_direction              0.7987  cross-asset 
+2      position_in_range                  0.0574  price       
+3      price_z_score                      0.0355  price       
+4      rsi                                0.0277  price       
+5      price_momentum                     0.0253  price       
+6      spread_proxy                       0.0201  price       
+7      volatility                         0.0145  price       
+8      epoch_sequence                     0.0101  time        
+9      minute_in_session                  0.0088  time        
+10     is_market_open                     0.0019  time        
+11     day_of_week                        0.0000  time        
+12     btc_correlation                    0.0000  cross-asset 
+13     multi_crypto_agreement             0.0000  cross-asset 
+
+Importance by Category:
+  cross-asset    :   0.7987 ( 79.9%)
+  price          :   0.1805 ( 18.1%)
+  time           :   0.0208 (  2.1%)
+
+================================================================================
