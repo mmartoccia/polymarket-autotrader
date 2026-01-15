@@ -1,0 +1,36 @@
+## Iteration 1 - OrderBookAgent Implementation
+- Implemented OrderBookAgent with microstructure analysis
+- Files changed:
+  - agents/voting/orderbook_agent.py (NEW - 600+ lines)
+  - tests/test_orderbook_agent.py (NEW - 12 unit tests, all passing)
+  - PRD.md (marked task complete)
+- Learnings for future iterations:
+  - Polymarket binary markets: price represents probability (Up=$0.60 = 60% chance Up wins)
+  - For simplified orderbook format, synthetic imbalance = (up_price - down_price) / 2
+  - Wide spreads (>10%) indicate low liquidity and should reduce quality score
+  - Agent must handle both detailed orderbook (from ClobClient.get_order_book) and simplified format (current bot)
+  - Use >= instead of > for threshold comparisons to avoid edge case issues
+  - All agents should return Vote with direction, confidence, quality, reasoning, details
+  - BaseAgent is located at agents/base_agent.py, not agents/voting/base_agent.py
+---
+
+## Iteration 2 - FundingRateAgent Implementation
+- Implemented FundingRateAgent with derivatives market analysis
+- Files changed:
+  - agents/voting/funding_rate_agent.py (NEW - 400+ lines)
+  - tests/test_funding_rate_agent.py (NEW - 13 unit tests, all passing)
+  - PRD.md (marked task complete)
+- Learnings for future iterations:
+  - Binance Futures API is public (no auth required) for funding rates, open interest, tickers
+  - Funding rate interpretation:
+    - Positive = longs pay shorts = too many longs = potential DOWN reversal
+    - Negative = shorts pay longs = too many shorts = potential UP reversal
+    - Extreme (>0.10%) = contrarian reversal signal (70% confidence)
+    - Moderate (0.05-0.10%) = aligned continuation signal (50% confidence)
+  - Threshold consistency: OI thresholds must match percentage format (5.0 = 5%, not 0.05)
+  - Caching pattern: 60-second TTL reduces API load while keeping data fresh
+  - Exception handling: catch broad Exception for mocked requests in tests
+  - Funding rate is returned as decimal (0.0001) but convert to % (0.01%) for clarity
+  - API responses: fundingRate, openInterest, volume from different endpoints
+---
+
