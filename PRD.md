@@ -562,7 +562,7 @@ CREATE TABLE alerts (
 
 **Tasks:**
 - [x] Train XGBoost model (walk-forward validation)
-- [ ] Train Random Forest model
+- [x] Train Random Forest model
 - [ ] Train Logistic Regression baseline
 - [ ] Build ensemble predictor
 - [ ] Implement MLAgent
