@@ -490,4 +490,95 @@ python3 scripts/validate_automation.py
 
 ---
 
+## Week 5 (Optional): Telegram Notification Bot
+
+**See `PRD-telegram-bot.md` for full specification.**
+
+### Overview
+
+Build a Telegram bot for mobile monitoring and notifications. Enables real-time alerts and status queries without SSH/dashboard access.
+
+### User Stories
+
+**US-TG-001: Bot initialization and authentication**
+- Secure Telegram bot with authorized user ID only
+- Commands: `/start`, `/help`
+
+**US-TG-002: Balance query (`/balance`)**
+- Current balance, daily P&L, peak balance
+- Blockchain balance verification
+
+**US-TG-003: Positions query (`/positions`)**
+- Active positions with win/loss status
+- Epoch start price vs current price comparison
+- Unrealized P&L summary
+
+**US-TG-004: Status query (`/status`)**
+- Bot mode, enabled agents, recent activity
+- Shadow strategies count, last scan time
+
+**US-TG-005: Statistics query (`/stats`)**
+- Total trades, win rate, total P&L
+- Best/worst trades, current streak
+
+**US-TG-006: Trade notifications**
+- Instant notification when bot places trade
+- Show: crypto, direction, entry price, confidence, reasoning
+
+**US-TG-007: Redemption notifications**
+- Instant notification when positions redeem
+- Show: win/loss, P&L amount, new balance
+
+**US-TG-008: Critical alerts**
+- Forward alerts to Telegram: halts, drawdowns, win rate drops
+- Real-time emergency notifications
+
+**US-TG-009: Daily summary**
+- End-of-day recap: P&L, trades, win rate
+- Shadow strategy leaders, tomorrow's preview
+
+**US-TG-010: Bot control (optional)**
+- `/halt` - Emergency stop trading
+- `/resume` - Resume trading
+- `/mode <mode>` - Change trading mode remotely
+
+### Quick Start
+
+```bash
+# 1. Get Telegram bot token from @BotFather
+# 2. Add to .env
+TELEGRAM_BOT_TOKEN=your_token_here
+TELEGRAM_AUTHORIZED_USER_ID=your_telegram_user_id
+
+# 3. Install dependencies
+pip install python-telegram-bot>=20.7
+
+# 4. Run bot
+python3 telegram_bot/telegram_notifier.py
+```
+
+### Integration Points
+
+- Trade placement: `bot/momentum_bot_v12.py` after order
+- Redemption: After successful redeem in auto-redemption logic
+- Alerts: `analytics/alert_system.py` send_alerts() method
+- Daily summary: Cron job at 23:59 UTC
+
+### Timeline
+
+- **Week 1:** Core bot + queries (US-TG-001 to US-TG-005) - 8-10 hours
+- **Week 2:** Real-time notifications (US-TG-006 to US-TG-008) - 6-8 hours
+- **Week 3:** Automation + deployment (US-TG-009, US-TG-010) - 4-6 hours
+
+**Total:** ~20-24 hours
+
+### Status
+
+- ⏳ **Optional enhancement** - Implement after core optimization complete
+- 📱 **Mobile-first monitoring** - Query bot status from anywhere
+- 🔔 **Real-time alerts** - Never miss a redemption or critical event
+
+---
+
 See `PRD-strategic.md` for high-level roadmap and rationale.
+See `PRD-telegram-bot.md` for detailed Telegram bot specification.
