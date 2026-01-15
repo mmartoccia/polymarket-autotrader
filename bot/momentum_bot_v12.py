@@ -2149,7 +2149,7 @@ def run_bot():
                                     "confidence": confidence,
                                     "token_id": token_id
                                 }
-                                guardian.add_position(position_data)
+                                # Position tracking happens via epoch_trades, no need to add to guardian
                                 state.last_trade_time = time.time()
 
                                 # Log ML trade to database
