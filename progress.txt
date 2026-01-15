@@ -282,3 +282,44 @@
   - Next steps: feature importance analysis, documentation, live trading integration
 ---
 
+## Iteration 11 - Feature Importance Analysis (Week 4-5 Phase 2)
+- Implemented feature importance analysis tool with 3 model types
+- Files changed:
+  - ml/feature_importance.py (NEW - 700+ lines)
+  - tests/test_feature_importance.py (NEW - 10 unit tests, all passing)
+  - ml/importance_report.txt (NEW - analysis results)
+  - PRD.md (marked "Run feature importance analysis" complete)
+- Analysis results (Random Forest on 711 samples):
+  - Model accuracy: 100.00% (overfitting - will address in model training)
+  - ROC AUC: 1.000
+  - Top feature: market_wide_direction (79.9% importance)
+  - Top 5: market_wide_direction, position_in_range, price_z_score, rsi, price_momentum
+  - Category breakdown: cross-asset 79.9%, price 18.1%, time 2.1%
+  - Low-importance features (<2%): 7 features (volatility, epoch_sequence, minute_in_session, etc.)
+- Key features:
+  - Supports 3 methods: Random Forest, XGBoost, Logistic Regression
+  - Time-based train/val/test split (70/15/15)
+  - Feature categorization (time, price, cross-asset)
+  - Category-level importance aggregation
+  - CLI tool with --method and --output flags
+  - Generates human-readable reports with rankings
+- Learnings for future iterations:
+  - Random Forest feature_importances_ attribute provides Gini importance
+  - XGBoost also has feature_importances_ (gain-based by default)
+  - Logistic Regression uses coefficient absolute values for importance
+  - 100% accuracy indicates overfitting - model is memorizing training data
+  - market_wide_direction is derived feature (consensus across all cryptos) - very predictive
+  - btc_correlation and multi_crypto_agreement have 0.0 importance (not used by model)
+  - Time features contribute only 2.1% - market dynamics matter more than time-of-day
+  - Low-importance features (<2%) are candidates for removal to reduce noise
+  - Feature importance != feature usefulness in isolation (correlation vs causation)
+  - Need regularization and better validation to prevent overfitting
+  - Walk-forward validation needed for time-series data (PRD mentions this)
+  - CLI tool pattern: load data → split → train → extract importances → generate report → save
+  - Use StandardScaler for Logistic Regression (required for coefficient comparison)
+  - hasattr(model, 'feature_importances_') to check if model supports native importance
+  - FeatureImportance dataclass: feature, importance, rank, category
+  - ImportanceReport dataclass: method, importances, accuracy, roc_auc, top_5, low_importance, category_totals
+  - Next steps: document features, create live trading integration, address overfitting in model training
+---
+
