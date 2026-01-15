@@ -138,8 +138,11 @@ def get_current_crypto_price(crypto):
     try:
         symbol_map = {
             'BTC': 'BTCUSDT',
+            'Bitcoin': 'BTCUSDT',
             'ETH': 'ETHUSDT',
+            'Ethereum': 'ETHUSDT',
             'SOL': 'SOLUSDT',
+            'Solana': 'SOLUSDT',
             'XRP': 'XRPUSDT'
         }
 
