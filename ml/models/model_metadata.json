@@ -1,0 +1,49 @@
+{
+  "training_date": "2026-01-15",
+  "dataset": "ml/features.csv",
+  "total_samples": 711,
+  "train_samples": 497,
+  "val_samples": 107,
+  "test_samples": 107,
+  "features": [
+    "day_of_week",
+    "minute_in_session",
+    "epoch_sequence",
+    "is_market_open",
+    "rsi",
+    "volatility",
+    "price_momentum",
+    "spread_proxy",
+    "position_in_range",
+    "price_z_score"
+  ],
+  "num_features": 10,
+  "leaked_features_removed": [
+    "market_wide_direction",
+    "multi_crypto_agreement",
+    "btc_correlation"
+  ],
+  "models": {
+    "random_forest": {
+      "path": "ml/models/random_forest_baseline.pkl",
+      "val_accuracy": 0.6261682242990654,
+      "test_accuracy": 0.6728971962616822,
+      "test_precision": 0.6206896551724138,
+      "test_recall": 0.7346938775510204,
+      "test_f1": 0.6728971962616822,
+      "test_roc_auc": 0.7125263898662914,
+      "edge_vs_baseline": 17.28971962616822
+    },
+    "logistic_regression": {
+      "path": "ml/models/logistic_regression_baseline.pkl",
+      "scaler_path": "ml/models/scaler.pkl",
+      "val_accuracy": 0.616822429906542,
+      "test_accuracy": 0.5607476635514018,
+      "test_precision": 0.5454545454545454,
+      "test_recall": 0.24489795918367346,
+      "test_f1": 0.3380281690140845,
+      "test_roc_auc": 0.6171710063335679,
+      "edge_vs_baseline": 6.0747663551401825
+    }
+  }
+}

@@ -73,6 +73,11 @@ class StrategyConfig:
     # Deployment mode
     mode: str = 'moderate'
 
+    # ML-specific settings (Jan 15, 2026)
+    use_ml_model: bool = False  # True to bypass agents and use ML predictions
+    ml_model_name: Optional[str] = None  # 'random_forest' or 'logistic_regression'
+    ml_threshold: float = 0.50  # Minimum win probability to trade
+
     # Metadata
     created: datetime = field(default_factory=datetime.now)
     is_live: bool = False
@@ -744,6 +749,49 @@ STRATEGY_LIBRARY = {
             'OnChainAgent': 1.0,           # Week 3 agents only
             'SocialSentimentAgent': 1.0
         }
+    ),
+
+    # =============================================================================
+    # ML STRATEGIES (Jan 15, 2026)
+    # =============================================================================
+    # Random Forest model trained on 711 historical samples
+    # Test accuracy: 67.3% (+17.3% edge over 50% baseline)
+    # These are SPECIAL strategies that bypass agent voting and use ML predictions
+
+    'ml_random_forest_50': StrategyConfig(
+        name='ml_random_forest_50',
+        description='ML Random Forest model (50% threshold - trade all predictions)',
+        consensus_threshold=0.50,  # Not used (ML bypasses consensus)
+        min_confidence=0.50,
+        min_individual_confidence=0.30,
+        use_ml_model=True,  # SPECIAL: Bypass agents, use ML
+        ml_model_name='random_forest',
+        ml_threshold=0.50,  # Trade if win probability >= 50%
+        agent_weights={}  # Empty - ML bypasses agents
+    ),
+
+    'ml_random_forest_55': StrategyConfig(
+        name='ml_random_forest_55',
+        description='ML Random Forest model (55% threshold - selective trading)',
+        consensus_threshold=0.55,
+        min_confidence=0.55,
+        min_individual_confidence=0.30,
+        use_ml_model=True,
+        ml_model_name='random_forest',
+        ml_threshold=0.55,  # Trade if win probability >= 55%
+        agent_weights={}
+    ),
+
+    'ml_random_forest_60': StrategyConfig(
+        name='ml_random_forest_60',
+        description='ML Random Forest model (60% threshold - high confidence only)',
+        consensus_threshold=0.60,
+        min_confidence=0.60,
+        min_individual_confidence=0.30,
+        use_ml_model=True,
+        ml_model_name='random_forest',
+        ml_threshold=0.60,  # Trade if win probability >= 60%
+        agent_weights={}
     )
 }
 

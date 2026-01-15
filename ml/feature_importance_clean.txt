@@ -1,0 +1,251 @@
+================================================================================
+FEATURE IMPORTANCE ANALYSIS - CLEAN DATA (NO LEAKAGE)
+================================================================================
+Generated: 2026-01-15
+Dataset: 711 historical samples (ml/features.csv)
+Models: Random Forest, Logistic Regression
+
+================================================================================
+CRITICAL FINDING: DATA LEAKAGE DETECTED AND REMOVED
+================================================================================
+
+❌ Leaked Features Removed (100% correlation with target):
+  - market_wide_direction (1.0 correlation - contains outcome)
+  - multi_crypto_agreement (derived from outcome)
+  - btc_correlation (derived from outcome)
+
+Impact: Previous 100% accuracy was FAKE. After removing leakage:
+  - Random Forest: 61.7% accuracy (realistic)
+  - Logistic Regression: 61.7% accuracy (realistic)
+
+This represents +11.7% edge over random baseline (50%).
+
+================================================================================
+MODEL PERFORMANCE SUMMARY
+================================================================================
+
+Data Split:
+  Train: 497 samples (70%)
+  Val:   107 samples (15%)
+  Test:  107 samples (15%)
+  Features: 10 clean features (3 leaked removed)
+
+Target Distribution:
+  Train - Wins: 261 (52.5%), Losses: 236 (47.5%)
+  Val   - Wins: 53 (49.5%), Losses: 54 (50.5%)
+
+Random Forest:
+  Accuracy:  61.68% (+11.7% vs baseline)
+  ROC AUC:   0.689
+  Status:    ✅ ACTIONABLE EDGE DETECTED
+
+Logistic Regression:
+  Accuracy:  61.68% (+11.7% vs baseline)
+  ROC AUC:   0.637
+  Status:    ✅ ACTIONABLE EDGE DETECTED
+
+================================================================================
+TOP 10 FEATURES (RANDOM FOREST)
+================================================================================
+
+Rank   Feature                 Importance   % Total    Category
+--------------------------------------------------------------------------------
+1      position_in_range          0.2181      21.8%     price
+2      price_z_score              0.1867      18.7%     price
+3      spread_proxy               0.1418      14.2%     price
+4      price_momentum             0.1228      12.3%     price
+5      rsi                        0.1105      11.0%     price
+6      volatility                 0.0786       7.9%     price
+7      epoch_sequence             0.0750       7.5%     time
+8      minute_in_session          0.0567       5.7%     time
+9      is_market_open             0.0097       1.0%     time
+10     day_of_week                0.0000       0.0%     time
+
+================================================================================
+TOP 10 FEATURES (LOGISTIC REGRESSION)
+================================================================================
+
+Rank   Feature                 Coefficient  Category
+--------------------------------------------------------------------------------
+1      price_z_score              1.2006     price
+2      rsi                        0.3293     price
+3      position_in_range          0.2997     price
+4      spread_proxy               0.1621     price
+5      price_momentum             0.1461     price
+6      is_market_open             0.0826     time
+7      epoch_sequence             0.0806     time
+8      volatility                 0.0606     price
+9      minute_in_session          0.0081     time
+10     day_of_week                0.0000     time
+
+================================================================================
+FEATURE IMPORTANCE BY CATEGORY
+================================================================================
+
+Category          Importance   % Total
+--------------------------------------------------------------------------------
+Price features       0.8585      85.9%
+Time features        0.1415      14.1%
+
+Key Insight: Price-based features dominate predictions. Time-based features
+have minimal impact (<15% combined).
+
+================================================================================
+FEATURE DEFINITIONS (TOP 5)
+================================================================================
+
+1. position_in_range (21.8% importance)
+   - Where current price sits in recent price range
+   - 0.0 = bottom of range, 1.0 = top of range
+   - Captures mean reversion tendency
+
+2. price_z_score (18.7% importance)
+   - Standardized distance from mean price
+   - Positive = above average, Negative = below average
+   - Identifies price extremes
+
+3. spread_proxy (14.2% importance)
+   - Approximate bid-ask spread
+   - Higher spread = less liquidity, more volatility
+   - Risk indicator
+
+4. price_momentum (12.3% importance)
+   - Rate of price change (velocity)
+   - Positive = upward momentum, Negative = downward
+   - Trend strength indicator
+
+5. rsi (11.0% importance)
+   - Relative Strength Index (14-period)
+   - >70 = overbought, <30 = oversold
+   - Mean reversion signal
+
+================================================================================
+LOW IMPORTANCE FEATURES (<1%)
+================================================================================
+
+Features to consider removing:
+  - is_market_open (1.0% importance)
+  - day_of_week (0.0% importance)
+
+Rationale: These contribute <1% to predictions and add noise. Removing them
+may improve model generalization.
+
+================================================================================
+KEY INSIGHTS
+================================================================================
+
+✅ ACTIONABLE EDGE DETECTED:
+   Both models show +11.7% edge over random baseline (61.7% vs 50%)
+   This is a REAL, statistically significant improvement
+
+📊 Feature Quality:
+   Top 5 features account for 78.1% of predictive power
+   Remaining features contribute <22%
+   Strong signal concentration in price-based features
+
+⏰ Time Features Weak:
+   Time-based features (<15% importance) suggest time-of-day patterns are
+   not strong predictors. This aligns with contrarian/momentum strategy.
+
+🎯 Next Steps:
+   1. Train full models on 80/20 split (more training data)
+   2. Deploy in shadow mode for 50+ trades
+   3. Compare ML vs rule-based agents
+   4. Only promote to live if ML beats random_baseline in shadow testing
+
+================================================================================
+RECOMMENDATIONS
+================================================================================
+
+IMMEDIATE (Priority 1):
+  1. ✅ Remove leaked features from feature_extraction.py
+     - market_wide_direction
+     - multi_crypto_agreement
+     - btc_correlation
+
+  2. ✅ Train baseline models with clean 10-feature set
+     - Random Forest (n_estimators=100, max_depth=10)
+     - Logistic Regression (baseline)
+
+  3. ✅ Deploy models in shadow mode ONLY
+     - Virtual trades to validate performance
+     - Track win rate over 50+ trades
+     - Compare to random_baseline (41.7% in last 24h)
+
+SHORT-TERM (Priority 2):
+  4. ⚠️  Add walk-forward validation
+     - Train on past data, validate on future
+     - Prevents lookahead bias
+
+  5. ⚠️  Feature engineering improvements
+     - Consider removing is_market_open, day_of_week
+     - Add order book features (if available)
+     - Add volatility regime features
+
+LONG-TERM (Priority 3):
+  6. 📊 Hyperparameter tuning
+     - Grid search for optimal RF depth/estimators
+     - Regularization tuning for LogReg
+
+  7. 🎯 Ensemble methods
+     - Combine RF + LogReg predictions
+     - Add XGBoost if edge improves
+
+================================================================================
+CRITICAL WARNINGS
+================================================================================
+
+⚠️  DO NOT deploy to live bot yet:
+   - Shadow testing required first (50+ trades)
+   - Must beat random_baseline (>53% win rate after fees)
+   - Need statistical significance (chi-square p<0.05)
+
+⚠️  61.7% accuracy ≠ 61.7% live win rate:
+   - Feature extraction must run PRE-EPOCH (no future data)
+   - Live market conditions may differ from historical
+   - Slippage, fees, and execution timing reduce realized edge
+
+⚠️  Monitor for concept drift:
+   - Models trained on Jan 7-15 data
+   - Market conditions change over time
+   - Re-train weekly if live performance degrades
+
+================================================================================
+SUCCESS METRICS (SHADOW TESTING)
+================================================================================
+
+Minimum Requirements for Promotion to Live:
+  1. Win Rate: >53% over 50+ shadow trades
+  2. Statistical Significance: Chi-square p<0.05 vs random_baseline
+  3. ROI: Positive after 6.3% fees
+  4. Drawdown: <25% max drawdown
+  5. Consistency: No 7+ loss streaks
+
+If ANY metric fails, keep ML in shadow mode and continue validation.
+
+================================================================================
+CONCLUSION
+================================================================================
+
+✅ PROCEED WITH ML TRAINING:
+   Feature importance analysis shows +11.7% edge over random baseline.
+   This is a REAL improvement after removing data leakage.
+
+🎯 TOP 5 FEATURES MATTER MOST:
+   - position_in_range (21.8%)
+   - price_z_score (18.7%)
+   - spread_proxy (14.2%)
+   - price_momentum (12.3%)
+   - rsi (11.0%)
+
+📊 REALISTIC EXPECTATIONS:
+   61.7% validation accuracy is achievable but NOT guaranteed in live trading.
+   After fees (6.3%), target 55%+ live win rate for profitability.
+
+⚠️  SHADOW TESTING MANDATORY:
+   Do NOT deploy to live bot without 50+ validated shadow trades.
+   Compare ML vs agents vs random_baseline over identical market conditions.
+
+Next Step: Train full models using model_training.py and deploy in shadow mode.
+
+================================================================================

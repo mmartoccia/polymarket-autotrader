@@ -336,6 +336,12 @@ SHADOW_STRATEGIES = [
     'inverse_consensus',     # Trade opposite of consensus vote
     'inverse_momentum',      # Trade opposite of TechAgent
     'inverse_sentiment',     # Trade opposite of SentimentAgent
+
+    # ML STRATEGIES (Jan 15, 2026) - Machine Learning Models
+    # Random Forest trained on 711 historical samples (67.3% test accuracy)
+    'ml_random_forest_50',   # Random Forest with 50% threshold (trade all predictions)
+    'ml_random_forest_55',   # Random Forest with 55% threshold (selective)
+    'ml_random_forest_60',   # Random Forest with 60% threshold (high confidence only)
 ]
 
 # Shadow trading configuration

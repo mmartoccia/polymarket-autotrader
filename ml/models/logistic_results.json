@@ -1,0 +1,232 @@
+{
+  "model_type": "logistic",
+  "folds": [
+    {
+      "fold_id": 0,
+      "train_start": 0,
+      "train_end": 400,
+      "val_start": 400,
+      "val_end": 500,
+      "train_size": 400,
+      "val_size": 100,
+      "accuracy": 1.0,
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1": 1.0,
+      "roc_auc": 1.0,
+      "confusion": [
+        [
+          47,
+          0
+        ],
+        [
+          0,
+          53
+        ]
+      ],
+      "feature_importances": {
+        "hour": 0.002199074784630873,
+        "day_of_week": 0.0,
+        "minute_in_session": 0.0021990747846310256,
+        "epoch_sequence": 0.046772874523729885,
+        "is_market_open": 0.053030207472405465,
+        "rsi": 0.027146700384667447,
+        "volatility": 0.009928986831077529,
+        "price_momentum": 0.015989470952104755,
+        "spread_proxy": 0.08253849426618211,
+        "position_in_range": 0.028499119823550727,
+        "price_z_score": 0.2598965289113495,
+        "btc_correlation": 0.0,
+        "multi_crypto_agreement": 0.0,
+        "market_wide_direction": 4.438164233690657
+      }
+    },
+    {
+      "fold_id": 1,
+      "train_start": 50,
+      "train_end": 450,
+      "val_start": 450,
+      "val_end": 550,
+      "train_size": 400,
+      "val_size": 100,
+      "accuracy": 1.0,
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1": 1.0,
+      "roc_auc": 1.0,
+      "confusion": [
+        [
+          46,
+          0
+        ],
+        [
+          0,
+          54
+        ]
+      ],
+      "feature_importances": {
+        "hour": 0.012338908483462538,
+        "day_of_week": 0.0,
+        "minute_in_session": 0.01233890848346249,
+        "epoch_sequence": 0.04223943947358257,
+        "is_market_open": 0.06587620040947983,
+        "rsi": 0.011402566075687615,
+        "volatility": 0.03797130091481747,
+        "price_momentum": 0.014512959697564843,
+        "spread_proxy": 0.06253931660675739,
+        "position_in_range": 0.02754065285574527,
+        "price_z_score": 0.24199365124951483,
+        "btc_correlation": 0.0,
+        "multi_crypto_agreement": 0.0,
+        "market_wide_direction": 4.439729073017722
+      }
+    },
+    {
+      "fold_id": 2,
+      "train_start": 100,
+      "train_end": 500,
+      "val_start": 500,
+      "val_end": 600,
+      "train_size": 400,
+      "val_size": 100,
+      "accuracy": 1.0,
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1": 1.0,
+      "roc_auc": 1.0,
+      "confusion": [
+        [
+          50,
+          0
+        ],
+        [
+          0,
+          50
+        ]
+      ],
+      "feature_importances": {
+        "hour": 0.0067053988612578086,
+        "day_of_week": 0.0,
+        "minute_in_session": 0.006705398861257791,
+        "epoch_sequence": 0.01966788786779548,
+        "is_market_open": 0.05754830542637063,
+        "rsi": 0.023910245959207668,
+        "volatility": 0.01314079224329267,
+        "price_momentum": 0.019967095415969437,
+        "spread_proxy": 0.07211392585011836,
+        "position_in_range": 0.022018923372673457,
+        "price_z_score": 0.25186354930811544,
+        "btc_correlation": 0.0,
+        "multi_crypto_agreement": 0.0,
+        "market_wide_direction": 4.444049992745681
+      }
+    },
+    {
+      "fold_id": 3,
+      "train_start": 150,
+      "train_end": 550,
+      "val_start": 550,
+      "val_end": 650,
+      "train_size": 400,
+      "val_size": 100,
+      "accuracy": 1.0,
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1": 1.0,
+      "roc_auc": 1.0,
+      "confusion": [
+        [
+          55,
+          0
+        ],
+        [
+          0,
+          45
+        ]
+      ],
+      "feature_importances": {
+        "hour": 0.015593044260919413,
+        "day_of_week": 0.0,
+        "minute_in_session": 0.015593044260919536,
+        "epoch_sequence": 0.03479116177984045,
+        "is_market_open": 0.05566326678807234,
+        "rsi": 0.01736016635067111,
+        "volatility": 0.010182763790176382,
+        "price_momentum": 0.012891935335597429,
+        "spread_proxy": 0.05827541039210721,
+        "position_in_range": 0.004675951018023643,
+        "price_z_score": 0.2419063661564338,
+        "btc_correlation": 0.0,
+        "multi_crypto_agreement": 0.0,
+        "market_wide_direction": 4.4406382354208445
+      }
+    },
+    {
+      "fold_id": 4,
+      "train_start": 200,
+      "train_end": 600,
+      "val_start": 600,
+      "val_end": 700,
+      "train_size": 400,
+      "val_size": 100,
+      "accuracy": 1.0,
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1": 1.0,
+      "roc_auc": 1.0,
+      "confusion": [
+        [
+          54,
+          0
+        ],
+        [
+          0,
+          46
+        ]
+      ],
+      "feature_importances": {
+        "hour": 0.014306326730851214,
+        "day_of_week": 0.0,
+        "minute_in_session": 0.014306326730851266,
+        "epoch_sequence": 0.1074527799643889,
+        "is_market_open": 0.05159694266422329,
+        "rsi": 0.043960240379288903,
+        "volatility": 0.0034408638480294173,
+        "price_momentum": 0.002138664016768274,
+        "spread_proxy": 0.02338900027048213,
+        "position_in_range": 0.009041901477306352,
+        "price_z_score": 0.25866464899236924,
+        "btc_correlation": 0.0,
+        "multi_crypto_agreement": 0.0,
+        "market_wide_direction": 4.441129022301504
+      }
+    }
+  ],
+  "avg_accuracy": 1.0,
+  "avg_precision": 1.0,
+  "avg_recall": 1.0,
+  "avg_f1": 1.0,
+  "avg_roc_auc": 1.0,
+  "std_accuracy": 0.0,
+  "std_roc_auc": 0.0,
+  "total_train_samples": 2000,
+  "total_val_samples": 500,
+  "num_folds": 5,
+  "feature_importances": {
+    "hour": 0.01022855062422437,
+    "day_of_week": 0.0,
+    "minute_in_session": 0.010228550624224422,
+    "epoch_sequence": 0.050184828721867455,
+    "is_market_open": 0.05674298455211031,
+    "rsi": 0.02475598382990455,
+    "volatility": 0.014932941525478693,
+    "price_momentum": 0.01310002508360095,
+    "spread_proxy": 0.05977122947712944,
+    "position_in_range": 0.018355309709459887,
+    "price_z_score": 0.25086494892355654,
+    "btc_correlation": 0.0,
+    "multi_crypto_agreement": 0.0,
+    "market_wide_direction": 4.440742111435282
+  },
+  "trained_at": "2026-01-15T13:00:47.778754"
+}
