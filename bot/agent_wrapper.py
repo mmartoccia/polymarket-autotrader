@@ -17,6 +17,7 @@ from agents.voting.orderbook_agent import OrderBookAgent
 from agents.voting.funding_rate_agent import FundingRateAgent
 from coordinator import DecisionEngine
 from config import agent_config
+from config.agent_config import get_enabled_agents
 import logging
 
 log = logging.getLogger(__name__)
@@ -96,20 +97,61 @@ class AgentSystemWrapper:
         if include_time_pattern is None:
             include_time_pattern = 'TimePatternAgent' in agent_weights and agent_weights['TimePatternAgent'] > 0
 
-        # Initialize core agents
-        self.tech_agent = TechAgent(name="TechAgent", weight=agent_weights.get('TechAgent', 1.0))
-        self.sentiment_agent = SentimentAgent(name="SentimentAgent", weight=agent_weights.get('SentimentAgent', 1.0))
-        self.regime_agent = RegimeAgent(name="RegimeAgent", weight=agent_weights.get('RegimeAgent', 1.0))
-        self.candle_agent = CandlestickAgent()  # Has its own default name
-        self.risk_agent = RiskAgent(name="RiskAgent", weight=1.0)
-        self.gambler_agent = GamblerAgent(name="GamblerAgent", weight=1.0)
+        # Get enabled agents from config
+        enabled_agents = get_enabled_agents()
 
-        # Build agent list (base 4 agents)
-        agents = [self.tech_agent, self.sentiment_agent, self.regime_agent, self.candle_agent]
-        agent_names = ["Tech", "Sentiment", "Regime", "Candlestick"]
+        # Initialize core agents (only if enabled)
+        agents = []
+        agent_names = []
 
-        # Optionally add TimePatternAgent
-        if include_time_pattern:
+        if 'TechAgent' in enabled_agents:
+            self.tech_agent = TechAgent(name="TechAgent", weight=agent_weights.get('TechAgent', 1.0))
+            agents.append(self.tech_agent)
+            agent_names.append("Tech")
+        else:
+            self.tech_agent = None
+
+        if 'SentimentAgent' in enabled_agents:
+            self.sentiment_agent = SentimentAgent(name="SentimentAgent", weight=agent_weights.get('SentimentAgent', 1.0))
+            agents.append(self.sentiment_agent)
+            agent_names.append("Sentiment")
+        else:
+            self.sentiment_agent = None
+
+        if 'RegimeAgent' in enabled_agents:
+            self.regime_agent = RegimeAgent(name="RegimeAgent", weight=agent_weights.get('RegimeAgent', 1.0))
+            agents.append(self.regime_agent)
+            agent_names.append("Regime")
+        else:
+            self.regime_agent = None
+
+        if 'CandlestickAgent' in enabled_agents:
+            self.candle_agent = CandlestickAgent()  # Has its own default name
+            agents.append(self.candle_agent)
+            agent_names.append("Candlestick")
+        else:
+            self.candle_agent = None
+
+        # Initialize veto agents (only if enabled)
+        veto_agents = []
+        veto_names = []
+
+        if 'RiskAgent' in enabled_agents:
+            self.risk_agent = RiskAgent(name="RiskAgent", weight=1.0)
+            veto_agents.append(self.risk_agent)
+            veto_names.append("Risk")
+        else:
+            self.risk_agent = None
+
+        if 'GamblerAgent' in enabled_agents:
+            self.gambler_agent = GamblerAgent(name="GamblerAgent", weight=1.0)
+            veto_agents.append(self.gambler_agent)
+            veto_names.append("Gambler")
+        else:
+            self.gambler_agent = None
+
+        # Optionally add TimePatternAgent (if enabled)
+        if include_time_pattern and 'TimePatternAgent' in enabled_agents:
             self.time_pattern_agent = TimePatternAgent(
                 name="TimePatternAgent",
                 weight=agent_weights.get('TimePatternAgent', 1.0)
@@ -119,8 +161,9 @@ class AgentSystemWrapper:
         else:
             self.time_pattern_agent = None
 
-        # Add OrderBookAgent if configured
-        if 'OrderBookAgent' in agent_weights and agent_weights['OrderBookAgent'] > 0:
+        # Add OrderBookAgent if configured and enabled
+        if ('OrderBookAgent' in agent_weights and agent_weights['OrderBookAgent'] > 0
+            and 'OrderBookAgent' in enabled_agents):
             self.orderbook_agent = OrderBookAgent(
                 name="OrderBookAgent",
                 weight=agent_weights.get('OrderBookAgent', 1.0)
@@ -130,8 +173,9 @@ class AgentSystemWrapper:
         else:
             self.orderbook_agent = None
 
-        # Add FundingRateAgent if configured
-        if 'FundingRateAgent' in agent_weights and agent_weights['FundingRateAgent'] > 0:
+        # Add FundingRateAgent if configured and enabled
+        if ('FundingRateAgent' in agent_weights and agent_weights['FundingRateAgent'] > 0
+            and 'FundingRateAgent' in enabled_agents):
             self.funding_rate_agent = FundingRateAgent(
                 name="FundingRateAgent",
                 weight=agent_weights.get('FundingRateAgent', 1.0)
@@ -142,13 +186,19 @@ class AgentSystemWrapper:
             self.funding_rate_agent = None
 
         # Build summary
-        agent_count = f"{len(agents)} AGENTS"
-        agent_list = ", ".join(agent_names) + " (+ Risk, Gambler veto)"
+        agent_count = f"{len(agents)} VOTING AGENTS"
+        agent_list = ", ".join(agent_names) if agent_names else "None"
+
+        if veto_names:
+            veto_list = ", ".join(veto_names)
+            full_summary = f"{agent_list} (+ {veto_list} veto)"
+        else:
+            full_summary = agent_list
 
         # Initialize decision engine
         self.engine = DecisionEngine(
             agents=agents,
-            veto_agents=[self.risk_agent, self.gambler_agent],
+            veto_agents=veto_agents,
             consensus_threshold=consensus_threshold,
             min_confidence=min_confidence,
             adaptive_weights=adaptive_weights
@@ -160,7 +210,8 @@ class AgentSystemWrapper:
         log.info(f"  Consensus Threshold: {consensus_threshold}")
         log.info(f"  Min Confidence: {min_confidence}")
         log.info(f"  Adaptive Weights: {adaptive_weights}")
-        log.info(f"  Agents: {agent_list}")
+        log.info(f"  Enabled Agents: {full_summary}")
+        log.info(f"  Disabled Agents: {', '.join([a for a in ['TechAgent', 'SentimentAgent', 'RegimeAgent', 'CandlestickAgent', 'TimePatternAgent', 'OrderBookAgent', 'FundingRateAgent', 'RiskAgent', 'GamblerAgent', 'OnChainAgent', 'SocialSentimentAgent'] if a not in enabled_agents]) or 'None'}")
         log.info("=" * 60)
 
     def make_decision(self,

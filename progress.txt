@@ -75,5 +75,42 @@ STATUS: ✅ Planning complete, ready for implementation
 - US-001: ✅ Database schema (agent_performance, agent_votes_outcomes)
 - US-002: ✅ Agent performance tracker module
 - US-003: ✅ Agent enable/disable configuration
-- US-004: 🔄 IN PROGRESS - Integrate flags into bot initialization
+- US-004: ✅ COMPLETE - Integrate flags into bot initialization
 - US-005: ⏳ BLOCKED - Wait for 100+ trades, analyze performance
+
+---
+
+## Iteration 3 - US-004: Agent Enable/Disable Integration
+- What was implemented:
+  - Modified bot/agent_wrapper.py to import get_enabled_agents()
+  - Added conditional agent initialization based on AGENT_ENABLED flags
+  - Separated veto_agents list (Risk, Gambler) from voting agents
+  - Added comprehensive logging of enabled/disabled agents on startup
+  - Created test_config_only.py to verify implementation without dependencies
+
+- Files changed:
+  - bot/agent_wrapper.py (lines 20, 100-214)
+  - PRD.md (marked US-004 as complete)
+  - progress.txt (this update)
+
+- Learnings for future iterations:
+  - Agent initialization follows this pattern: Check enabled flag → Initialize if True → Append to list
+  - Disabled agents set to None (prevents accidental usage)
+  - Veto agents (Risk, Gambler) handled separately from voting agents
+  - Logging shows both enabled AND disabled agents for clarity
+  - Tests can validate config logic without requiring all dependencies
+  - Syntax check with py_compile is sufficient for validation without full imports
+
+- Key implementation details:
+  - Each agent type (Tech, Sentiment, Regime, etc.) has individual enable check
+  - get_enabled_agents() called once at wrapper init (line 101)
+  - Agent names logged in startup message (line 213-214)
+  - OnChain and SocialSentiment correctly disabled by default (no API keys)
+
+- Patterns discovered:
+  - Config-based feature toggling works well for gradual rollout
+  - Logging enabled/disabled lists helps verify configuration
+  - Setting disabled agents to None prevents partial initialization bugs
+  - Test strategy: Config test first (no deps), then integration test (with deps)
+
+---

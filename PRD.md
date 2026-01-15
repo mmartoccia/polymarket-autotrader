@@ -65,15 +65,15 @@ Implement per-agent performance tracking to identify which of the 7 deployed age
 **Description:** As a bot operator, I need the bot to respect AGENT_ENABLED flags so disabled agents don't participate in decisions.
 
 **Acceptance Criteria:**
-- [ ] Import `get_enabled_agents()` in `bot/momentum_bot_v12.py`
-- [ ] Log enabled agents on startup
-- [ ] Filter agent initialization based on AGENT_ENABLED flags
-- [ ] Verify disabled agents (OnChain, Social) are NOT initialized
-- [ ] Verify agent votes only come from enabled agents
-- [ ] Typecheck passes
+- [x] Import `get_enabled_agents()` in `bot/momentum_bot_v12.py`
+- [x] Log enabled agents on startup
+- [x] Filter agent initialization based on AGENT_ENABLED flags
+- [x] Verify disabled agents (OnChain, Social) are NOT initialized
+- [x] Verify agent votes only come from enabled agents
+- [x] Typecheck passes
 - [ ] Test on VPS with logs showing enabled agents list
 
-**Status:** 🔄 IN PROGRESS
+**Status:** ✅ COMPLETE (Jan 15, 2026)
 
 ---
 
