@@ -16,6 +16,40 @@
 - **Shadow Testing:** 11+ strategies running in parallel
 - **Challenge:** Need 65-70% win rate to overcome 6.3% fees and achieve consistent profitability
 
+### **Current Reality (January 15, 2026) - CRITICAL STATUS**
+
+**Live Bot Status:**
+- **Balance:** $6.81 (down from $54.28 peak)
+- **Status:** HALTED (87.5% drawdown triggered automatic halt)
+- **Last 24h Loss:** ~$47 (-87.5%)
+- **Win Rate:** 30-50% (unchanged, no improvement)
+- **Mode:** Stopped - requires manual intervention
+
+**Phase 1 Implementation Status:**
+- OrderBookAgent: ✅ Deployed (no performance validation)
+- FundingRateAgent: ✅ Deployed (no performance validation)
+- OnChainAgent: ⚠️ Code complete, disabled (no API key configured)
+- SocialSentimentAgent: ⚠️ Code complete, disabled (no API keys configured)
+- **Validation Data:** ZERO - trade_journal.db is empty
+
+**Timeline Reality:**
+- PRD shows Week 10 activities
+- Actual validated progress: Week 5
+- Gap: 5 weeks behind schedule
+
+**Critical Blockers:**
+1. Shadow trading database empty - cannot validate ANY strategy claims
+2. Live bot suffering major losses - new features untested before deployment
+3. API keys not configured - 2 of 4 Phase 1 agents disabled
+4. No per-agent performance tracking - cannot identify failure root cause
+
+**Immediate Actions Required:**
+1. Debug shadow_strategy.py database writes (Priority 1)
+2. Raise live bot thresholds to 0.75/0.60 (reduce risk)
+3. Add inverse strategies to shadow testing
+4. Reset peak balance to resume trading
+5. Validate existing agents before adding more complexity
+
 ### Goal
 Build a comprehensive multi-agent trading system that achieves **65-70% win rate** through:
 1. **Signal diversity** - 12+ independent agents capturing different market dynamics
@@ -24,10 +58,22 @@ Build a comprehensive multi-agent trading system that achieves **65-70% win rate
 4. **Continuous adaptation** - Real-time learning and optimization
 
 ### Success Metrics
-- Overall win rate: 65-70% (from 30-50%)
-- Trades per day: 15-25 high-quality setups (from 60-80)
-- Monthly ROI: +30-50% sustained (from -10% to +20%)
-- Edge per trade: 12-15% (from 0-5%)
+
+**Phase 1 Targets (Month 2 - Realistic):**
+- Overall win rate: 52-55% (from 30-50%)
+- Trades per day: 10-15 high-quality setups (from 20-30)
+- Monthly ROI: +10-20% sustained
+- Edge per trade: 4-6% (from 0-2%)
+- Max drawdown: <25% (from 30%+)
+
+**Long-term Targets (Month 6 - Aspirational):**
+- Overall win rate: 58-62% (aspirational 65%+)
+- Trades per day: 15-25 selective setups
+- Monthly ROI: +20-30% sustained
+- Edge per trade: 8-10%
+- System uptime: 99.5%+
+
+**Rationale:** Binary markets are zero-sum with 6.3% fees = ~53% breakeven. Moving from 40% → 55% is +15% improvement (already ambitious). 65-70% win rate requires near-perfect timing and is unrealistic for consistent performance.
 
 ---
 
@@ -98,7 +144,8 @@ Market Data (Prices, Orderbook, On-Chain, Social, etc.)
 ### Phase 1: Expand Signal Diversity (Weeks 1-3)
 
 #### 1. OrderBookAgent - Microstructure Signals
-**Priority:** HIGH | **Expected Impact:** +3-5% win rate
+**Priority:** HIGH | **Expected Impact:** +1-2% win rate (REVISED - was +3-5%)
+**Status:** ✅ Deployed, ❌ Not validated (no performance data)
 
 **Signals:**
 - Bid-ask spread (tight = liquid, wide = volatile)
@@ -107,9 +154,11 @@ Market Data (Prices, Orderbook, On-Chain, Social, etc.)
 - Wall detection (large orders indicating support/resistance)
 
 **Data Source:** Already available in bot's orderbook data
+**Validation Required:** 50+ shadow trades before claiming impact
 
 #### 2. OnChainAgent - Blockchain Signals
-**Priority:** MEDIUM | **Expected Impact:** +2-4% win rate
+**Priority:** MEDIUM | **Expected Impact:** +0.5-1% win rate (REVISED - was +2-4%)
+**Status:** ⚠️ Code complete, disabled (no API key configured)
 
 **Signals:**
 - Whale transfers (>$100k movements)
@@ -117,10 +166,12 @@ Market Data (Prices, Orderbook, On-Chain, Social, etc.)
 - Exchange outflows (buying/hodling indicator)
 - Net flow (inflow - outflow over 15 min)
 
-**Data Sources:** Whale Alert API, Etherscan/Polygonscan
+**Data Sources:** Whale Alert API ($29/mo), Etherscan/Polygonscan (free)
+**Action:** Configure Etherscan API first (free), delay Whale Alert until proven
 
 #### 3. SocialSentimentAgent - Crowd Psychology
-**Priority:** MEDIUM | **Expected Impact:** +3-5% win rate
+**Priority:** MEDIUM | **Expected Impact:** +1-2% win rate (REVISED - was +3-5%)
+**Status:** ⚠️ Code complete, disabled (no API keys configured)
 
 **Signals:**
 - Twitter mention volume (spikes indicate attention)
@@ -128,10 +179,12 @@ Market Data (Prices, Orderbook, On-Chain, Social, etc.)
 - Google Trends (search momentum)
 - Sentiment score (NLP on social text)
 
-**Data Sources:** Twitter API v2, Reddit PRAW, Google Trends (pytrends)
+**Data Sources:** Twitter API v2 ($100/mo), Reddit PRAW (free), Google Trends (free)
+**Action:** Configure free APIs first (Reddit, GoogleTrends), delay Twitter until proven
 
 #### 4. FundingRateAgent - Derivatives Bias
-**Priority:** HIGH | **Expected Impact:** +2-4% win rate
+**Priority:** HIGH | **Expected Impact:** +1-2% win rate (REVISED - was +2-4%)
+**Status:** ✅ Deployed, ❌ Not validated (no performance data)
 
 **Signals:**
 - Funding rate (positive = long bias, negative = short bias)
@@ -139,17 +192,27 @@ Market Data (Prices, Orderbook, On-Chain, Social, etc.)
 - Liquidation data (cascade risk)
 
 **Data Sources:** Binance Futures API (free, no auth)
+**Validation Required:** 50+ shadow trades before claiming impact
 
-**Total Phase 1 Impact:** +10-18% win rate from signal diversity
+**Total Phase 1 Impact:** +2-4% win rate cumulative (REVISED - was +10-18%)
+
+**Reality Check:** Binary markets are zero-sum. Each agent adding +1-2% is realistic. Original +10-18% estimate was too optimistic and has not been validated with real trading data.
 
 ---
 
-### Phase 2: Machine Learning Integration (Weeks 4-7)
+### Phase 2: Machine Learning Integration (Weeks 4-7) **[DELAYED]**
+
+**STATUS:** ⏸️ PAUSED - Delayed until baseline agents achieve 55%+ win rate consistently
+
+**Rationale:** ML models require a baseline edge to improve upon. Training ML on agents with 30-50% win rate (below breakeven) risks overfitting on noise rather than learning genuine patterns.
+
+**Prerequisite:** Agents must demonstrate 55%+ win rate for 200+ trades before ML training proceeds.
 
 #### 5. MLAgent - Ensemble Predictions
-**Priority:** CRITICAL | **Expected Impact:** +15-20% win rate
+**Priority:** MEDIUM (was CRITICAL) | **Expected Impact:** +3-5% win rate (REVISED - was +15-20%)
+**Status:** ⏸️ Feature extraction complete (14 features, 711 samples), models not trained
 
-**Approach:** Train ensemble of models on 2,884+ historical epochs
+**Approach:** Train ensemble of models on 2,884+ historical epochs (WHEN agents show consistent edge)
 
 **Feature Engineering (50+ features):**
 - Agent votes (all 12 agents: direction, confidence, quality)
@@ -403,39 +466,52 @@ CREATE TABLE alerts (
 
 ---
 
-## Success Criteria
+## Success Criteria **[REVISED]**
 
-### Phase 1 Success (Week 3)
-- [ ] 4 new agents deployed (OrderBook, OnChain, Social, Funding)
-- [ ] Shadow testing shows +5% win rate improvement
-- [ ] All agents returning valid votes
-- [ ] No performance degradation (latency <3s)
+### **Crisis Response Success (Week 1-2) - CURRENT PRIORITY**
+- [ ] Shadow trading database fixed (trade_journal.db contains 50+ resolved trades)
+- [ ] Live bot HALTED status resolved (peak balance reset, trading resumed)
+- [ ] Thresholds raised to 0.75/0.60 (reduces low-quality trades)
+- [ ] Inverse strategies added to shadow testing
+- [ ] Root cause of Jan 14-15 failure identified and documented
 
-### Phase 2 Success (Week 7)
-- [ ] ML models trained with 60%+ out-of-sample accuracy
-- [ ] MLAgent integrated and shadow tested
-- [ ] Feature importance analysis completed
-- [ ] Per-regime models show improvement over general model
+### Phase 1 Success (Week 3-4) **[REVISED]**
+- [x] 4 new agents implemented (OrderBook, OnChain, Social, Funding) - CODE COMPLETE
+- [ ] 2 of 4 agents deployed and validated (OrderBook, Funding need 50+ trades)
+- [ ] 2 of 4 agents enabled with free APIs (OnChain via Etherscan, Social via Reddit/Trends)
+- [ ] Shadow testing shows **+2-4% win rate improvement** (REVISED from +5%)
+- [ ] Per-agent accuracy tracking implemented
+- [ ] All agents returning valid votes with >0.50 quality
 
-### Phase 3 Success (Week 10)
-- [ ] Selective trading reduces trades to 15-25/day
-- [ ] Win rate improves to 60%+ on shadow strategies
-- [ ] Kelly sizing shows better risk-adjusted returns
-- [ ] Condition filters eliminate low-edge trades
+### Phase 2 Success (Week 5-6) **[REVISED & DELAYED]**
+- [ ] Baseline agents achieve 55%+ win rate consistently (200+ trades)
+- [ ] Agent quality gate: Low-performing agents (<48% win rate) identified and disabled
+- [ ] Dynamic threshold implemented (confidence-based, not fixed 0.40)
+- [ ] Feature importance analysis completed (identify predictive features)
+- **ML model training PAUSED** until prerequisites met
 
-### Phase 4 Success (Week 12)
-- [ ] Online learning system operational
-- [ ] Agent weights auto-adjust based on performance
-- [ ] Automated rollback tested and functional
+### Phase 3 Success (Week 7-8) **[REVISED]**
+- [ ] Best shadow strategy promoted to 25% live allocation (if beats baseline by 3%+)
+- [ ] Selective trading reduces trades to 10-15/day (from 20-30)
+- [ ] Win rate improves to **52-55%** on promoted strategies (REVISED from 60%+)
+- [ ] Kelly sizing tested in shadow (risk-adjusted returns)
+- [ ] Automated rollback functional (triggers on <40% win rate)
+
+### Phase 4 Success (Week 9+) **[CONDITIONAL]**
+- [ ] Online learning system operational (agent weight updates)
 - [ ] Alert system monitoring all critical metrics
+- [ ] ML phase proceeds ONLY IF agents at 55%+ win rate
+- [ ] Logistic regression baseline trained (if ML approved)
 
-### Overall Success (Month 3)
-- [ ] **Overall win rate: 65-70%** (from 30-50%)
-- [ ] **Monthly ROI: +30-50%** sustained
-- [ ] **Edge per trade: 12-15%** (from 0-5%)
-- [ ] **Trades per day: 15-25** high-quality setups
-- [ ] **Max drawdown: <20%** (from 30%)
-- [ ] **System uptime: 99.5%+**
+### **Overall Success (Month 3) - REALISTIC TARGETS**
+- [ ] **Overall win rate: 52-55%** (REVISED from 65-70%)
+- [ ] **Monthly ROI: +10-20%** sustained (REVISED from +30-50%)
+- [ ] **Edge per trade: 4-6%** (REVISED from 12-15%)
+- [ ] **Trades per day: 10-15** high-quality setups (REVISED from 15-25)
+- [ ] **Max drawdown: <25%** (REVISED from <20%)
+- [ ] **System uptime: 99%+** (REVISED from 99.5%+)
+
+**Rationale for Revisions:** Original targets assumed +10-18% from Phase 1 agents and +15-20% from ML. Reality: binary markets are zero-sum with 6.3% fees. Moving from 40% → 55% win rate (+15%) is already ambitious. 65-70% would require near-perfect market timing.
 
 ---
 
@@ -485,7 +561,7 @@ CREATE TABLE alerts (
 **Priority:** CRITICAL (biggest win rate improvement)
 
 **Tasks:**
-- [ ] Train XGBoost model (walk-forward validation)
+- [x] Train XGBoost model (walk-forward validation)
 - [ ] Train Random Forest model
 - [ ] Train Logistic Regression baseline
 - [ ] Build ensemble predictor

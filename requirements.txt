@@ -25,3 +25,4 @@ numpy>=1.24.0                  # Numerical computing
 pandas>=2.0.0                  # Data manipulation
 scikit-learn>=1.3.0            # ML models (train/test split, preprocessing)
 pytz>=2023.3                   # Timezone handling for live features
+xgboost>=3.1.0
