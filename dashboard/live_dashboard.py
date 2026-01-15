@@ -163,6 +163,56 @@ def get_current_crypto_price(crypto):
 
     return None
 
+def get_epoch_start_price(crypto_ticker, epoch_timestamp):
+    """
+    Get the crypto price at epoch start time from Binance historical data.
+
+    Args:
+        crypto_ticker: Ticker symbol (e.g., 'SOL', 'BTC', 'ETH', 'XRP')
+        epoch_timestamp: Unix timestamp of epoch start (seconds)
+
+    Returns:
+        Float price at epoch start, or None if unavailable
+    """
+    try:
+        symbol_map = {
+            'BTC': 'BTCUSDT',
+            'ETH': 'ETHUSDT',
+            'SOL': 'SOLUSDT',
+            'XRP': 'XRPUSDT'
+        }
+
+        symbol = symbol_map.get(crypto_ticker)
+        if not symbol:
+            return None
+
+        # Binance klines API requires milliseconds
+        start_time_ms = epoch_timestamp * 1000
+
+        # Fetch 1-minute kline at epoch start
+        resp = requests.get(
+            'https://api.binance.com/api/v3/klines',
+            params={
+                'symbol': symbol,
+                'interval': '1m',
+                'startTime': start_time_ms,
+                'limit': 1
+            },
+            timeout=5
+        )
+
+        if resp.status_code == 200:
+            klines = resp.json()
+            if klines and len(klines) > 0:
+                # Kline format: [open_time, open, high, low, close, volume, ...]
+                # We want the open price (index 1)
+                open_price = float(klines[0][1])
+                return open_price
+    except:
+        pass
+
+    return None
+
 def get_positions():
     """Get all positions categorized by status."""
     try:
@@ -392,10 +442,41 @@ def render_dashboard():
 
                 if crypto_ticker:
                     current_price = get_current_crypto_price(crypto_ticker)
-                    if current_price:
-                        # Show current price with position direction
-                        arrow = "↑" if direction == "Up" else "↓" if direction == "Down" else ""
-                        print(f"    📊 {crypto_ticker} Current Price: ${current_price:,.2f} {arrow} | Market Prob: {pos['cur_price']*100:.1f}%")
+
+                    # Extract epoch timestamp from slug (last part)
+                    # Format: "sol-updown-15m-1768516200"
+                    slug_parts = slug.split('-')
+                    if len(slug_parts) >= 4:
+                        try:
+                            epoch_timestamp = int(slug_parts[-1])
+                            start_price = get_epoch_start_price(crypto_ticker, epoch_timestamp)
+
+                            if current_price and start_price:
+                                # Calculate price change
+                                price_diff = current_price - start_price
+                                price_diff_pct = (price_diff / start_price) * 100
+
+                                # Determine if winning
+                                is_winning = False
+                                if direction == "Up" and current_price > start_price:
+                                    is_winning = True
+                                elif direction == "Down" and current_price < start_price:
+                                    is_winning = True
+
+                                status_emoji = "✅" if is_winning else "❌"
+                                status_text = "WINNING" if is_winning else "LOSING"
+                                arrow = "↑" if price_diff > 0 else "↓" if price_diff < 0 else "→"
+
+                                print(f"    📊 {crypto_ticker}: Start ${start_price:,.2f} | Current ${current_price:,.2f} {arrow} | {price_diff:+.2f} ({price_diff_pct:+.2f}%) {status_emoji} {status_text}")
+                            elif current_price:
+                                # Fallback if epoch start price unavailable
+                                arrow = "↑" if direction == "Up" else "↓" if direction == "Down" else ""
+                                print(f"    📊 {crypto_ticker} Current Price: ${current_price:,.2f} {arrow} | Market Prob: {pos['cur_price']*100:.1f}%")
+                        except (ValueError, IndexError):
+                            # If timestamp parsing fails, show current price only
+                            if current_price:
+                                arrow = "↑" if direction == "Up" else "↓" if direction == "Down" else ""
+                                print(f"    📊 {crypto_ticker} Current Price: ${current_price:,.2f} {arrow} | Market Prob: {pos['cur_price']*100:.1f}%")
 
             print(f"    Current Value: ${pos['current_value']:.2f} | If Win: ${pos['max_payout']:.2f} | Est. Invested: ${est_invested:.2f}")
 
