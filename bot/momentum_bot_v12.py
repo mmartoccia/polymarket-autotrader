@@ -70,21 +70,38 @@ try:
 except ImportError:
     pass  # Will log warning after logger initialization
 
-# Trade journal imports (for ML trade logging)
-# Import directly to avoid circular dependencies
-TRADE_JOURNAL_AVAILABLE = False
-TradeJournal = None
-try:
-    import sys
-    import importlib.util
-    journal_path = Path(__file__).parent.parent / "simulation" / "trade_journal.py"
-    spec = importlib.util.spec_from_file_location("trade_journal", journal_path)
-    trade_journal_module = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(trade_journal_module)
-    TradeJournal = trade_journal_module.TradeJournal
-    TRADE_JOURNAL_AVAILABLE = True
-except Exception:
-    pass  # Will log warning after logger initialization
+# Direct SQLite logging for ML trades (avoids import issues)
+import sqlite3
+
+def log_ml_trade_direct(db_path: str, strategy: str, crypto: str, epoch: str,
+                        direction: str, entry_price: float, shares: int,
+                        confidence: float) -> bool:
+    """
+    Direct SQLite logging without TradeJournal class.
+    Returns True if successful, False otherwise.
+    """
+    try:
+        conn = sqlite3.connect(db_path)
+        timestamp = time.time()
+
+        # Register strategy if not exists
+        conn.execute('''
+            INSERT OR IGNORE INTO strategies (name, description, is_live, created)
+            VALUES (?, ?, ?, ?)
+        ''', (strategy, 'Live ML Random Forest Bot', 1, timestamp))
+
+        # Log trade
+        conn.execute('''
+            INSERT INTO trades (strategy, crypto, epoch, timestamp, direction,
+                               entry_price, shares, confidence)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+        ''', (strategy, crypto, epoch, timestamp, direction, entry_price, shares, confidence))
+
+        conn.commit()
+        conn.close()
+        return True
+    except Exception:
+        return False
 
 # ML Bot imports (for live ML trading)
 ML_BOT_AVAILABLE = False
@@ -1818,18 +1835,9 @@ def run_bot():
     else:
         log.warning("Shadow trading module not available")
 
-    # Initialize trade journal for ML trade logging
-    trade_journal = None
-    if TRADE_JOURNAL_AVAILABLE:
-        try:
-            journal_path = Path(__file__).parent.parent / "simulation" / "trade_journal.db"
-            trade_journal = TradeJournal(db_path=str(journal_path))
-            log.info(f"📝 Trade Journal: Connected to {journal_path.name}")
-        except Exception as e:
-            log.warning(f"Trade journal init failed: {e}")
-            trade_journal = None
-    else:
-        log.warning("Trade journal module not available")
+    # Initialize trade journal database path for ML trade logging
+    ml_trade_db_path = str(Path(__file__).parent.parent / "simulation" / "trade_journal.db")
+    log.info(f"📝 ML Trade Logging: {ml_trade_db_path}")
 
     # Track bets per epoch
     epoch_trades: Dict[str, Dict[int, List[str]]] = {c: {} for c in CRYPTOS}
@@ -2154,24 +2162,21 @@ def run_bot():
                                 state.last_trade_time = time.time()
 
                                 # Log ML trade to database
-                                if trade_journal:
-                                    try:
-                                        # Register strategy if not exists (live ML bot)
-                                        strategy_name = f"ml_live_{strategy}"  # e.g., "ml_live_ml_random_forest"
-
-                                        # Log the trade
-                                        trade_journal.log_trade(
-                                            strategy=strategy_name,
-                                            crypto=crypto,
-                                            epoch=current_epoch,
-                                            direction=direction,
-                                            entry_price=entry_price,
-                                            shares=shares,
-                                            confidence=confidence
-                                        )
-                                        log.debug(f"  [Journal] Logged {strategy_name} trade to database")
-                                    except Exception as e:
-                                        log.warning(f"  [Journal] Failed to log trade: {e}")
+                                strategy_name = f"ml_live_{strategy}"  # e.g., "ml_live_ml_random_forest"
+                                success = log_ml_trade_direct(
+                                    db_path=ml_trade_db_path,
+                                    strategy=strategy_name,
+                                    crypto=crypto,
+                                    epoch=current_epoch,
+                                    direction=direction,
+                                    entry_price=entry_price,
+                                    shares=shares,
+                                    confidence=confidence
+                                )
+                                if success:
+                                    log.debug(f"  [Journal] Logged {strategy_name} trade to database")
+                                else:
+                                    log.warning(f"  [Journal] Failed to log trade to database")
 
                             # Continue to next crypto (skip old bot logic)
                             continue
