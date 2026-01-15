@@ -51,7 +51,9 @@ class StrategyConfig:
         'RegimeAgent': 1.0,
         'CandlestickAgent': 1.0,
         'OrderBookAgent': 0.8,
-        'FundingRateAgent': 0.8
+        'FundingRateAgent': 0.8,
+        'OnChainAgent': 0.0,           # Disabled by default (requires API key)
+        'SocialSentimentAgent': 0.0    # Disabled by default (requires API keys)
     })
 
     # Features
@@ -124,7 +126,9 @@ STRATEGY_LIBRARY = {
             'RegimeAgent': 1.2,  # Boost regime awareness
             'CandlestickAgent': 1.0,
             'OrderBookAgent': 0.8,
-            'FundingRateAgent': 0.8
+            'FundingRateAgent': 0.8,
+            'OnChainAgent': 0.0,
+            'SocialSentimentAgent': 0.0
         }
     ),
 
@@ -141,7 +145,9 @@ STRATEGY_LIBRARY = {
             'RegimeAgent': 0.8,  # Less regime caution
             'CandlestickAgent': 1.0,
             'OrderBookAgent': 0.8,
-            'FundingRateAgent': 0.8
+            'FundingRateAgent': 0.8,
+            'OnChainAgent': 0.0,
+            'SocialSentimentAgent': 0.0
         }
     ),
 
@@ -157,7 +163,9 @@ STRATEGY_LIBRARY = {
             'RegimeAgent': 1.0,
             'CandlestickAgent': 0.8,
             'OrderBookAgent': 0.8,
-            'FundingRateAgent': 0.8
+            'FundingRateAgent': 0.8,
+            'OnChainAgent': 0.0,
+            'SocialSentimentAgent': 0.0
         },
         sentiment_config={
             'SENTIMENT_CONTRARIAN_MAX_ENTRY': 0.25,  # Allow more expensive entries
@@ -177,7 +185,9 @@ STRATEGY_LIBRARY = {
             'RegimeAgent': 1.2,
             'CandlestickAgent': 1.0,
             'OrderBookAgent': 0.8,
-            'FundingRateAgent': 0.8
+            'FundingRateAgent': 0.8,
+            'OnChainAgent': 0.0,
+            'SocialSentimentAgent': 0.0
         },
         tech_config={
             'TECH_CONFLUENCE_THRESHOLD': 0.0010,  # Lower bar (0.10% instead of 0.15%)
@@ -198,7 +208,9 @@ STRATEGY_LIBRARY = {
             'RegimeAgent': 1.0,
             'CandlestickAgent': 1.0,
             'OrderBookAgent': 0.8,
-            'FundingRateAgent': 0.8
+            'FundingRateAgent': 0.8,
+            'OnChainAgent': 0.0,
+            'SocialSentimentAgent': 0.0
         }
     ),
 
@@ -216,7 +228,9 @@ STRATEGY_LIBRARY = {
             'RegimeAgent': 1.0,
             'CandlestickAgent': 1.0,
             'OrderBookAgent': 0.8,
-            'FundingRateAgent': 0.8
+            'FundingRateAgent': 0.8,
+            'OnChainAgent': 0.0,
+            'SocialSentimentAgent': 0.0
         }
     ),
 
@@ -266,7 +280,9 @@ STRATEGY_LIBRARY = {
             'RegimeAgent': 1.0,
             'CandlestickAgent': 1.0,
             'OrderBookAgent': 0.8,
-            'FundingRateAgent': 0.8
+            'FundingRateAgent': 0.8,
+            'OnChainAgent': 0.0,
+            'SocialSentimentAgent': 0.0
         }
     ),
 
@@ -285,7 +301,9 @@ STRATEGY_LIBRARY = {
             'RegimeAgent': 1.0,
             'CandlestickAgent': 1.0,
             'OrderBookAgent': 0.8,
-            'FundingRateAgent': 0.8
+            'FundingRateAgent': 0.8,
+            'OnChainAgent': 0.0,
+            'SocialSentimentAgent': 0.0
         }
     ),
 
@@ -302,7 +320,9 @@ STRATEGY_LIBRARY = {
             'RegimeAgent': 0.5,  # Ignore regime warnings
             'CandlestickAgent': 1.0,
             'OrderBookAgent': 0.8,
-            'FundingRateAgent': 0.8
+            'FundingRateAgent': 0.8,
+            'OnChainAgent': 0.0,
+            'SocialSentimentAgent': 0.0
         }
     ),
 
@@ -377,7 +397,9 @@ STRATEGY_LIBRARY = {
             'RegimeAgent': 1.5,  # Boost regime alignment
             'CandlestickAgent': 1.0,
             'OrderBookAgent': 0.8,
-            'FundingRateAgent': 0.8
+            'FundingRateAgent': 0.8,
+            'OnChainAgent': 0.0,
+            'SocialSentimentAgent': 0.0
         }
     ),
 
@@ -394,7 +416,9 @@ STRATEGY_LIBRARY = {
             'RegimeAgent': 1.0,
             'CandlestickAgent': 1.0,
             'OrderBookAgent': 0.8,
-            'FundingRateAgent': 0.8
+            'FundingRateAgent': 0.8,
+            'OnChainAgent': 0.0,
+            'SocialSentimentAgent': 0.0
         }
     ),
 
@@ -428,7 +452,9 @@ STRATEGY_LIBRARY = {
             'RegimeAgent': 1.0,
             'CandlestickAgent': 1.0,
             'OrderBookAgent': 0.8,
-            'FundingRateAgent': 0.8
+            'FundingRateAgent': 0.8,
+            'OnChainAgent': 0.0,
+            'SocialSentimentAgent': 0.0
         }
     ),
 
@@ -445,7 +471,9 @@ STRATEGY_LIBRARY = {
             'RegimeAgent': 0.7,
             'CandlestickAgent': 0.7,
             'OrderBookAgent': 0.7,
-            'FundingRateAgent': 0.7
+            'FundingRateAgent': 0.7,
+            'OnChainAgent': 0.0,
+            'SocialSentimentAgent': 0.0
         }
     ),
 
@@ -516,7 +544,9 @@ STRATEGY_LIBRARY = {
             'RegimeAgent': 0.8,
             'CandlestickAgent': 0.8,
             'OrderBookAgent': 1.5,     # Boost orderbook analysis
-            'FundingRateAgent': 0.8
+            'FundingRateAgent': 0.8,
+            'OnChainAgent': 0.0,
+            'SocialSentimentAgent': 0.0
         }
     ),
 
@@ -548,7 +578,9 @@ STRATEGY_LIBRARY = {
             'RegimeAgent': 0.7,
             'CandlestickAgent': 0.7,
             'OrderBookAgent': 1.2,      # Boost both new agents
-            'FundingRateAgent': 1.2
+            'FundingRateAgent': 1.2,
+            'OnChainAgent': 0.0,
+            'SocialSentimentAgent': 0.0
         }
     ),
 
@@ -564,7 +596,9 @@ STRATEGY_LIBRARY = {
             'RegimeAgent': 0.0,
             'CandlestickAgent': 0.0,
             'OrderBookAgent': 1.0,      # Only agent
-            'FundingRateAgent': 0.0
+            'FundingRateAgent': 0.0,
+            'OnChainAgent': 0.0,
+            'SocialSentimentAgent': 0.0
         }
     ),
 
@@ -596,7 +630,119 @@ STRATEGY_LIBRARY = {
             'RegimeAgent': 0.0,
             'CandlestickAgent': 0.0,
             'OrderBookAgent': 1.0,      # Both new agents only
-            'FundingRateAgent': 1.0
+            'FundingRateAgent': 1.0,
+            'OnChainAgent': 0.0,
+            'SocialSentimentAgent': 0.0
+        }
+    ),
+
+    # === WEEK 3 AGENTS (OnChain + SocialSentiment) ===
+
+    'onchain_focused': StrategyConfig(
+        name='onchain_focused',
+        description='Boost OnChainAgent for whale tracking signals',
+        consensus_threshold=0.40,
+        min_confidence=0.40,
+        min_individual_confidence=0.30,
+        agent_weights={
+            'TechAgent': 0.7,
+            'SentimentAgent': 0.7,
+            'RegimeAgent': 0.7,
+            'CandlestickAgent': 0.7,
+            'OrderBookAgent': 0.7,
+            'FundingRateAgent': 0.7,
+            'OnChainAgent': 1.5,           # Boost on-chain signals
+            'SocialSentimentAgent': 0.0
+        }
+    ),
+
+    'social_sentiment_focused': StrategyConfig(
+        name='social_sentiment_focused',
+        description='Boost SocialSentimentAgent for crowd psychology',
+        consensus_threshold=0.40,
+        min_confidence=0.40,
+        min_individual_confidence=0.30,
+        agent_weights={
+            'TechAgent': 0.7,
+            'SentimentAgent': 0.7,
+            'RegimeAgent': 0.7,
+            'CandlestickAgent': 0.7,
+            'OrderBookAgent': 0.7,
+            'FundingRateAgent': 0.7,
+            'OnChainAgent': 0.0,
+            'SocialSentimentAgent': 1.5    # Boost social signals
+        }
+    ),
+
+    'phase1_week3_combo': StrategyConfig(
+        name='phase1_week3_combo',
+        description='All Phase 1 agents (OrderBook, Funding, OnChain, Social)',
+        consensus_threshold=0.40,
+        min_confidence=0.40,
+        min_individual_confidence=0.30,
+        agent_weights={
+            'TechAgent': 0.7,
+            'SentimentAgent': 0.7,
+            'RegimeAgent': 0.7,
+            'CandlestickAgent': 0.7,
+            'OrderBookAgent': 1.0,         # All Phase 1 agents
+            'FundingRateAgent': 1.0,
+            'OnChainAgent': 1.0,
+            'SocialSentimentAgent': 1.0
+        }
+    ),
+
+    'onchain_only': StrategyConfig(
+        name='onchain_only',
+        description='ONLY OnChainAgent (isolate whale tracking performance)',
+        consensus_threshold=0.30,  # Lower threshold for single agent
+        min_confidence=0.35,
+        min_individual_confidence=0.30,
+        agent_weights={
+            'TechAgent': 0.0,
+            'SentimentAgent': 0.0,
+            'RegimeAgent': 0.0,
+            'CandlestickAgent': 0.0,
+            'OrderBookAgent': 0.0,
+            'FundingRateAgent': 0.0,
+            'OnChainAgent': 1.0,           # Only agent
+            'SocialSentimentAgent': 0.0
+        }
+    ),
+
+    'social_sentiment_only': StrategyConfig(
+        name='social_sentiment_only',
+        description='ONLY SocialSentimentAgent (isolate crowd psychology performance)',
+        consensus_threshold=0.30,  # Lower threshold for single agent
+        min_confidence=0.35,
+        min_individual_confidence=0.30,
+        agent_weights={
+            'TechAgent': 0.0,
+            'SentimentAgent': 0.0,
+            'RegimeAgent': 0.0,
+            'CandlestickAgent': 0.0,
+            'OrderBookAgent': 0.0,
+            'FundingRateAgent': 0.0,
+            'OnChainAgent': 0.0,
+            'SocialSentimentAgent': 1.0    # Only agent
+        }
+    ),
+
+    'week3_only': StrategyConfig(
+        name='week3_only',
+        description='ONLY Week 3 agents (OnChain + SocialSentiment)',
+        consensus_threshold=0.40,
+        min_confidence=0.40,
+        min_individual_confidence=0.30,
+        agent_weights={
+            'TechAgent': 0.0,
+            'SentimentAgent': 0.0,
+            'RegimeAgent': 0.0,
+            'CandlestickAgent': 0.0,
+            'OrderBookAgent': 0.0,
+            'FundingRateAgent': 0.0,
+            'OnChainAgent': 1.0,           # Week 3 agents only
+            'SocialSentimentAgent': 1.0
         }
     )
 }

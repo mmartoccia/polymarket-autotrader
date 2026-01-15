@@ -20,15 +20,17 @@ ADAPTIVE_WEIGHTS = True        # Enable performance-based weight tuning
 
 # Agent weights (base multipliers, will be adjusted by performance)
 AGENT_WEIGHTS = {
-    'TechAgent': 1.0,          # Technical analysis
-    'SentimentAgent': 1.0,     # Contrarian signals
-    'RegimeAgent': 1.0,        # Market classification
-    'CandlestickAgent': 1.0,   # Candlestick pattern analysis
-    'TimePatternAgent': 0.5,   # Historical hourly patterns (ENABLED for live trading)
-    'OrderBookAgent': 0.8,     # Orderbook microstructure analysis (NEW - Phase 1)
-    'FundingRateAgent': 0.8,   # Derivatives funding rate analysis (NEW - Phase 1)
-    'RiskAgent': 1.0,          # Risk management (veto)
-    'GamblerAgent': 1.0,       # Probability gating (veto - blocks trades <60% win prob)
+    'TechAgent': 1.0,              # Technical analysis
+    'SentimentAgent': 1.0,         # Contrarian signals
+    'RegimeAgent': 1.0,            # Market classification
+    'CandlestickAgent': 1.0,       # Candlestick pattern analysis
+    'TimePatternAgent': 0.5,       # Historical hourly patterns (ENABLED for live trading)
+    'OrderBookAgent': 0.8,         # Orderbook microstructure analysis (NEW - Phase 1)
+    'FundingRateAgent': 0.8,       # Derivatives funding rate analysis (NEW - Phase 1)
+    'OnChainAgent': 0.0,           # Blockchain whale tracking (NEW - Phase 1, disabled until API key)
+    'SocialSentimentAgent': 0.0,   # Crowd psychology analysis (NEW - Phase 1, disabled until API keys)
+    'RiskAgent': 1.0,              # Risk management (veto)
+    'GamblerAgent': 1.0,           # Probability gating (veto - blocks trades <60% win prob)
 }
 
 # =============================================================================
