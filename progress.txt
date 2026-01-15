@@ -75,8 +75,10 @@ STATUS: ✅ Planning complete, ready for implementation
 - US-001: ✅ Database schema (agent_performance, agent_votes_outcomes)
 - US-002: ✅ Agent performance tracker module
 - US-003: ✅ Agent enable/disable configuration
-- US-004: ✅ COMPLETE - Integrate flags into bot initialization
+- US-004: ✅ Integrate flags into bot initialization
 - US-005: ⏳ BLOCKED - Wait for 100+ trades, analyze performance
+- US-006: ✅ Create ultra_selective shadow strategy (0.80/0.70 thresholds)
+- US-007: ⏳ NEXT - Verify ultra_selective running on VPS
 
 ---
 
@@ -112,5 +114,42 @@ STATUS: ✅ Planning complete, ready for implementation
   - Logging enabled/disabled lists helps verify configuration
   - Setting disabled agents to None prevents partial initialization bugs
   - Test strategy: Config test first (no deps), then integration test (with deps)
+
+---
+
+## Iteration 4 - US-006: Create ultra_selective shadow strategy
+- What was implemented:
+  - Added 'ultra_selective' strategy to simulation/strategy_configs.py STRATEGY_LIBRARY
+  - Set consensus_threshold=0.80, min_confidence=0.70, min_individual_confidence=0.70
+  - Kept adaptive_weights=True, copied agent_weights from default strategy
+  - Added 'ultra_selective' to SHADOW_STRATEGIES list in config/agent_config.py
+  - Now appears as strategy #25 in the shadow trading system
+
+- Files changed:
+  - simulation/strategy_configs.py (lines 785-820)
+  - config/agent_config.py (lines 367-373)
+  - PRD.md (marked US-006 as complete)
+  - progress.txt (this update)
+
+- Learnings for future iterations:
+  - New strategies follow the same pattern: Create StrategyConfig in STRATEGY_LIBRARY, then add to SHADOW_STRATEGIES list
+  - The field 'min_viable_threshold' in PRD doesn't exist in StrategyConfig - used min_individual_confidence instead
+  - Strategy thresholds map: consensus_threshold (weighted score), min_confidence (average), min_individual_confidence (per-agent)
+  - Testing strategy configs works with direct module import to avoid full dependency chain
+  - py_compile validates syntax without requiring all dependencies installed
+  - Shadow strategies will be tested against live strategy to validate higher thresholds improve win rate
+
+- Key implementation details:
+  - ultra_selective targets quality over quantity (fewer trades, higher win rate)
+  - Thresholds significantly higher than conservative (0.80 vs 0.75 consensus, 0.70 vs 0.60 confidence)
+  - Expected behavior: 50% fewer trades than default, but 65%+ win rate target
+  - Will run alongside 24 other shadow strategies for comparison
+  - Virtual starting balance: $100 per strategy
+
+- What worked:
+  - StrategyConfig dataclass makes adding new strategies simple
+  - SHADOW_STRATEGIES list auto-loads strategies on bot startup
+  - Verification script confirmed strategy correctly configured
+  - All acceptance criteria met, typecheck passes
 
 ---
