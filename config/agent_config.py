@@ -24,9 +24,9 @@ AGENT_WEIGHTS = {
     'SentimentAgent': 1.0,     # Contrarian signals
     'RegimeAgent': 1.0,        # Market classification
     'CandlestickAgent': 1.0,   # Candlestick pattern analysis
-    'TimePatternAgent': 0.0,   # Historical hourly patterns (0.0 = disabled, set 0.5-1.0 to enable)
+    'TimePatternAgent': 0.5,   # Historical hourly patterns (ENABLED for live trading)
     'RiskAgent': 1.0,          # Risk management (veto)
-    'GamblerAgent': 1.0,       # Probability gating (veto)
+    'GamblerAgent': 1.0,       # Probability gating (veto - blocks trades <60% win prob)
 }
 
 # =============================================================================
