@@ -238,3 +238,47 @@
   - Week 3 agents need API keys to provide high-quality signals (graceful degradation without keys)
 ---
 
+## Iteration 10 - Feature Extraction Pipeline (Week 4-5 Phase 1)
+- Implemented feature extraction pipeline for ML model training
+- Files changed:
+  - ml/feature_extraction.py (NEW - 700+ lines)
+  - tests/test_feature_extraction.py (NEW - 11 unit tests, all passing)
+  - requirements.txt (added numpy, pandas, scikit-learn)
+  - PRD.md (marked 3 tasks complete)
+- Extracted data:
+  - Source: 2,884 epochs from analysis/epoch_history.db (Jan 7-14, 2026)
+  - Output: 711 usable samples after dropping NaN from rolling calculations
+  - Date range: Jan 7-14, 2026 (4 cryptos: BTC, ETH, SOL, XRP)
+  - Target distribution: 51% UP, 49% DOWN (balanced)
+- Feature categories (14 features):
+  - Time (5): hour, day_of_week, minute_in_session, epoch_sequence, is_market_open
+  - Price (6): RSI, volatility, price_momentum, spread_proxy, position_in_range, price_z_score
+  - Cross-asset (3): btc_correlation, multi_crypto_agreement, market_wide_direction
+- Key features:
+  - Time-based train/val/test split (70/15/15) to avoid lookahead bias
+  - Rolling calculations for RSI (14-period), volatility (20-period), correlations (20-period)
+  - Cross-crypto analysis (BTC correlation, multi-asset agreement)
+  - Z-score normalization for price features
+  - CSV export for scikit-learn compatibility
+- Learnings for future iterations:
+  - epoch_history.db schema: id, crypto, epoch, date, hour, direction, start_price, end_price, change_pct, change_abs, timestamp
+  - 2,884 epochs → 711 samples after dropping NaN (75% data loss from 50-period lookback windows)
+  - To preserve more data: reduce lookback windows (50 → 20) or use forward-fill for initial periods
+  - Target label: 1 for UP, 0 for DOWN (binary classification)
+  - Time-based splits are CRITICAL: must sort by timestamp before splitting (no random shuffle!)
+  - Cross-asset features require pivoting data by timestamp+crypto
+  - RSI calculation: 14-period rolling average of gains/losses → RS → RSI = 100 - (100/(1+RS))
+  - Position in range: (current - rolling_min) / (rolling_max - rolling_min) → 0-1 scale
+  - BTC correlation: each crypto's rolling correlation with BTC (BTC gets 1.0 with itself)
+  - Market-wide direction: -1 (strong DOWN), 0 (mixed), 1 (strong UP) based on multi-crypto agreement
+  - Pandas pivot_table is ideal for reshaping time-series data by crypto
+  - Feature engineering drops ~2,173 rows (75%) due to rolling window warm-up (50-period RSI needs 50 samples)
+  - To get more samples: use min_periods parameter in rolling() to allow shorter windows initially
+  - CLI tool (ml/feature_extraction.py) with --output flag for custom CSV path
+  - FeatureConfig dataclass for configuration management
+  - get_feature_columns() excludes metadata (id, crypto, date, direction, target, timestamps)
+  - Virtual environment (venv) required for pandas/numpy/scikit-learn (system Python is restricted)
+  - Feature count: 14 features extracted (originally targeting 50+, can expand in future iterations)
+  - Next steps: feature importance analysis, documentation, live trading integration
+---
+
