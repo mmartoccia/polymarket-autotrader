@@ -1920,6 +1920,24 @@ def run_bot():
     ml_trade_db_path = str(Path(__file__).parent.parent / "simulation" / "trade_journal.db")
     log.info(f"📝 ML Trade Logging: {ml_trade_db_path}")
 
+    # Initialize alert system
+    alert_system = None
+    alert_check_interval = 600  # 10 minutes
+    last_alert_check = 0
+    try:
+        from analytics.alert_system import AlertSystem
+        state_path = str(Path(__file__).parent.parent / "state" / "trading_state.json")
+        alert_log_path = str(Path(__file__).parent.parent / "logs" / "alerts.log")
+        alert_system = AlertSystem(
+            db_path=ml_trade_db_path,
+            state_path=state_path,
+            alert_log_path=alert_log_path
+        )
+        log.info(f"🔔 Alert System: ENABLED (checks every {alert_check_interval}s)")
+    except Exception as e:
+        log.warning(f"Alert system init failed: {e}")
+        alert_system = None
+
     # Track bets per epoch
     epoch_trades: Dict[str, Dict[int, List[str]]] = {c: {} for c in CRYPTOS}
     epoch_bet_placed: Dict[int, bool] = {}
@@ -1960,11 +1978,27 @@ def run_bot():
             state.peak_balance = max(state.peak_balance, balance)  # FIX: Track peak cash, not position estimates
             state.daily_pnl = portfolio_value - state.day_start_balance
 
-            # 4. UPDATE PRICES
+            # 4. RUN ALERT CHECKS (every 10 minutes)
+            if alert_system and (time.time() - last_alert_check >= alert_check_interval):
+                try:
+                    alerts = alert_system.run_all_checks()
+                    if alerts:
+                        alert_system.send_alerts(alerts)
+                        log.info(f"🔔 Alert check complete: {len(alerts)} alerts generated")
+                    else:
+                        log.info("🔔 Alert check complete: No issues detected")
+                    last_alert_check = time.time()
+                except Exception as e:
+                    log.error(f"Alert system check failed: {e}")
+                    # Don't update last_alert_check so it retries next cycle
+                    import traceback
+                    log.error(f"Alert traceback: {traceback.format_exc()}")
+
+            # 5. UPDATE PRICES
             for crypto in CRYPTOS:
                 price_feed.update_prices(crypto)
 
-            # 5. CHECK STOP-LOSSES (FIX #3) - DISABLED for binary markets
+            # 6. CHECK STOP-LOSSES (FIX #3) - DISABLED for binary markets
             # NOTE: Stop-loss is fundamentally wrong for binary outcome markets
             # Mid-epoch prices are probability estimates, not value
             # A stop-loss would cut winning trades based on temporary movements
@@ -1977,7 +2011,7 @@ def run_bot():
                     balance = get_usdc_balance()
                     state.current_balance = balance
 
-            # 6. CHECK REDEMPTIONS
+            # 7. CHECK REDEMPTIONS
             redeemed, resolved_positions = redeemer.check_and_redeem()
             if redeemed > 0:
                 balance = get_usdc_balance()
@@ -2092,7 +2126,7 @@ def run_bot():
                 except Exception as e:
                     log.error(f"Shadow strategy position expiration check failed: {e}")
 
-            # 7. EVALUATE EACH CRYPTO (ALL TIMEFRAMES)
+            # 8. EVALUATE EACH CRYPTO (ALL TIMEFRAMES)
             current_epoch = price_feed.get_current_epoch()
             time_in_epoch = int(time.time()) - current_epoch
             time_left = 900 - time_in_epoch

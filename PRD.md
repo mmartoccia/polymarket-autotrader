@@ -347,18 +347,18 @@ Implement per-agent performance tracking to identify which of the 7 deployed age
 **Description:** As a bot operator, I need alerts running every 10 minutes so I'm notified of problems quickly.
 
 **Acceptance Criteria:**
-- [ ] Modify `bot/momentum_bot_v12.py` main loop
-- [ ] Add `alert_check_interval = 600` (10 minutes)
-- [ ] Add `last_alert_check = 0` tracker
-- [ ] Inside main loop: Check if `time.time() - last_alert_check >= alert_check_interval`
-- [ ] If yes: Import AlertSystem, run checks, send alerts, update tracker
-- [ ] Wrap in try/except to prevent bot crashes
-- [ ] Log alert check completion
-- [ ] Typecheck passes
+- [x] Modify `bot/momentum_bot_v12.py` main loop
+- [x] Add `alert_check_interval = 600` (10 minutes)
+- [x] Add `last_alert_check = 0` tracker
+- [x] Inside main loop: Check if `time.time() - last_alert_check >= alert_check_interval`
+- [x] If yes: Import AlertSystem, run checks, send alerts, update tracker
+- [x] Wrap in try/except to prevent bot crashes
+- [x] Log alert check completion
+- [x] Typecheck passes
 - [ ] Deploy to VPS
 - [ ] Verify: `tail -f logs/alerts.log` shows periodic checks
 
-**Status:** ⏳ PENDING
+**Status:** ✅ COMPLETE (Jan 15, 2026)
 
 **Dependencies:** Requires US-016 complete
 
