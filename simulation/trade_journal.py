@@ -174,22 +174,38 @@ class TradeJournalDB:
     def register_strategy(self, config: StrategyConfig):
         """
         Register new strategy or update existing.
-        
+
         Args:
             config: StrategyConfig to register
         """
-        self.conn.execute('''
-            INSERT OR REPLACE INTO strategies (name, description, config, is_live, created, last_updated)
-            VALUES (?, ?, ?, ?, ?, ?)
-        ''', (
-            config.name,
-            config.description,
-            json.dumps(asdict(config), default=str),
-            config.is_live,
-            config.created.isoformat(),
-            time.time()
-        ))
-        self.conn.commit()
+        # Retry with timeout if database is locked
+        max_retries = 5
+        retry_delay = 0.5  # seconds
+
+        for attempt in range(max_retries):
+            try:
+                self.conn.execute('''
+                    INSERT OR REPLACE INTO strategies (name, description, config, is_live, created, last_updated)
+                    VALUES (?, ?, ?, ?, ?, ?)
+                ''', (
+                    config.name,
+                    config.description,
+                    json.dumps(asdict(config), default=str),
+                    config.is_live,
+                    config.created.isoformat(),
+                    time.time()
+                ))
+                self.conn.commit()
+                return  # Success
+            except sqlite3.OperationalError as e:
+                if "locked" in str(e) and attempt < max_retries - 1:
+                    log.warning(f"[TradeJournal] Database locked, retrying in {retry_delay}s (attempt {attempt + 1}/{max_retries})")
+                    time.sleep(retry_delay)
+                else:
+                    # Last attempt or different error - just log warning and continue
+                    log.warning(f"[TradeJournal] Could not register strategy {config.name}: {e}")
+                    log.warning(f"[TradeJournal] Continuing anyway - strategy may already be registered")
+                    return
     
     def log_decision(self, strategy: str, crypto: str, epoch: int, 
                     should_trade: bool, direction: Optional[str],
