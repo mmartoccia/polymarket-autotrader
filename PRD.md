@@ -477,7 +477,7 @@ CREATE TABLE alerts (
 - [x] Create train/validation/test splits (time-based)
 - [x] Run feature importance analysis
 - [x] Document feature definitions
-- [ ] Create feature extraction module for live trading
+- [x] Create feature extraction module for live trading
 
 **Success Metric:** Feature matrix ready for model training
 
