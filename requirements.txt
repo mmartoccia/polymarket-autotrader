@@ -14,6 +14,12 @@ aiohttp>=3.9.0
 # Utilities
 python-dotenv>=1.0.0
 
+# Social Sentiment Analysis (Week 3 agents)
+praw>=7.7.0                    # Reddit API client
+pytrends>=4.9.0                # Google Trends
+transformers>=4.30.0           # NLP models (finbert for sentiment)
+torch>=2.0.0                   # PyTorch (required by transformers)
+
 # Optional: For enhanced features
 # numpy>=1.24.0
 # pandas>=2.0.0

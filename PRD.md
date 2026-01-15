@@ -462,7 +462,7 @@ CREATE TABLE alerts (
 - [x] Implement OnChainAgent (exchange flow tracking)
 - [ ] Sign up for Twitter API v2
 - [x] Implement SocialSentimentAgent (Twitter + Reddit + Trends)
-- [ ] Add sentiment analysis model (finbert)
+- [x] Add sentiment analysis model (finbert)
 - [x] Shadow test both agents
 - [ ] Validate signal quality
 
