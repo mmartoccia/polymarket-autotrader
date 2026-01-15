@@ -182,4 +182,55 @@ The bot should now reject conflicting orders with clear error messages.
 
 ---
 
+## Iteration 4 - Add Monitoring & Alerts (P4)
+- What was implemented:
+  - Created scripts/monitor.sh - automated health monitoring
+  - Checks 5 critical metrics: process status, conflicts, balance, order failures, ML exceptions
+  - Alert system with WARNING and CRITICAL severity levels
+  - Balance history tracking (24h rolling window)
+  - Cron-ready for automated execution every 5 minutes
+  - Created comprehensive MONITORING.md documentation
+
+- Files changed:
+  - scripts/monitor.sh (new file)
+    - check_bot_running() - verifies momentum_bot_v12.py process
+    - check_position_conflicts() - scans logs for CONFLICT messages
+    - check_balance_drop() - tracks balance changes over 15min window
+    - check_order_failures() - counts ORDER FAILED messages
+    - check_ml_exceptions() - counts ML Bot errors
+    - send_alert() - logs alerts to monitor_alerts.txt
+  - scripts/MONITORING.md (new file)
+    - Complete usage documentation
+    - Cron installation instructions
+    - Alert severity definitions
+    - Extension examples (email, Slack)
+  - PRD.md (marked P4 as complete)
+
+- Learnings for future iterations:
+  - Shell script needed to track balance over time (Python would restart each run)
+  - balance_history.txt stores timestamp + balance for historical comparison
+  - Auto-cleanup keeps only last 24 hours of balance history
+  - Use awk to find balance from specific time window
+  - bc -l for floating point comparison in bash
+  - grep -i for case-insensitive pattern matching
+  - pgrep -f matches full command line (not just process name)
+  - Cron jobs should redirect both stdout and stderr to log file
+
+- Gotchas encountered:
+  - Need to handle missing files gracefully (bot may be starting)
+  - Balance history empty on first run - skip comparison
+  - Python one-liners work for JSON parsing in bash
+  - ANSI color codes work in terminal but not in cron logs
+  - Process check needs full script name: momentum_bot_v12.py
+
+- Useful context:
+  - Monitor script is idempotent - safe to run repeatedly
+  - All checks return 0 (pass) or 1 (fail) for easy composition
+  - Alert file accumulates all alerts (manual cleanup recommended)
+  - Balance history auto-prunes old data (>24h)
+  - Script designed for VPS deployment (systemd + cron)
+  - Can extend send_alert() for email/Slack without changing check logic
+
+---
+
 _This is a fresh start. Previous iterations archived in progress_old.txt_

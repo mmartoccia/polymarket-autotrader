@@ -174,25 +174,51 @@ python3 test_ml_logging.py         # Tests logging function
 
 ---
 
-### P4: Add Monitoring & Alerts
+### ✅ P4: Add Monitoring & Alerts (COMPLETED)
 
-**Immediate Monitoring Needed:**
-1. **Position Conflict Alert:** Check every 5 minutes for same crypto with both Up/Down
-2. **Balance Drop Alert:** If balance drops >10% in 15 minutes
-3. **Order Placement Failures:** Count consecutive failures (>3 = alert)
-4. **ML Decision Failures:** Count exceptions in ML decision path
+**Status:** FIXED - Iteration 4 (Jan 15, 2026)
+
+**Goal:** Automated health checks and alerting for production ML bot
 
 **Implementation:**
-Simple script that runs on VPS and sends alerts:
-```bash
-# /opt/polymarket-autotrader/scripts/monitor.sh
-# Run via cron: */5 * * * * /opt/polymarket-autotrader/scripts/monitor.sh
+Created `scripts/monitor.sh` - automated monitoring script that checks:
 
-# Check for conflicting positions
-# Check balance vs 15min ago
-# Check error logs
-# Send alert if issues found
+1. ✅ **Bot Process Status** - Verifies bot is running
+2. ✅ **Position Conflict Alert** - Scans logs for CONFLICT messages
+3. ✅ **Balance Drop Alert** - Tracks balance, alerts if >10% drop in 15min
+4. ✅ **Order Placement Failures** - Alerts if >3 consecutive failures
+5. ✅ **ML Decision Failures** - Alerts if >5 ML exceptions detected
+
+**Features:**
+- Color-coded output (green/yellow/red)
+- Two alert levels: WARNING, CRITICAL
+- Balance history tracking (24h window)
+- Alert file for persistent notifications
+- Cron-ready (runs every 5 minutes)
+
+**Files Created:**
+- `scripts/monitor.sh` - Main monitoring script
+- `scripts/MONITORING.md` - Complete documentation
+- `state/balance_history.txt` - Historical balance data (auto-created)
+- `monitor_alerts.txt` - Alert log (auto-created)
+
+**Usage:**
+```bash
+# Manual run
+./scripts/monitor.sh
+
+# Install cron (every 5 minutes)
+crontab -e
+*/5 * * * * /opt/polymarket-autotrader/scripts/monitor.sh >> /opt/polymarket-autotrader/monitor.log 2>&1
+
+# View alerts
+tail -f monitor_alerts.txt
 ```
+
+**Extension Points:**
+- Email notifications (add to send_alert function)
+- Slack webhooks (see MONITORING.md)
+- Custom thresholds (edit script variables)
 
 ---
 

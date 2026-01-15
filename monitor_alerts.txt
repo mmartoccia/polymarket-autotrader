@@ -1,0 +1,2 @@
+[2026-01-15 12:02:18] CRITICAL: Bot process not found - may have crashed
+[2026-01-15 12:05:51] CRITICAL: Bot process not found - may have crashed
