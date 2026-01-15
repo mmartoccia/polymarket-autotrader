@@ -2247,6 +2247,11 @@ def run_bot():
                         # =================================================================
                         # AGENT MODE - Expert consensus decision-making
                         # =================================================================
+                        # SAFETY: Ensure we never run agents when ML mode is active
+                        if use_ml_bot and ML_BOT_AVAILABLE:
+                            log.warning(f"[{crypto.upper()}] Skipping agent decision - ML mode active (use_ml_bot={use_ml_bot})")
+                            continue
+
                         # Ask agents to make decision
                         try:
                             agent_should_trade, direction, confidence, reason, weighted_score = agent_system.make_decision(

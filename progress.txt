@@ -31,7 +31,7 @@
 **Next Actions:**
 1. ✅ Investigate why conflicts still occurring - Root cause found
 2. ✅ Add explicit position conflict check - Implemented
-3. Disable agent system completely when ML enabled (verified already working)
+3. ✅ Disable agent system completely when ML enabled - Added explicit guard
 4. Deploy and validate fix
 
 ---
@@ -71,6 +71,29 @@
   - Position structure: {title, outcome, size, curPrice, conditionId, ...}
   - Guardian.can_open_position() is called at line 2178 before placing ML orders
   - The conflict check happens BEFORE correlation/limit checks (highest priority)
+
+---
+
+## Iteration 2 - Disable Agent System Fallback (P2)
+- What was implemented:
+  - Added explicit guard in agent system path to check if ML mode is active
+  - Logs warning and continues if USE_ML_BOT=true and agents try to run
+  - Double safety: ML path already does continue, now agents also check
+
+- Files changed:
+  - bot/momentum_bot_v12.py (line ~2250)
+    - Added safety check: if use_ml_bot, skip agents completely
+
+- Learnings for future iterations:
+  - The elif structure already prevented agents when ML ran successfully
+  - But if someone modifies the code flow, this guard prevents accidents
+  - Explicit is better than implicit for critical safety checks
+  - The use_ml_bot variable is checked at line 2041 (from env var USE_ML_BOT)
+
+- Gotchas encountered:
+  - Need to check both use_ml_bot AND ML_BOT_AVAILABLE flags
+  - The ML_BOT_AVAILABLE flag is set at import time (line ~60)
+  - If ML imports fail, ML_BOT_AVAILABLE=False and agents should run
 
 ---
 
