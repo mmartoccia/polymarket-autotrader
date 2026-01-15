@@ -12,9 +12,9 @@ Controls behavior of the multi-expert consensus trading system.
 # Master enable/disable switch
 AGENT_SYSTEM_ENABLED = True  # Set True to enable agent decisions, False for log-only
 
-# Consensus requirements
-CONSENSUS_THRESHOLD = 0.40     # Minimum weighted score to trade (enforced in decision_engine.py)
-MIN_CONFIDENCE = 0.40          # Minimum average agent confidence (enforced in decision_engine.py)
+# Consensus requirements (RAISED Jan 15, 2026 - reduce low-quality trades after 87% loss)
+CONSENSUS_THRESHOLD = 0.75     # Minimum weighted score to trade (RAISED from 0.40)
+MIN_CONFIDENCE = 0.60          # Minimum average agent confidence (RAISED from 0.40)
 MIN_INDIVIDUAL_CONFIDENCE = 0.30  # Minimum per-agent confidence (enforced in vote_aggregator.py)
 ADAPTIVE_WEIGHTS = True        # Enable performance-based weight tuning
 
@@ -330,6 +330,12 @@ SHADOW_STRATEGIES = [
     # Single agent isolation
     'tech_only',             # Technical/momentum only
     'sentiment_only',        # Contrarian/sentiment only
+
+    # INVERSE STRATEGIES (Jan 15, 2026) - Trade OPPOSITE of consensus
+    # If agents are consistently wrong, inverse should win
+    'inverse_consensus',     # Trade opposite of consensus vote
+    'inverse_momentum',      # Trade opposite of TechAgent
+    'inverse_sentiment',     # Trade opposite of SentimentAgent
 ]
 
 # Shadow trading configuration

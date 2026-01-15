@@ -20,12 +20,18 @@ The bot uses a **contrarian fade + momentum confirmation** approach:
 
 ### Current Performance
 
-- **Live Balance:** $21.52 (as of Jan 14, 2026 14:35 UTC)
-- **Peak Balance:** $161.99 (Jan 13, 2026)
+- **Live Balance:** $6.81 (as of Jan 15, 2026 12:30 UTC)
+- **Peak Balance:** $54.28 (Jan 15 AM)
+- **Status:** **HALTED** (87.5% drawdown triggered automatic halt)
 - **Recent Events:**
-  - Jan 14 AM: -95% drawdown from trend filter bias (fixed 14:00 UTC)
-  - Jan 14 PM: +$25 deposit, then -$10.69 loss from 2 contrarian DOWN trades (-33% drawdown)
-- **Current Status:** Live trading with fixed trend filter, reset to $21.52 baseline
+  - Jan 15 Overnight: -87.5% loss ($54.28 → $6.81) in ~18 hours
+  - Root causes: Low confidence trades (18-19% avg), Phase 1 agents unvalidated before live deployment
+  - Trend filter bias from Jan 14 was FIXED but new issues emerged
+- **Current Status:** Bot is HALTED, awaiting:
+  1. Peak balance reset to $6.81 (exit HALTED mode)
+  2. Threshold increase to 0.75/0.60 (reduce risk)
+  3. Shadow database debugging (Priority 1)
+- **Shadow Trading:** Infrastructure built but trade_journal.db is EMPTY (no validation data collected)
 - **Trading Since:** January 2026
 - **Deployment:** Vultr VPS (Mexico City) - 24/7 operation
 
