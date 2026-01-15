@@ -203,3 +203,38 @@
   - Each new agent group (Week 1, Week 3) gets 6 shadow strategies for comprehensive testing
 ---
 
+## Iteration 9 - Week 3 Agent Signal Quality Validation
+- Implemented Week3Validator tool for validating OnChainAgent and SocialSentimentAgent
+- Files changed:
+  - analytics/week3_validator.py (NEW - 600+ lines)
+  - tests/test_week3_validator.py (NEW - 15 unit tests, all passing)
+  - PRD.md (marked "Validate signal quality" complete)
+- Key features:
+  - Signal quality metrics: confidence, quality, vote distribution
+  - Detects low-quality votes (<0.30 quality threshold)
+  - Identifies stale data and API errors from vote details
+  - Data source detection (Twitter, Reddit, GoogleTrends, OnChain, ExchangeFlows)
+  - API health check for Week 3 data sources (Whale Alert, Twitter, Reddit)
+  - Comprehensive validation report with pass/fail and recommendations
+- Validation criteria:
+  - Minimum 10 votes for validation
+  - Average quality ≥ 0.50
+  - Low-quality votes < 30%
+  - Stale data < 20%
+  - API error rate < 10%
+  - Balanced vote distribution (not >90% one direction)
+- Learnings for future iterations:
+  - Signal quality validation focuses on data health, not win rate (win rate needs resolved trades)
+  - Parse vote details field for stale data indicators ("stale", "old data")
+  - Parse vote details for API errors ("error", "failed")
+  - Detect data sources from details field (case-insensitive keyword matching)
+  - API health check uses os.environ.get() to check for configured keys
+  - Missing os import can cause NameError in API health check
+  - Week3Validator pattern mirrors Phase1Monitor but focuses on signal quality
+  - ValidationResult includes pass/fail, issues list, and recommendations
+  - CLI tool supports --api-health flag for checking data source configuration
+  - Validator can run on empty database without crashing (shows 0 votes)
+  - SignalQuality dataclass tracks stale_votes and api_errors separately
+  - Week 3 agents need API keys to provide high-quality signals (graceful degradation without keys)
+---
+
