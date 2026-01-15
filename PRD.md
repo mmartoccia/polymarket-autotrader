@@ -464,7 +464,7 @@ CREATE TABLE alerts (
 - [x] Implement SocialSentimentAgent (Twitter + Reddit + Trends)
 - [x] Add sentiment analysis model (finbert)
 - [x] Shadow test both agents
-- [ ] Validate signal quality
+- [x] Validate signal quality
 
 **Success Metric:** +4-6% cumulative win rate improvement
 
