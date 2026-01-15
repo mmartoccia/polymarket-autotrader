@@ -15,8 +15,18 @@ from datetime import datetime
 # Add parent directory to path for imports
 sys.path.append(str(Path(__file__).parent.parent))
 
+from dataclasses import dataclass
+
 from analysis.pattern_query_service import get_pattern_service, PatternSignal
 from agents.base_agent import BaseAgent, Vote as BaseVote
+
+
+@dataclass
+class Vote:
+    """Simple vote structure for TimePatternAgent.vote() method."""
+    direction: str
+    confidence: float
+    reasoning: str
 
 
 class TimePatternAgent(BaseAgent):
@@ -42,9 +52,7 @@ class TimePatternAgent(BaseAgent):
             name: Agent name for identification
             weight: Agent weight (used by coordinator for vote weighting)
         """
-        super().__init__()
-        self.name = name
-        self.weight = weight
+        super().__init__(name, weight)
         self.pattern_service = get_pattern_service()
 
         # Configuration
