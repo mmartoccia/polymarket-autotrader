@@ -228,10 +228,11 @@ If critical issues persist after fixes:
 ## Known Issues (Tracking)
 
 ### Critical (P0)
-1. ❌ **Conflicting positions bug** - Both Up/Down same epoch
-   - Status: Root cause under investigation
-   - Impact: $14-20 loss per conflict set
-   - ETA: Fix within 24 hours
+1. ✅ **Conflicting positions bug** - Both Up/Down same epoch - **FIXED**
+   - Status: Fixed in iterations 1-2 (Jan 15, 2026)
+   - Root cause: Guardian not querying live API, relied on internal list
+   - Solution: Added check_live_position_conflicts() method
+   - Ready for deployment testing
 
 ### High (P1)
 2. ⚠️ **Peak balance tracking** - Includes unrealized positions, causes false halts
