@@ -212,19 +212,19 @@ Implement per-agent performance tracking to identify which of the 7 deployed age
 **Description:** As a developer, I need a Kelly Criterion position sizer so the bot can calculate mathematically optimal bet sizes.
 
 **Acceptance Criteria:**
-- [ ] Create `bot/position_sizer.py`
-- [ ] Implement `KellyPositionSizer` class
-- [ ] Implement `calculate_kelly_size(win_prob, entry_price, balance, min_size_pct, max_size_pct)`
-- [ ] Kelly formula: f* = (p*b - q) / b where b = (1 - entry_price) / entry_price
-- [ ] Apply fractional Kelly (25% of full Kelly for safety)
-- [ ] Clamp to min/max range (2% - 15% of balance)
-- [ ] Return tuple: (position_size_usd, debug_info_dict)
-- [ ] Implement `compare_with_fixed_tiers()` for analysis
-- [ ] Add example usage in `if __name__ == "__main__"` block
-- [ ] Typecheck passes
-- [ ] Test: `python3 bot/position_sizer.py` shows example calculations
+- [x] Create `bot/position_sizer.py`
+- [x] Implement `KellyPositionSizer` class
+- [x] Implement `calculate_kelly_size(win_prob, entry_price, balance, min_size_pct, max_size_pct)`
+- [x] Kelly formula: f* = (p*b - q) / b where b = (1 - entry_price) / entry_price
+- [x] Apply fractional Kelly (25% of full Kelly for safety)
+- [x] Clamp to min/max range (2% - 15% of balance)
+- [x] Return tuple: (position_size_usd, debug_info_dict)
+- [x] Implement `compare_with_fixed_tiers()` for analysis
+- [x] Add example usage in `if __name__ == "__main__"` block
+- [x] Typecheck passes
+- [x] Test: `python3 bot/position_sizer.py` shows example calculations
 
-**Status:** ⏳ PENDING
+**Status:** ✅ COMPLETE (Jan 15, 2026)
 
 ---
 

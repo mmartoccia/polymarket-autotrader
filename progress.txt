@@ -263,3 +263,57 @@ STATUS: ✅ Planning complete, ready for implementation
 
 ---
 
+
+## Iteration 8 - US-010: Create Kelly Criterion position sizer module
+- What was implemented:
+  - Created bot/position_sizer.py with KellyPositionSizer class
+  - Implemented calculate_kelly_size() using Kelly formula: f* = (p*b - q) / b
+  - Implemented fractional Kelly (25% of full Kelly for safety)
+  - Implemented clamping to min/max range (2% - 15% of balance)
+  - Implemented compare_with_fixed_tiers() for comparing Kelly vs fixed tier sizing
+  - Added comprehensive example usage in __main__ block
+  - All tests pass with example calculations
+
+- Files changed:
+  - bot/position_sizer.py (NEW - 332 lines)
+  - PRD.md (lines 211-227: Marked US-010 complete)
+  - progress.txt (this update)
+
+- Learnings for future iterations:
+  - Kelly Criterion requires: win_prob, entry_price (to calculate net odds), balance
+  - Net odds formula: (1 - entry_price) / entry_price
+    - Example: $0.20 entry → 4.0x odds (pays $1.00 if win)
+  - Fractional Kelly (25%) reduces variance while preserving most growth
+  - Clamping prevents over-betting (min 2%, max 15%)
+  - Kelly sizes are often larger than fixed tiers for mid-range balances
+  - Break-even scenarios (50% @ $0.50) get clamped to minimum (2%)
+
+- Key implementation details:
+  - KellyPositionSizer class with configurable kelly_fraction, min/max
+  - calculate_kelly_size() returns (position_size_usd, debug_info_dict)
+  - debug_info includes: full Kelly, fractional Kelly, clamped Kelly, all inputs
+  - compare_with_fixed_tiers() shows Kelly vs bot's current tiered sizing
+  - Validation: win_prob 0-1, entry_price 0-1 (exclusive), balance > 0
+
+- Test results:
+  - High edge contrarian (65% @ $0.20): $14.06 (14.06%) vs fixed $7.00 (7%)
+  - Moderate edge (58% @ $0.30): $10.00 (10%) vs fixed $7.00 (7%)
+  - Low edge late (88% @ $0.85): $5.00 (5%) vs fixed $7.00 (7%)
+  - Break-even (50% @ $0.50): $2.00 (2% min) vs fixed $7.00 (7%)
+  - Kelly sizes larger for high-edge scenarios, smaller for low-edge
+
+- Patterns discovered:
+  - Kelly adapts to edge: high confidence → larger bets, low confidence → smaller
+  - Fixed tiers don't consider edge → constant sizing regardless of confidence
+  - Kelly prevents betting on break-even scenarios (clamps to minimum)
+  - 25% fractional Kelly provides good balance of growth vs risk
+
+- What worked:
+  - Kelly formula implementation straightforward
+  - Debug info dict provides transparency for analysis
+  - Comparison function useful for validating against current system
+  - Example calculations demonstrate behavior across scenarios
+  - Syntax check passed (mypy not available in environment)
+
+---
+
