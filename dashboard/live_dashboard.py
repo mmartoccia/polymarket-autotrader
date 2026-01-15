@@ -382,16 +382,20 @@ def render_dashboard():
             print(f"    Win Prob: [{bar}] {prob_pct:.1f}%")
 
             # Show current crypto price and position status
-            outcome_parts = pos['outcome'].split()
-            if len(outcome_parts) >= 1:
-                crypto = outcome_parts[0]  # BTC, ETH, SOL, XRP
-                direction = pos['outcome'].split()[-1] if len(outcome_parts) > 1 else None  # Up or Down
+            # Extract crypto from slug (format: "btc-updown-15m-...", "sol-updown-15m-...", etc)
+            slug = pos.get('slug', '')
+            direction = pos['outcome']  # "Up" or "Down"
 
-                current_price = get_current_crypto_price(crypto)
-                if current_price and direction:
-                    # Show current price with position direction
-                    arrow = "↑" if direction == "Up" else "↓" if direction == "Down" else ""
-                    print(f"    📊 {crypto} Current Price: ${current_price:,.2f} {arrow} | Market Prob: {pos['cur_price']*100:.1f}%")
+            if slug and direction:
+                # Get crypto ticker from slug (first part before hyphen)
+                crypto_ticker = slug.split('-')[0].upper() if slug else None
+
+                if crypto_ticker:
+                    current_price = get_current_crypto_price(crypto_ticker)
+                    if current_price:
+                        # Show current price with position direction
+                        arrow = "↑" if direction == "Up" else "↓" if direction == "Down" else ""
+                        print(f"    📊 {crypto_ticker} Current Price: ${current_price:,.2f} {arrow} | Market Prob: {pos['cur_price']*100:.1f}%")
 
             print(f"    Current Value: ${pos['current_value']:.2f} | If Win: ${pos['max_payout']:.2f} | Est. Invested: ${est_invested:.2f}")
 
