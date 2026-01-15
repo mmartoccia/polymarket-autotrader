@@ -78,6 +78,9 @@ class StrategyConfig:
     ml_model_name: Optional[str] = None  # 'random_forest' or 'logistic_regression'
     ml_threshold: float = 0.50  # Minimum win probability to trade
 
+    # Position sizing (Jan 15, 2026)
+    use_kelly_sizing: bool = False  # True to use Kelly Criterion instead of fixed tiers
+
     # Metadata
     created: datetime = field(default_factory=datetime.now)
     is_live: bool = False
@@ -806,6 +809,31 @@ STRATEGY_LIBRARY = {
         min_confidence=0.70,       # Increased from 0.60 (conservative)
         min_individual_confidence=0.70,  # Increased from 0.40 (conservative)
         adaptive_weights=True,
+        agent_weights={
+            'TechAgent': 1.0,
+            'SentimentAgent': 1.0,
+            'RegimeAgent': 1.0,
+            'CandlestickAgent': 1.0,
+            'OrderBookAgent': 0.8,
+            'FundingRateAgent': 0.8,
+            'OnChainAgent': 0.0,
+            'SocialSentimentAgent': 0.0
+        }
+    ),
+
+    # =============================================================================
+    # WEEK 3: KELLY CRITERION POSITION SIZING (Jan 15, 2026)
+    # =============================================================================
+    # Testing Kelly Criterion for mathematically optimal position sizing
+
+    'kelly_sizing': StrategyConfig(
+        name='kelly_sizing',
+        description='Kelly Criterion position sizing (Week 3 optimization)',
+        consensus_threshold=0.40,  # Same as default
+        min_confidence=0.40,       # Same as default
+        min_individual_confidence=0.30,  # Same as default
+        adaptive_weights=True,
+        use_kelly_sizing=True,  # Use Kelly instead of fixed tiers
         agent_weights={
             'TechAgent': 1.0,
             'SentimentAgent': 1.0,

@@ -232,13 +232,13 @@ Implement per-agent performance tracking to identify which of the 7 deployed age
 **Description:** As a strategy designer, I need a shadow strategy using Kelly sizing so I can compare it to fixed tiers.
 
 **Acceptance Criteria:**
-- [ ] Add `kelly_sizing` to `simulation/strategy_configs.py` STRATEGY_LIBRARY
-- [ ] Copy thresholds from default (0.75 consensus, 0.60 confidence)
-- [ ] Add special flag: `use_kelly_sizing=True`
-- [ ] Add to SHADOW_STRATEGIES list in `config/agent_config.py`
-- [ ] Typecheck passes
+- [x] Add `kelly_sizing` to `simulation/strategy_configs.py` STRATEGY_LIBRARY
+- [x] Copy thresholds from default (0.40 consensus, 0.40 confidence, 0.30 individual)
+- [x] Add special flag: `use_kelly_sizing=True`
+- [x] Add to SHADOW_STRATEGIES list in `config/agent_config.py`
+- [x] Typecheck passes
 
-**Status:** ⏳ PENDING
+**Status:** ✅ COMPLETE (Jan 15, 2026)
 
 **Dependencies:** Requires US-010 complete
 

@@ -317,3 +317,42 @@ STATUS: ✅ Planning complete, ready for implementation
 
 ---
 
+
+## Iteration 9 - US-011: Create kelly_sizing shadow strategy
+- What was implemented:
+  - Added use_kelly_sizing field to StrategyConfig dataclass (default False)
+  - Created kelly_sizing strategy in STRATEGY_LIBRARY
+  - Copied thresholds from default: 0.40/0.40/0.30 (consensus/confidence/individual)
+  - Set use_kelly_sizing=True for kelly_sizing strategy
+  - Added kelly_sizing to SHADOW_STRATEGIES list in config/agent_config.py
+  - Now appears as strategy #26 (after ultra_selective)
+
+- Files changed:
+  - simulation/strategy_configs.py (lines 75-78: Added use_kelly_sizing field)
+  - simulation/strategy_configs.py (lines 824-840: Added kelly_sizing strategy)
+  - config/agent_config.py (lines 375-377: Added kelly_sizing to SHADOW_STRATEGIES)
+  - PRD.md (lines 231-243: Marked US-011 complete, corrected threshold values)
+  - progress.txt (this update)
+
+- Learnings for future iterations:
+  - StrategyConfig supports optional feature flags (use_ml_model, use_kelly_sizing)
+  - Adding new strategies: Define in STRATEGY_LIBRARY, then add name to SHADOW_STRATEGIES
+  - Default strategy uses moderate thresholds (0.40/0.40/0.30), not conservative (0.75/0.60)
+  - Shadow strategies automatically load on bot restart (no manual initialization)
+  - Strategy count will increase from 24 to 25 on next bot restart
+
+- Key implementation details:
+  - kelly_sizing uses same thresholds as default (only sizing differs)
+  - use_kelly_sizing flag will be checked in shadow_strategy.py execute_trade()
+  - If True: Call KellyPositionSizer.calculate_kelly_size()
+  - If False: Use existing fixed tier sizing
+  - This allows apples-to-apples comparison (same trades, different sizes)
+
+- What worked:
+  - Syntax check passed for both files
+  - Strategy definition follows existing patterns
+  - Field addition to dataclass clean and non-breaking
+  - Ready for integration in US-012 (shadow system execution)
+
+---
+

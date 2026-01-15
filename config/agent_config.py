@@ -371,6 +371,10 @@ SHADOW_STRATEGIES = [
     # WEEK 2: SELECTIVE TRADING STRATEGIES (Jan 15, 2026)
     # Testing higher thresholds to improve win rate through quality over quantity
     'ultra_selective',       # Higher thresholds (0.80/0.70) - target 65%+ win rate
+
+    # WEEK 3: KELLY CRITERION POSITION SIZING (Jan 15, 2026)
+    # Testing mathematically optimal bet sizing vs fixed tiers
+    'kelly_sizing',          # Kelly Criterion (default thresholds 0.40/0.40)
 ]
 
 # Shadow trading configuration
