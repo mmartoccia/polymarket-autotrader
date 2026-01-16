@@ -1,4 +1,4 @@
 #!/bin/bash
-# Unified Dashboard Launcher
+# Agent Decision Dashboard Launcher
 cd "$(dirname "$0")"
-python3 dashboard/unified_dashboard.py
+python3 dashboard/agent_decisions.py
