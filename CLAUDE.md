@@ -637,14 +637,16 @@ SCAN_INTERVAL = 2.0  # seconds
 
 **IMPORTANT:** Claude has full SSH access to the VPS and can run commands remotely:
 
+**SSH Key Location:** `~/.ssh/polymarket_vultr`
+
 ```bash
-# Direct SSH commands (preferred method)
-ssh root@216.238.85.11 "command here"
+# Direct SSH commands (preferred method) - MUST use SSH key
+ssh -i ~/.ssh/polymarket_vultr root@216.238.85.11 "command here"
 
 # Examples:
-ssh root@216.238.85.11 "tail -100 /opt/polymarket-autotrader/bot.log"
-ssh root@216.238.85.11 "systemctl status polymarket-bot"
-ssh root@216.238.85.11 "python3 /opt/polymarket-autotrader/scripts/analyze.py"
+ssh -i ~/.ssh/polymarket_vultr root@216.238.85.11 "tail -100 /opt/polymarket-autotrader/bot.log"
+ssh -i ~/.ssh/polymarket_vultr root@216.238.85.11 "systemctl status polymarket-bot"
+ssh -i ~/.ssh/polymarket_vultr root@216.238.85.11 "python3 /opt/polymarket-autotrader/scripts/analyze.py"
 ```
 
 **Key capabilities:**
@@ -910,7 +912,15 @@ ssh root@216.238.85.11 "cd /opt/polymarket-autotrader && ./scripts/deploy.sh"
 
 ## Version History
 
-- **Optimization Focus** (Jan 15, 2026) - Current direction
+- **Contrarian Re-enabled** (Jan 16, 2026 15:19 UTC) - Current production
+  - Re-enabled ENABLE_CONTRARIAN_TRADES after market analysis showed choppy regime
+  - SentimentAgent now active (90% confidence votes observed)
+  - Rationale: Agents showing conflicting signals, neutral funding rates, no clear trend
+  - Expected: 5-10 trades/day at 65-70% win rate with cheap entries (<$0.20)
+  - Risk: Low (contrarian only triggers on >70% overpriced markets)
+  - Monitoring: Will disable if regime changes to strong BULL/BEAR
+
+- **Optimization Focus** (Jan 15, 2026) - Strategic direction
   - 4-week roadmap: Per-agent tracking, selective trading, Kelly sizing, automation
   - Shadow trading system fixed (now broadcasting in both ML and agent modes)
   - PRD restructured: Focus on optimization over complexity
