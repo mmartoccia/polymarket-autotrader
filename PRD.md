@@ -229,29 +229,29 @@ This PRD addresses both the underlying bugs AND profitability restoration throug
 5. Gap between TechAgent (15min) and RegimeAgent (5hr) misses 1-2hr trends
 
 **Acceptance Criteria:**
-- [ ] Lower TECH_CONFLUENCE_THRESHOLD from 0.003 to 0.002 (0.30% → 0.20%) in config/agent_config.py
-- [ ] Lower TECH_CONFLUENCE_THRESHOLD from 0.003 to 0.002 in agents/tech_agent.py (keep in sync)
-- [ ] Lower REGIME_TREND_THRESHOLD from 0.001 to 0.0005 (0.10% → 0.05%) in config/agent_config.py
-- [ ] Lower TREND_THRESHOLD from 0.001 to 0.0005 in agents/regime_agent.py (keep in sync)
-- [ ] Add consecutive_epochs tracking to TechAgent:
+- [x] Lower TECH_CONFLUENCE_THRESHOLD from 0.003 to 0.002 (0.30% → 0.20%) in config/agent_config.py
+- [x] Lower TECH_CONFLUENCE_THRESHOLD from 0.003 to 0.002 in agents/tech_agent.py (keep in sync)
+- [x] Lower REGIME_TREND_THRESHOLD from 0.001 to 0.0005 (0.10% → 0.05%) in config/agent_config.py
+- [x] Lower TREND_THRESHOLD from 0.001 to 0.0005 in agents/regime_agent.py (keep in sync)
+- [x] Add consecutive_epochs tracking to TechAgent:
   - Track last 5 epochs of direction (Up/Down/Flat) per crypto
   - If 3+ consecutive same direction → recognize trend
   - If current vote conflicts with 3+ epoch trend → reduce confidence by 50%
   - Add reasoning: "Conflicts with 3-epoch downtrend, reducing confidence"
-- [ ] Add trend_strength field to RegimeAgent vote details:
+- [x] Add trend_strength field to RegimeAgent vote details:
   - "strong_bull" (mean > 0.10%), "weak_bull" (0.05-0.10%)
   - "strong_bear" (mean < -0.10%), "weak_bear" (-0.10 to -0.05%)
   - "sideways" (-0.05 to +0.05%)
-- [ ] Update vote aggregator to check for trend conflicts:
+- [x] Update vote aggregator to check for trend conflicts:
   - If TechAgent detects 3+ epoch trend AND agent votes opposite → log warning
   - Don't auto-veto but flag for consensus threshold adjustment
-- [ ] Add logging: "TechAgent detected 3-epoch downtrend (BTC: Down, Down, Down)"
-- [ ] Add logging: "RegimeAgent classified weak_bear regime (mean: -0.07%)"
-- [ ] Test: TechAgent recognizes 3 consecutive Down epochs as downtrend
-- [ ] Test: RegimeAgent classifies -0.07% mean as weak_bear not sideways
-- [ ] Test: Bot logs warning when SentimentAgent Up vote conflicts with downtrend
-- [ ] Test: Lower thresholds allow detection of -0.15% to -0.20% moves
-- [ ] Typecheck passes
+- [x] Add logging: "TechAgent detected 3-epoch downtrend (BTC: Down, Down, Down)"
+- [x] Add logging: "RegimeAgent classified weak_bear regime (mean: -0.07%)"
+- [x] Test: TechAgent recognizes 3 consecutive Down epochs as downtrend
+- [x] Test: RegimeAgent classifies -0.07% mean as weak_bear not sideways
+- [x] Test: Bot logs warning when SentimentAgent Up vote conflicts with downtrend
+- [x] Test: Lower thresholds allow detection of -0.15% to -0.20% moves
+- [x] Typecheck passes
 
 **Success Metrics:**
 - Bot should NOT buy Up during 3+ consecutive Down epochs

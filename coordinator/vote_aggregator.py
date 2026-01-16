@@ -202,6 +202,30 @@ class VoteAggregator:
             f"Weighted scores (averaged): Up={up_score:.3f}, Down={down_score:.3f}, Neutral={neutral_score:.3f}"
         )
 
+        # US-BF-017: Check for trend conflicts between TechAgent and other agents
+        tech_vote = next((v for v in votes if v.agent_name == "TechAgent"), None)
+        if tech_vote and hasattr(tech_vote, 'details') and tech_vote.details:
+            epoch_trend = tech_vote.details.get('epoch_trend')
+            trend_conflict = tech_vote.details.get('trend_conflict', False)
+
+            # Log warning if TechAgent detected multi-epoch trend conflict
+            if trend_conflict and epoch_trend:
+                self.log.warning(
+                    f"⚠️ TREND CONFLICT: TechAgent detected 3-epoch {epoch_trend.lower()}trend, "
+                    f"but consensus voted {direction}. TechAgent reduced its confidence by 50%."
+                )
+
+            # Also check if any other agent voted opposite to detected trend
+            if epoch_trend and not trend_conflict:
+                opposite_direction = "Down" if epoch_trend == "Up" else "Up"
+                opposite_votes = [v for v in votes if v.direction == opposite_direction]
+                if opposite_votes and direction == opposite_direction:
+                    agent_names = ", ".join(v.agent_name for v in opposite_votes)
+                    self.log.warning(
+                        f"⚠️ TREND CONFLICT: {agent_names} voted {opposite_direction} against "
+                        f"TechAgent's 3-epoch {epoch_trend.lower()}trend detection"
+                    )
+
         self.log.info(
             f"Aggregated {len(votes)} votes: {direction} "
             f"(score: {weighted_score:.3f}, agreement: {agreement_rate:.1%})"

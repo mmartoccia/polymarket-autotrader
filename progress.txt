@@ -299,3 +299,42 @@
   - Logs will now show exactly when/why threshold checks pass or fail for diagnosis
 ---
 
+## Iteration 16 - US-BF-016: Shadow test validation setup
+- Added 'fixed_bugs' strategy to simulation/strategy_configs.py
+- Strategy configuration includes all 16 fixes:
+  - US-BF-013: ML mode disabled (use_ml_model=False)
+  - US-BF-014: Entry prices lowered (MAX_ENTRY=0.25)
+  - US-BF-015: Bull market overrides disabled (via flag)
+  - US-BF-011: Confluence threshold raised (0.003 = 0.30%)
+  - US-BF-010: Consensus threshold verified (0.75)
+  - US-BF-007: Weighted score averaging (handled in aggregator)
+  - US-BF-006: Skip vote filtering (handled in aggregator)
+  - US-BF-005: Skip vote type (handled in base_agent)
+  - US-BF-001-003: Agents abstain on uncertainty (Skip votes)
+  - US-BF-004: RSI neutral zone = 0.5 confidence
+  - US-BF-008-009: Directional balance tracker (handled in decision_engine)
+  - US-BF-012: Threshold debug logging (handled in agents)
+- Added 'fixed_bugs' to SHADOW_STRATEGIES list in config/agent_config.py
+- Created test_fixed_bugs_strategy.py with 7 tests (all passed)
+- Created test_shadow_integration.py with 7 tests (all passed)
+- Files changed:
+  - simulation/strategy_configs.py (added fixed_bugs strategy with all config overrides)
+  - config/agent_config.py (added fixed_bugs to SHADOW_STRATEGIES list)
+  - test_fixed_bugs_strategy.py (comprehensive test suite)
+  - test_shadow_integration.py (integration test suite)
+  - PRD.md (marked US-BF-016 complete)
+- Learnings for future iterations:
+  - Shadow strategies use StrategyConfig dataclass with config overrides
+  - Config overrides in tech_config, sentiment_config fields propagate to agents
+  - Shadow strategies must have is_live=False (distinguishes from live bot)
+  - Strategy list in agent_config determines which strategies run in parallel
+  - All 16 fixes are code changes, strategy just configures thresholds/flags
+  - Shadow trading system automatically logs to trade_journal.db
+  - Dashboard at simulation/dashboard.py provides real-time comparison
+  - Full validation requires 24hr monitoring (not part of setup task)
+  - Tests verify setup is correct, not that strategy performs better
+  - Strategy position in list: 27/27 (last strategy, easy to find in dashboard)
+  - Test coverage: Both functional tests and integration tests passed
+  - Typecheck passed for all files
+---
+

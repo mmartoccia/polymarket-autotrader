@@ -23,8 +23,8 @@ RSI_PERIOD = 14
 RSI_HISTORY_SIZE = 50
 RSI_OVERBOUGHT = 70
 RSI_OVERSOLD = 30
-# Raised from 0.15% to 0.30% to filter random walk noise (±0.05% typical in 15min epochs)
-CONFLUENCE_THRESHOLD = 0.003  # 0.30% minimum price change
+# Lowered from 0.30% to 0.20% to detect cumulative multi-epoch trends (US-BF-017)
+CONFLUENCE_THRESHOLD = 0.002  # 0.20% minimum price change
 
 
 # Exchange symbol mappings
@@ -116,6 +116,7 @@ class MultiExchangePriceFeed:
         self.rsi = rsi_calculator
         self.epoch_starts: Dict[str, Dict[int, Dict[str, float]]] = {}
         self.current_prices: Dict[str, Dict[str, float]] = {}
+        self.log = logging.getLogger(__name__)
 
     def get_binance_price(self, symbol: str) -> Optional[float]:
         """Fetch price from Binance."""
@@ -279,6 +280,9 @@ class TechAgent(BaseAgent):
         # Track when we last updated prices for each crypto
         self.last_update: Dict[str, float] = {}
 
+        # Track last 5 epochs of direction per crypto (US-BF-017: multi-epoch trend detection)
+        self.epoch_history: Dict[str, deque] = {}
+
     def analyze(self, crypto: str, epoch: int, data: dict) -> Vote:
         """
         Analyze technical indicators and return vote.
@@ -384,6 +388,37 @@ class TechAgent(BaseAgent):
             f"entry ${entry_price:.2f}"
         )
 
+        # US-BF-017: Check for multi-epoch trend conflicts
+        # Initialize epoch history for this crypto if needed
+        if crypto not in self.epoch_history:
+            self.epoch_history[crypto] = deque(maxlen=5)
+
+        # Detect 3+ consecutive epochs in same direction (trend) BEFORE adding current
+        trend_direction = None
+        if len(self.epoch_history[crypto]) >= 3:
+            last_3 = list(self.epoch_history[crypto])[-3:]
+            if all(d == "Up" for d in last_3):
+                trend_direction = "Up"
+            elif all(d == "Down" for d in last_3):
+                trend_direction = "Down"
+
+        # If current vote conflicts with 3+ epoch trend, reduce confidence by 50%
+        trend_conflict = False
+        if trend_direction and direction != trend_direction:
+            confidence *= 0.5
+            trend_conflict = True
+            epoch_str = ", ".join(list(self.epoch_history[crypto]))
+            reasoning += f" | ⚠️ CONFLICTS with 3-epoch {trend_direction.lower()}trend [{epoch_str}], reducing confidence"
+            self.log.info(f"🔴 [{self.name}] {crypto}: Detected 3-epoch {trend_direction.lower()}trend, but voting {direction} → reducing confidence by 50%")
+
+        # Log trend detection
+        if trend_direction:
+            epoch_str = ", ".join(list(self.epoch_history[crypto]))
+            self.log.debug(f"[{self.name}] Detected 3-epoch {trend_direction.lower()}trend ({crypto}): [{epoch_str}]")
+
+        # Add current direction to history AFTER conflict detection
+        self.epoch_history[crypto].append(direction)
+
         vote = Vote(
             direction=direction,
             confidence=confidence,
@@ -396,7 +431,9 @@ class TechAgent(BaseAgent):
                 'rsi': rsi,
                 'entry_price': entry_price,
                 'scores': scores,
-                'exchange_signals': {ex: (d, c*100) for ex, (d, c) in exchange_signals.items()}
+                'exchange_signals': {ex: (d, c*100) for ex, (d, c) in exchange_signals.items()},
+                'epoch_trend': trend_direction,
+                'trend_conflict': trend_conflict
             }
         )
         self.log.debug(f"[{self.name}] {crypto}: {vote.direction} (conf={vote.confidence:.2f}) - {vote.reasoning}")

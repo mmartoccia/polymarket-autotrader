@@ -84,8 +84,8 @@ EARLY_MAX_ENTRY = 0.30            # Early momentum maximum (overridden by MAX_EN
 
 # Exchange confluence requirements
 TECH_MIN_EXCHANGES_AGREE = 2      # Minimum exchanges agreeing on direction
-# Raised from 0.15% to 0.30% to filter random walk noise (±0.05% typical in 15min epochs)
-TECH_CONFLUENCE_THRESHOLD = 0.003  # 0.30% minimum price change
+# Lowered from 0.30% to 0.20% to detect cumulative multi-epoch trends (US-BF-017)
+TECH_CONFLUENCE_THRESHOLD = 0.002  # 0.20% minimum price change
 
 # RSI settings
 TECH_RSI_PERIOD = 14
@@ -101,6 +101,11 @@ TECH_PRICE_WEIGHT = 0.15
 # =============================================================================
 # SENTIMENT AGENT SETTINGS
 # =============================================================================
+
+# EMERGENCY: Disable contrarian fading in trending markets
+# Contrarian strategy only works in choppy/volatile regimes, NOT trending markets
+# When False: SentimentAgent will skip voting (prevents counter-trend trades)
+ENABLE_CONTRARIAN_TRADES = False  # DISABLED: Bot was placing 80% Up trades in downtrend
 
 # Contrarian thresholds
 SENTIMENT_CONTRARIAN_PRICE_THRESHOLD = 0.70  # When one side >70%, consider fading
@@ -124,7 +129,7 @@ SENTIMENT_RSI_WEIGHT = 0.10
 
 # Regime classification thresholds
 REGIME_HIGH_VOLATILITY = 0.015      # 1.5% std dev = volatile
-REGIME_TREND_THRESHOLD = 0.001      # 0.1% mean return = trend
+REGIME_TREND_THRESHOLD = 0.0005     # 0.05% mean return = trend (lowered from 0.10% per US-BF-017)
 REGIME_STRONG_TREND_RATIO = 0.75    # 75% of cryptos agreeing = strong trend
 
 # Lookback period (number of price samples)

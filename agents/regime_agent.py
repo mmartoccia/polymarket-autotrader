@@ -18,7 +18,7 @@ log = logging.getLogger(__name__)
 
 # Regime classification thresholds
 HIGH_VOLATILITY_THRESHOLD = 0.015  # 1.5% std dev
-TREND_THRESHOLD = 0.001            # 0.1% mean return
+TREND_THRESHOLD = 0.0005           # 0.05% mean return (lowered from 0.10% per US-BF-017)
 STRONG_TREND_RATIO = 0.75          # 3 out of 4 cryptos agreeing
 
 
@@ -126,19 +126,32 @@ class RegimeAgent(BaseAgent):
                     'confidence': confidence,
                     'volatility': self.avg_volatility,
                     'weight_adjustments': weight_adjustments,
-                    'crypto_details': regime_data.get('crypto_details', {})
+                    'crypto_details': regime_data.get('crypto_details', {}),
+                    'trend_strength': 'sideways',  # US-BF-017: Add trend_strength even for Skip votes
+                    'mean_return': mean_return
                 }
             )
             self.log.debug(f"[{self.name}] {crypto}: {vote.direction} (conf={vote.confidence:.2f}) - {vote.reasoning}")
             return vote
 
         # For non-sideways regimes, pick direction based on this crypto's trend
-        if mean_return > 0.001:  # Positive trend > 0.1%
+        # US-BF-017: Updated thresholds to use 0.05% (0.0005) instead of 0.10% (0.001)
+        if mean_return > 0.001:  # Strong positive trend > 0.10%
             direction = "Up"
-        elif mean_return < -0.001:  # Negative trend < -0.1%
+            trend_strength = "strong_bull"
+        elif mean_return > 0.0005:  # Weak positive trend 0.05-0.10%
+            direction = "Up"
+            trend_strength = "weak_bull"
+        elif mean_return < -0.001:  # Strong negative trend < -0.10%
             direction = "Down"
+            trend_strength = "strong_bear"
+        elif mean_return < -0.0005:  # Weak negative trend -0.10 to -0.05%
+            direction = "Down"
+            trend_strength = "weak_bear"
         else:
-            # Flat trend - use overall regime to break tie
+            # Sideways trend -0.05 to +0.05%
+            # Use overall regime to break tie
+            trend_strength = "sideways"
             if self.current_regime in ['bull_momentum']:
                 direction = "Up"
             elif self.current_regime in ['bear_momentum']:
@@ -153,9 +166,12 @@ class RegimeAgent(BaseAgent):
 
         reasoning = (
             f"Regime: {self.current_regime} ({confidence:.0%}), "
-            f"{crypto} trend: {mean_return*100:+.2f}% → {direction}, "
+            f"{crypto} trend: {mean_return*100:+.2f}% ({trend_strength}) → {direction}, "
             f"volatility: {self.avg_volatility*100:.2f}%"
         )
+
+        # Log trend strength classification (US-BF-017)
+        self.log.debug(f"[{self.name}] RegimeAgent classified {trend_strength} regime (mean: {mean_return:+.3%})")
 
         vote = Vote(
             direction=direction,  # ALWAYS pick Up or Down
@@ -168,7 +184,9 @@ class RegimeAgent(BaseAgent):
                 'confidence': confidence,
                 'volatility': self.avg_volatility,
                 'weight_adjustments': weight_adjustments,
-                'crypto_details': regime_data.get('crypto_details', {})
+                'crypto_details': regime_data.get('crypto_details', {}),
+                'trend_strength': trend_strength,  # US-BF-017: Add trend strength field
+                'mean_return': mean_return
             }
         )
         self.log.debug(f"[{self.name}] {crypto}: {vote.direction} (conf={vote.confidence:.2f}) - {vote.reasoning}")
