@@ -359,6 +359,74 @@ def notify_redemption(
         logger.error(f"Error in notify_redemption wrapper: {e}", exc_info=True)
 
 
+async def send_alert_notification(
+    level: str,
+    title: str,
+    message: str
+) -> None:
+    """
+    Send notification for critical alerts.
+
+    Args:
+        level: Alert severity level ('critical', 'warning', 'info')
+        title: Alert title
+        message: Detailed alert message
+    """
+    if not NOTIFICATIONS_ENABLED or not _application:
+        return
+
+    try:
+        # Determine emoji based on severity
+        emoji_map = {
+            'critical': '🚨',
+            'warning': '⚠️',
+            'info': 'ℹ️'
+        }
+        emoji = emoji_map.get(level.lower(), '📢')
+
+        # Format timestamp
+        timestamp = datetime.now().strftime('%Y-%m-%d %H:%M UTC')
+
+        # Build notification message
+        notification = (
+            f"{emoji} *{level.upper()} ALERT*\n\n"
+            f"*{title}*\n\n"
+            f"{message}\n\n"
+            f"⏰ {timestamp}"
+        )
+
+        await _application.bot.send_message(
+            chat_id=AUTHORIZED_USER_ID,
+            text=notification,
+            parse_mode='Markdown'
+        )
+        logger.info(f"Alert notification sent: {level} - {title}")
+
+    except Exception as e:
+        logger.error(f"Error sending alert notification: {e}", exc_info=True)
+        # Don't raise - notifications should never break trading bot
+
+
+def notify_alert(level: str, title: str, message: str) -> None:
+    """
+    Synchronous wrapper for send_alert_notification.
+    Safe to call from non-async code (e.g., alert system).
+    """
+    # Run the async function in a new event loop (non-blocking)
+    try:
+        # Create a new event loop for this thread if needed
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
+        loop.run_until_complete(send_alert_notification(
+            level=level,
+            title=title,
+            message=message
+        ))
+        loop.close()
+    except Exception as e:
+        logger.error(f"Error in notify_alert wrapper: {e}", exc_info=True)
+
+
 def main():
     """Start the Telegram bot."""
     if not TELEGRAM_BOT_TOKEN:

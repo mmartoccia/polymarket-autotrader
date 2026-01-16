@@ -120,3 +120,50 @@ Learnings for future iterations:
 - Used try/except around notify_trade() call in trading bot for safety
 
 ---
+## Iteration 3 - US-TG-007: Real-time redemption notifications
+- Implemented send_redemption_notification() async function in telegram_notifier.py
+- Created notify_redemption() synchronous wrapper for calling from non-async trading bot
+- Integrated notification calls in bot/momentum_bot_v12.py after successful redemptions
+- Added notifications for both WINS (when positions are redeemed) and LOSSES (when positions expire)
+- Notification includes: crypto, direction, outcome, P&L, shares, entry price, new balance
+- Error handling: Telegram failures logged but don't crash trading bot
+- Uses emoji: ✅ for wins, ❌ for losses
+- P&L calculation: WIN = shares * $1.00 - cost, LOSS = -cost
+
+Files changed:
+- telegram_bot/telegram_notifier.py: Added send_redemption_notification() and notify_redemption()
+- bot/momentum_bot_v12.py: Added notification calls after successful redemptions (line 2054-2069) and expired positions (line 2091-2106)
+- PRD.md: Marked US-TG-007 as complete
+
+Learnings for future iterations:
+- WIN detection: Positions that are redeemable = won (get $1.00 payout per share)
+- LOSS detection: Positions that expired past their epoch without redemption = lost ($0.00 payout)
+- Win notifications integrated into shadow trading resolution logic (lines 2028-2071)
+- Loss notifications integrated into expired position check (lines 2073-2108)
+- P&L calculation must account for entry cost vs payout (win: shares - cost, loss: -cost)
+- Same async wrapper pattern used as trade notifications (new event loop per call)
+
+---
+## Iteration 4 - US-TG-008: Critical alert notifications
+- Implemented send_alert_notification() async function in telegram_notifier.py
+- Created notify_alert() synchronous wrapper for calling from non-async alert system
+- Integrated notification call in analytics/alert_system.py send_alerts() method
+- Notification includes: severity level (critical/warning/info), title, message, timestamp
+- Error handling: Telegram failures logged but don't crash alert system
+- Uses emoji based on severity: 🚨 critical, ⚠️ warning, ℹ️ info
+- All alerts from alert system now forwarded to Telegram automatically
+
+Files changed:
+- telegram_bot/telegram_notifier.py: Added send_alert_notification() and notify_alert()
+- analytics/alert_system.py: Added Telegram integration in send_alerts() method
+- PRD.md: Marked US-TG-008 as complete
+
+Learnings for future iterations:
+- Alert system uses dataclass Alert with severity, title, message, timestamp
+- Alert types: win_rate_drop, balance_drop, shadow_outperformance, daily_loss_limit, agent_consensus_failure
+- Integration uses try/except to handle ImportError (Telegram not required dependency)
+- Same async wrapper pattern used as trade/redemption notifications (new event loop per call)
+- Alerts automatically logged to logs/alerts.log AND sent to Telegram
+- --test flag in alert_system.py generates test alerts for verification
+
+---

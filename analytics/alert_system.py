@@ -383,7 +383,7 @@ class AlertSystem:
 
     def send_alerts(self):
         """
-        Send alerts by logging to file and printing to stdout.
+        Send alerts by logging to file, printing to stdout, and sending to Telegram.
         """
         if not self.alerts:
             print("✅ No alerts - all systems operational")
@@ -404,6 +404,31 @@ class AlertSystem:
             print()
 
         print(f"Alerts logged to: {self.alert_log_path}")
+
+        # Send to Telegram
+        try:
+            # Import here to avoid circular dependencies and allow running without Telegram
+            from telegram_bot.telegram_notifier import notify_alert
+            TELEGRAM_ENABLED = os.getenv('TELEGRAM_NOTIFICATIONS_ENABLED', 'true').lower() == 'true'
+
+            if TELEGRAM_ENABLED:
+                for alert in self.alerts:
+                    # Extract recommended action from message if present
+                    message_parts = alert.message.split('\n')
+                    clean_message = '\n'.join(message_parts)
+
+                    notify_alert(
+                        level=alert.severity,
+                        title=alert.title,
+                        message=clean_message
+                    )
+                    print(f"  → Sent to Telegram: {alert.severity} - {alert.title}")
+        except ImportError:
+            # Telegram bot not installed - silently skip
+            pass
+        except Exception as e:
+            # Log error but don't crash alert system
+            print(f"⚠️  Warning: Could not send Telegram notifications: {e}", file=sys.stderr)
 
 
 def main():
