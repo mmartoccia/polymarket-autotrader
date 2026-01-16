@@ -314,6 +314,13 @@ def get_current_config() -> dict:
 apply_mode(CURRENT_MODE)
 
 # =============================================================================
+# MACHINE LEARNING MODEL
+# =============================================================================
+
+# Master enable/disable for ML model (disabled due to feature leakage - 40% WR)
+USE_ML_MODEL = False  # Set True to enable ML predictions (bypasses agent voting)
+
+# =============================================================================
 # SHADOW TRADING SYSTEM
 # =============================================================================
 

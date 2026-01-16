@@ -2036,6 +2036,16 @@ def run_bot():
     else:
         log.info("Agent system not available - using legacy logic only")
 
+    # Log ML mode status
+    try:
+        from config import agent_config
+        if not agent_config.USE_ML_MODEL:
+            log.info("🚫 ML mode disabled - using agent-only mode (USE_ML_MODEL=False)")
+        else:
+            log.info("🤖 ML mode available (USE_ML_MODEL=True)")
+    except (ImportError, AttributeError):
+        pass
+
     # Initialize shadow trading orchestrator
     orchestrator = None
     if SHADOW_TRADING_AVAILABLE and agent_config.ENABLE_SHADOW_TRADING:
@@ -2369,8 +2379,13 @@ def run_bot():
                     # Get RSI (needed for both ML and agent modes)
                     rsi_value = rsi_calc.get_rsi(crypto)
 
-                    # Check if ML mode is enabled
-                    use_ml_bot = os.getenv('USE_ML_BOT', 'false').lower() == 'true'
+                    # Check if ML mode is enabled (config flag takes precedence over env var)
+                    try:
+                        from config import agent_config
+                        use_ml_bot = agent_config.USE_ML_MODEL and os.getenv('USE_ML_BOT', 'false').lower() == 'true'
+                    except (ImportError, AttributeError):
+                        # Fallback to env var only if config not available
+                        use_ml_bot = os.getenv('USE_ML_BOT', 'false').lower() == 'true'
 
                     # SHADOW TRADING: Broadcast market data to ALL shadow strategies (runs in both ML and agent modes)
                     if orchestrator:
