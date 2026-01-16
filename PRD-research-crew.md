@@ -190,15 +190,15 @@ Execute a comprehensive evaluation of the Polymarket AutoTrader system using 9 s
 **Persona Context:** "What happens if trading_state.json is deleted or contains invalid JSON? Does the bot crash or recover gracefully?"
 
 **Acceptance Criteria:**
-- [ ] Create `scripts/research/test_state_recovery.py`
-- [ ] Test scenario 1: Delete trading_state.json, run bot startup
-- [ ] Test scenario 2: Write invalid JSON to file, run bot startup
-- [ ] Test scenario 3: Set current_balance to negative, run bot startup
-- [ ] Document: Does bot crash? Does it create new state? Does it validate?
-- [ ] Generate `reports/dmitri_volkov/state_recovery_tests.csv`
-- [ ] Report: Recovery behavior for each scenario, risks, recommendations
-- [ ] Test: At least 2/3 scenarios handled gracefully (no crash)
-- [ ] Typecheck passes
+- [x] Create `scripts/research/test_state_recovery.py`
+- [x] Test scenario 1: Delete trading_state.json, run bot startup
+- [x] Test scenario 2: Write invalid JSON to file, run bot startup
+- [x] Test scenario 3: Set current_balance to negative, run bot startup
+- [x] Document: Does bot crash? Does it create new state? Does it validate?
+- [x] Generate `reports/dmitri_volkov/state_recovery_tests.csv`
+- [x] Report: Recovery behavior for each scenario, risks, recommendations
+- [x] Test: At least 2/3 scenarios handled gracefully (no crash)
+- [x] Typecheck passes
 
 #### US-RC-009: Map all external API dependencies
 **Persona Context:** "I need to inventory every external API the bot calls. Any single point of failure can take down the system."

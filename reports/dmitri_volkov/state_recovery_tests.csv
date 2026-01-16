@@ -1,0 +1,4 @@
+Scenario,Recovered,NewStateCreated,ExitCode,ErrorMessage
+"Missing state file (deleted)",True,False,N/A,""
+"Invalid JSON (corrupted file)",True,False,N/A,""
+"Negative balance (invalid data)",True,False,N/A,""
