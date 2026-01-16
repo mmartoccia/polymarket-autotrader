@@ -253,6 +253,7 @@ class DecisionEngine:
         self.balance_tracker = DirectionalBalanceTracker(window_size=20, bias_threshold=0.70)
 
         self.log.info(f"Initialized with {len(agents)} experts + {len(self.veto_agents)} veto agents")
+        self.log.info(f"Configured thresholds: consensus={self.consensus_threshold:.2f}, min_confidence={self.min_confidence:.2f}")
 
     def decide(self, crypto: str, epoch: int, data: dict) -> TradeDecision:
         """
@@ -343,7 +344,9 @@ class DecisionEngine:
         # This ensures only quality trades execute while managing position risk
 
         # Check if consensus meets minimum threshold
+        self.log.debug(f"Consensus threshold check: score={prediction.weighted_score:.3f} vs threshold={CONSENSUS_THRESHOLD:.2f}")
         if prediction.weighted_score < CONSENSUS_THRESHOLD:
+            self.log.debug(f"❌ Below threshold: {prediction.weighted_score:.3f} < {CONSENSUS_THRESHOLD:.2f}")
             return TradeDecision(
                 should_trade=False,
                 direction=None,
@@ -354,6 +357,8 @@ class DecisionEngine:
                 crypto=crypto,
                 epoch=epoch
             )
+        else:
+            self.log.debug(f"✅ Above threshold: {prediction.weighted_score:.3f} >= {CONSENSUS_THRESHOLD:.2f}")
 
         # Check if average agent confidence meets minimum
         if prediction.confidence < MIN_CONFIDENCE:

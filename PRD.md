@@ -181,12 +181,12 @@ This PRD addresses both the underlying bugs AND profitability restoration throug
 **Description:** As a developer, I need to confirm the consensus threshold is correctly enforced as configured (0.75) with debug logging.
 
 **Acceptance Criteria:**
-- [ ] Add debug logging in coordinator/decision_engine.py line 200
-- [ ] Log: "Consensus threshold check: {score} vs {threshold}"
-- [ ] Log includes configured threshold value on startup
-- [ ] Test: Score 0.74 → logged as "below threshold"
-- [ ] Test: Score 0.76 → logged as "above threshold"
-- [ ] Typecheck passes
+- [x] Add debug logging in coordinator/decision_engine.py line 200
+- [x] Log: "Consensus threshold check: {score} vs {threshold}"
+- [x] Log includes configured threshold value on startup
+- [x] Test: Score 0.74 → logged as "below threshold"
+- [x] Test: Score 0.76 → logged as "above threshold"
+- [x] Typecheck passes
 
 ### US-BF-012: Add threshold debug logging
 **Description:** As a developer, I need comprehensive debug logging for all threshold checks to diagnose future issues quickly.

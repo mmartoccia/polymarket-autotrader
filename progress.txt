@@ -228,3 +228,24 @@
   - All 6 tests passed, syntax check passed
   - Class is ready for integration in next task (US-BF-009)
 ---
+## Iteration 13 - US-BF-009: Integrate balance tracker
+- Instantiated DirectionalBalanceTracker in DecisionEngine.__init__ (line 253)
+- Added tracker.record() call after vote aggregation (line 323)
+- Added has_bias() check and warning log when >70% bias detected (lines 326-328)
+- Recording happens AFTER prediction aggregation but BEFORE trade execution checks
+- Files changed:
+  - coordinator/decision_engine.py (added tracker instantiation and recording logic)
+  - test_balance_integration_simple.py (created comprehensive test suite with 5 tests)
+  - PRD.md (marked US-BF-009 complete)
+- Learnings for future iterations:
+  - Balance tracker automatically filters Skip/Neutral votes (only tracks Up/Down)
+  - Recording happens early in decide() method - tracks ALL decisions with direction
+  - This includes decisions that don't trade (low confidence, vetoed, etc.)
+  - Conditional check (if prediction.direction:) prevents errors when no direction
+  - Warning logged at INFO level when bias detected (⚠️ emoji for visibility)
+  - get_balance_summary() provides human-readable format: "Up 75% | Down 25% ⚠️ BIAS DETECTED"
+  - Recording after aggregation ensures we only track final consensus direction (not individual votes)
+  - All 5 tests passed: instantiation, record call, warning log, logic flow, conditional recording
+  - Typecheck passed for decision_engine.py
+  - Integration complete: Balance tracker will now alert on directional cascades (>70% same direction)
+---
