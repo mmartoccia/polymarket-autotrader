@@ -12,9 +12,9 @@ Controls behavior of the multi-expert consensus trading system.
 # Master enable/disable switch
 AGENT_SYSTEM_ENABLED = True  # Set True to enable agent decisions, False for log-only
 
-# Consensus requirements (RAISED Jan 15, 2026 - reduce low-quality trades after 87% loss)
-CONSENSUS_THRESHOLD = 0.75     # Minimum weighted score to trade (RAISED from 0.40)
-MIN_CONFIDENCE = 0.60          # Minimum average agent confidence (RAISED from 0.40)
+# Consensus requirements (US-RI-005: Jan 16, 2026 - further raise to reduce marginal trades)
+CONSENSUS_THRESHOLD = 0.82     # Minimum weighted score to trade (RAISED from 0.75 → optimal per research)
+MIN_CONFIDENCE = 0.65          # Minimum average agent confidence (RAISED from 0.60)
 MIN_INDIVIDUAL_CONFIDENCE = 0.30  # Minimum per-agent confidence (enforced in vote_aggregator.py)
 ADAPTIVE_WEIGHTS = True        # Enable performance-based weight tuning
 
@@ -265,9 +265,9 @@ DEPLOYMENT_MODES = {
     },
     'conservative': {
         'AGENT_SYSTEM_ENABLED': True,
-        'CONSENSUS_THRESHOLD': 0.75,
-        'MIN_CONFIDENCE': 0.60,
-        'description': 'Higher threshold, more selective trades'
+        'CONSENSUS_THRESHOLD': 0.82,
+        'MIN_CONFIDENCE': 0.65,
+        'description': 'Higher threshold, more selective trades (US-RI-005 optimized)'
     },
     'moderate': {
         'AGENT_SYSTEM_ENABLED': True,

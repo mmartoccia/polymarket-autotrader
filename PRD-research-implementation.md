@@ -174,10 +174,10 @@ this PRD translates findings into executable code changes to achieve 60-65% win 
 - Need higher confidence bar for consistent profitability
 
 **Acceptance Criteria:**
-- [ ] 1. Read `reports/sarah_chen/statistical_significance.md`
-- [ ] 2. Calculate optimal threshold:
-- [ ] 3. Update `config/agent_config.py`:
-- [ ] Typecheck passes
+- [x] 1. Read `reports/sarah_chen/statistical_significance.md`
+- [x] 2. Calculate optimal threshold:
+- [x] 3. Update `config/agent_config.py`:
+- [x] Typecheck passes
 - [ ] Verify success metrics:
   - Trade frequency: Drop 30-40% (expected)
   - Win rate: Improve 3-5% (higher quality trades)
