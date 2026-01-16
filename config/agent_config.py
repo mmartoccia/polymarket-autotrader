@@ -105,7 +105,7 @@ TECH_PRICE_WEIGHT = 0.15
 # EMERGENCY: Disable contrarian fading in trending markets
 # Contrarian strategy only works in choppy/volatile regimes, NOT trending markets
 # When False: SentimentAgent will skip voting (prevents counter-trend trades)
-ENABLE_CONTRARIAN_TRADES = False  # DISABLED: Bot was placing 80% Up trades in downtrend
+ENABLE_CONTRARIAN_TRADES = True  # ENABLED: Choppy market regime - contrarian strategy optimal (Jan 16, 2026)
 
 # Contrarian thresholds
 SENTIMENT_CONTRARIAN_PRICE_THRESHOLD = 0.70  # When one side >70%, consider fading
