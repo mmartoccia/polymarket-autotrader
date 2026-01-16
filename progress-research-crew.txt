@@ -1088,3 +1088,70 @@
 
 ---
 
+
+## Iteration 17 - US-RC-009: Map all external API dependencies
+**Persona:** Dmitri "The Hammer" Volkov (System Reliability Engineer)
+**Completed:** 2026-01-16 13:10
+**Files Changed:**
+- scripts/research/map_api_dependencies.py (created)
+- reports/dmitri_volkov/api_dependency_map.md (generated)
+- PRD-research-crew.md (marked US-RC-009 complete)
+
+**Learnings:**
+- Pattern: API dependency mapping requires multi-step approach
+  - Use grep to find API URLs in code
+  - Extract timeout values with regex
+  - Check error handling by reading actual code files (grep context windows too narrow)
+- Pattern: Error handling detection needs file reading, not just grep
+  - Grep with context (-A/-B flags) misses try/except blocks that are far from API calls
+  - Solution: Read the full file and check for presence of both 'try:' and 'except'
+- Pattern: Comprehensive API inventory includes 7 services
+  - Polymarket APIs: Gamma (markets), CLOB (orders), Data (positions)
+  - Exchange APIs: Binance, Kraken, Coinbase (price feeds)
+  - Blockchain: Polygon RPC (balance checks, redemptions)
+- Pattern: Timeout configuration varies by API criticality
+  - Price feeds: 2s (fast responses expected)
+  - Market data: 3s (slightly slower)
+  - Historical data: 5s (can be slower)
+- Gotcha: Status assessment must check both timeouts AND error handling
+  - Initial logic only checked timeouts
+  - EXCELLENT status requires ALL APIs have BOTH timeouts and error handling
+- Context: Bot has GOOD API resilience infrastructure
+  - 5/7 APIs have timeouts (Polygon RPC and Data API missing)
+  - All 7 APIs have error handling (try/except blocks present)
+  - Circuit breaker patterns detected (cooldown periods)
+  - Recommendation: Add missing timeouts (critical priority)
+
+**Implementation Notes:**
+- Created comprehensive API dependency mapper with APIEndpoint dataclass
+- Implements 4 analysis phases:
+  1. Map API dependencies (7 external services)
+  2. Audit timeout configuration (regex search for timeout params)
+  3. Detect circuit breaker patterns (5 pattern types: consecutive_fail, error_count, circuit_breaker, backoff, cooldown)
+  4. Analyze single points of failure
+- APIEndpoint dataclass tracks:
+  - name, url_pattern, purpose, found_in_code
+  - timeout_configured, timeout_value, retry_logic
+  - error_handling, fallback_present
+- Scan logic:
+  - Use subprocess grep to find API URLs
+  - Extract timeout values with regex
+  - Check error handling by reading bot code files
+- Report structure:
+  1. Executive summary with status (EXCELLENT/GOOD/POOR/UNKNOWN)
+  2. API dependency inventory table (7 services)
+  3. Timeout configuration audit (2s, 3s, 5s values found)
+  4. Circuit breaker analysis (3 patterns detected)
+  5. Single points of failure (3 critical dependencies)
+  6. Recommendations prioritized by severity (CRITICAL/HIGH/MEDIUM)
+  7. Failure mode testing (4 chaos engineering tests)
+  8. Implementation timeline (3-week plan)
+- Exit code: 0 (GOOD status achieved)
+- Typecheck passed with py_compile
+- Successfully audited bot code and generated comprehensive API reliability report
+
+**Key Finding:**
+🟡 GOOD: Bot has strong API reliability infrastructure. 5/7 APIs have timeouts, ALL 7 have error handling. Missing timeouts on Polygon RPC and Data API (critical priority to add). Circuit breaker patterns detected. Single points of failure identified with mitigation strategies.
+
+---
+

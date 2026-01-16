@@ -204,14 +204,14 @@ Execute a comprehensive evaluation of the Polymarket AutoTrader system using 9 s
 **Persona Context:** "I need to inventory every external API the bot calls. Any single point of failure can take down the system."
 
 **Acceptance Criteria:**
-- [ ] Create `scripts/research/map_api_dependencies.py`
-- [ ] Scan `bot/momentum_bot_v12.py` for all `requests.get()` and `requests.post()` calls
-- [ ] Extract: API endpoint, purpose, timeout setting, retry logic
-- [ ] Identify APIs: Polymarket (Gamma, CLOB, Data), Exchanges (Binance, Kraken, Coinbase), Polygon RPC
-- [ ] Generate `reports/dmitri_volkov/api_dependency_map.md`
-- [ ] Report: List of APIs, single points of failure, missing timeouts, missing error handling
-- [ ] Test: Script successfully parses bot code and finds ≥5 API endpoints
-- [ ] Typecheck passes
+- [x] Create `scripts/research/map_api_dependencies.py`
+- [x] Scan `bot/momentum_bot_v12.py` for all `requests.get()` and `requests.post()` calls
+- [x] Extract: API endpoint, purpose, timeout setting, retry logic
+- [x] Identify APIs: Polymarket (Gamma, CLOB, Data), Exchanges (Binance, Kraken, Coinbase), Polygon RPC
+- [x] Generate `reports/dmitri_volkov/api_dependency_map.md`
+- [x] Report: List of APIs, single points of failure, missing timeouts, missing error handling
+- [x] Test: Script successfully parses bot code and finds ≥5 API endpoints (found 7)
+- [x] Typecheck passes
 
 #### US-RC-010: Check VPS service uptime and restarts
 **Persona Context:** "If the bot is restarting frequently, there's an underlying stability issue I need to find."
