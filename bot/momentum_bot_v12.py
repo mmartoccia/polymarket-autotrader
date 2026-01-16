@@ -2173,7 +2173,11 @@ def run_bot():
             portfolio_value = balance + positions_value
 
             state.current_balance = balance
-            state.peak_balance = max(state.peak_balance, balance)  # FIX: Track peak cash, not position estimates
+            # TEMPORARY: Disabled automatic peak tracking to allow manual reset (Jan 16, 2026)
+            # state.peak_balance = max(state.peak_balance, balance)  # FIX: Track peak cash, not position estimates
+            # TODO: Re-enable after manual reset verified
+            if state.peak_balance == 0:  # Only initialize if zero
+                state.peak_balance = balance
             state.daily_pnl = portfolio_value - state.day_start_balance
 
             # 4. RUN ALERT CHECKS (every 10 minutes)
