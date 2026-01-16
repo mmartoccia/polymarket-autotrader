@@ -2060,3 +2060,86 @@ Cannot make ML deployment decision without actual performance data.
 Drawdown formula is mathematically correct, but peak tracking implementation was flawed. Bug caused false halt at 48% drawdown when actual drawdown was 0%. Current mitigation (disabled automatic tracking) prevents false halts but requires manual intervention. Recommended fix: Update peak only on redemption events using cash-only balance.
 
 ---
+
+## Iteration 23 - US-RC-023: Stress test position sizing with Monte Carlo
+**Persona:** Colonel Rita "The Guardian" Stevens (Risk Management Architect)
+**Completed:** 2026-01-16 14:18
+**Files Changed:**
+- scripts/research/position_sizing_stress_test.py (created)
+- reports/rita_stevens/stress_test_results.csv (generated)
+- reports/rita_stevens/stress_test_results.md (generated)
+- PRD-research-crew.md (marked US-RC-023 complete)
+
+**Learnings:**
+- Pattern: Monte Carlo stress testing validates risk controls under extreme scenarios
+  - 10 consecutive losses = realistic worst-case for position sizing
+  - Each loss assumes complete loss of bet (price → $0.00)
+  - Tests multiple balance levels to validate tier transitions
+- Pattern: Tiered position sizing effectiveness measured by drawdown
+  - Successful sizing = keeps drawdown <30% (halt threshold)
+  - Adaptive sizing = bet size reduces as balance declines
+  - Failed sizing = exceeds halt threshold before 10 losses
+- CRITICAL FINDING: Current tiered sizing is INSUFFICIENT
+  - $50 start: 73.8% drawdown (exceeds 30% halt)
+  - $100 start: 60.2% drawdown (exceeds 30% halt)
+  - $200 start: 45.0% drawdown (exceeds 30% halt)
+  - ALL tested scenarios exceed halt threshold
+- Gotcha: Exit code 1 is intentional when critical risk detected
+  - Signals automated systems to flag results
+  - Not a script failure - successful detection of problem
+- Context: Position sizing recommendations from analysis
+  - Reduce <$30 tier from 15% → 10% per trade
+  - Add loss streak circuit breaker (halt after 7 consecutive losses)
+  - Implement adaptive sizing: reduce all tiers by 50% after 5 losses
+  - Consider lower minimum bet ($0.75 if CLOB allows)
+- Context: Report structure for risk assessment
+  - Executive summary with verdict (PASS/FAIL/CRITICAL)
+  - Detailed per-scenario analysis with bet evolution
+  - Tiered sizing effectiveness measurement
+  - Actionable recommendations prioritized by severity
+
+**Implementation Notes:**
+- Created comprehensive stress test simulator
+- PositionSizingStressTest class encapsulates:
+  - POSITION_TIERS configuration (matches bot config)
+  - calculate_position_size() - applies tiered logic
+  - simulate_loss_streak() - runs N consecutive losses
+  - run_stress_tests() - tests multiple balance levels
+  - generate_csv_report() - structured data output
+  - generate_markdown_report() - detailed analysis
+- StressTestResult dataclass tracks:
+  - scenario_name, starting_balance, ending_balance
+  - total_loss_usd, drawdown_pct
+  - max_bet_size, min_bet_size, avg_bet_size
+  - bet_sizes (sequence), exceeds_halt_threshold
+- Simulation logic:
+  - Start with initial balance
+  - Calculate bet size using tiered formula
+  - Subtract full bet amount (worst case: total loss)
+  - Repeat for 10 losses or until balance hits $0
+  - Track drawdown vs 30% halt threshold
+- CSV report structure:
+  - One row per scenario
+  - Columns: balance, loss, drawdown, bets, halt status
+  - Bet sequence visualization (e.g., "$5.00 → $4.50 → $4.05...")
+- Markdown report structure:
+  1. Executive summary with status (CRITICAL/PASS)
+  2. Configuration details (tiers, constraints)
+  3. Per-scenario detailed results with bet evolution
+  4. Analysis (tier effectiveness, threshold proximity)
+  5. Recommendations (prioritized by severity)
+  6. Conclusion with verdict and next steps
+- Critical findings documented:
+  - All 3 tested scenarios exceed 30% halt threshold
+  - Worst case: 73.8% drawdown at $50 starting balance
+  - Position sizing insufficient for 10-loss streak protection
+  - Immediate action required: adjust tier percentages
+- Handles edge cases: balance hits $0 before 10 losses
+- Exit code logic: 0 if safe, 1 if critical risk
+- Typecheck passed with py_compile
+- Successfully identified systemic risk in position sizing
+
+**Key Insight:**
+The stress test revealed a CRITICAL vulnerability: current tiered position sizing does NOT protect against 10-loss streaks at any tested balance level. This is a major risk management failure that requires immediate remediation. The 15% tier at low balances ($<30) is particularly dangerous, causing 73.8% drawdown from $50. This validates Colonel Stevens' approach: "Plan for failure. Stress test everything." The simulation prevented discovering this vulnerability in production with real money.
+
+---

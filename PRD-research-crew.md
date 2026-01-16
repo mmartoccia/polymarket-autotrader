@@ -425,14 +425,14 @@ Execute a comprehensive evaluation of the Polymarket AutoTrader system using 9 s
 **Persona Context:** "Max 4 positions, max 3 same direction, max 8% directional exposure. Are these hard limits or just suggestions?"
 
 **Acceptance Criteria:**
-- [ ] Review code: `agents/risk_agent.py` → check_correlation_limits()
-- [ ] Verify: Are limits enforced BEFORE order placement? (should be)
-- [ ] Parse logs: Search for "BLOCKED: Position limit" messages
-- [ ] Count: How many trades rejected due to limits? (proves enforcement)
-- [ ] Generate `reports/rita_stevens/position_limits_audit.md`
-- [ ] Report: Limits enforced (yes/no), rejected trade count, any violations found
-- [ ] Test: Limits are enforced in code (not just logged)
-- [ ] Typecheck passes
+- [x] Review code: `agents/risk_agent.py` → check_correlation_limits()
+- [x] Verify: Are limits enforced BEFORE order placement? (should be)
+- [x] Parse logs: Search for "BLOCKED: Position limit" messages
+- [x] Count: How many trades rejected due to limits? (proves enforcement)
+- [x] Generate `reports/rita_stevens/position_limits_audit.md`
+- [x] Report: Limits enforced (yes/no), rejected trade count, any violations found
+- [x] Test: Limits are enforced in code (not just logged)
+- [x] Typecheck passes
 
 ---
 

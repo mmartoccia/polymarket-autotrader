@@ -1,0 +1,249 @@
+2026-01-13 20:27:44,760 -   [XRP] BLOCKED: Already have position in xrp
+2026-01-13 20:58:01,304 -   [XRP] BLOCKED: Already have position in xrp
+2026-01-13 20:59:21,006 -   [ETH] BLOCKED: Already have position in eth
+2026-01-15 16:00:28,233 -   [ETH] BLOCKED: Already have position in eth
+2026-01-15 16:02:52,153 -   [ETH] BLOCKED: Already have position in eth
+2026-01-15 17:05:04,454 -   [ETH] BLOCKED: Already have eth Up position - cannot bet both sides!
+2026-01-15 17:05:06,327 -   [SOL] BLOCKED: Already have sol Up position (size: 22.7 shares)
+2026-01-15 17:05:08,354 -   [XRP] BLOCKED: Already have xrp Up position (size: 23.6 shares)
+2026-01-15 17:05:18,387 -   [ETH] BLOCKED: Already have eth Up position - cannot bet both sides!
+2026-01-15 17:05:20,248 -   [SOL] BLOCKED: Already have sol Up position - cannot bet both sides!
+2026-01-15 17:05:22,082 -   [XRP] BLOCKED: Already have xrp Up position (size: 23.6 shares)
+2026-01-15 17:05:32,607 -   [ETH] BLOCKED: Already have eth Up position - cannot bet both sides!
+2026-01-15 17:05:34,456 -   [SOL] BLOCKED: Already have sol Up position - cannot bet both sides!
+2026-01-15 17:05:36,413 -   [XRP] BLOCKED: Already have xrp Up position (size: 23.6 shares)
+2026-01-15 17:05:49,023 -   [SOL] BLOCKED: Already have sol Up position - cannot bet both sides!
+2026-01-15 17:05:50,870 -   [XRP] BLOCKED: Already have xrp Up position (size: 23.6 shares)
+2026-01-15 17:06:06,425 -   [ETH] BLOCKED: Already have eth Up position - cannot bet both sides!
+2026-01-15 17:06:08,532 -   [SOL] BLOCKED: Already have sol Up position (size: 22.7 shares)
+2026-01-15 17:06:19,450 -   [ETH] BLOCKED: Already have eth Up position (size: 50.2 shares)
+2026-01-15 17:06:21,350 -   [SOL] BLOCKED: Already have sol Up position (size: 22.7 shares)
+2026-01-15 17:06:32,858 -   [ETH] BLOCKED: Already have eth Up position (size: 50.2 shares)
+2026-01-15 17:11:31,906 -   [SOL] BLOCKED: Already have sol Up position (size: 22.7 shares)
+2026-01-15 17:20:15,498 -   [ETH] BLOCKED: Already have eth Up position - cannot bet both sides!
+2026-01-15 17:20:17,483 -   [SOL] BLOCKED: Already have sol Up position - cannot bet both sides!
+2026-01-15 17:20:19,499 -   [XRP] BLOCKED: Already have xrp Up position - cannot bet both sides!
+2026-01-15 17:21:13,072 -   [SOL] BLOCKED: Already have sol Up position - cannot bet both sides!
+2026-01-15 17:21:14,970 -   [XRP] BLOCKED: Already have xrp Up position - cannot bet both sides!
+2026-01-15 17:21:28,217 -   [XRP] BLOCKED: Already have xrp Up position (size: 16.7 shares)
+2026-01-15 17:21:39,813 -   [SOL] BLOCKED: Already have sol Up position - cannot bet both sides!
+2026-01-15 17:21:41,763 -   [XRP] BLOCKED: Already have xrp Up position (size: 16.7 shares)
+2026-01-15 17:21:52,780 -   [SOL] BLOCKED: Already have sol Up position - cannot bet both sides!
+2026-01-15 17:21:54,598 -   [XRP] BLOCKED: Already have xrp Up position (size: 16.7 shares)
+2026-01-15 17:22:04,266 -   [ETH] BLOCKED: Already have eth Up position - cannot bet both sides!
+2026-01-15 17:22:06,142 -   [SOL] BLOCKED: Already have sol Up position - cannot bet both sides!
+2026-01-15 17:22:08,137 -   [XRP] BLOCKED: Already have xrp Up position (size: 16.7 shares)
+2026-01-15 17:22:17,775 -   [ETH] BLOCKED: Already have eth Up position - cannot bet both sides!
+2026-01-15 17:22:19,707 -   [SOL] BLOCKED: Already have sol Up position - cannot bet both sides!
+2026-01-15 17:22:21,751 -   [XRP] BLOCKED: Already have xrp Up position (size: 16.7 shares)
+2026-01-15 17:22:35,334 -   [XRP] BLOCKED: Already have xrp Up position - cannot bet both sides!
+2026-01-15 17:22:45,369 -   [ETH] BLOCKED: Already have eth Up position - cannot bet both sides!
+2026-01-15 17:22:48,907 -   [XRP] BLOCKED: Already have xrp Up position - cannot bet both sides!
+2026-01-15 17:22:59,449 -   [ETH] BLOCKED: Already have eth Up position - cannot bet both sides!
+2026-01-15 17:23:03,127 -   [XRP] BLOCKED: Already have xrp Up position - cannot bet both sides!
+2026-01-15 17:23:14,685 -   [SOL] BLOCKED: Already have sol Up position - cannot bet both sides!
+2026-01-15 17:23:16,684 -   [XRP] BLOCKED: Already have xrp Up position (size: 16.7 shares)
+2026-01-15 17:23:26,481 -   [ETH] BLOCKED: Already have eth Up position - cannot bet both sides!
+2026-01-15 17:24:07,124 -   [XRP] BLOCKED: Already have xrp Up position - cannot bet both sides!
+2026-01-15 17:24:19,553 -   [XRP] BLOCKED: Already have xrp Up position - cannot bet both sides!
+2026-01-15 17:24:31,745 -   [XRP] BLOCKED: Already have xrp Up position - cannot bet both sides!
+2026-01-15 17:24:43,321 -   [SOL] BLOCKED: Already have sol Up position - cannot bet both sides!
+2026-01-15 17:24:45,232 -   [XRP] BLOCKED: Already have xrp Up position (size: 16.7 shares)
+2026-01-15 17:24:56,453 -   [SOL] BLOCKED: Already have sol Up position - cannot bet both sides!
+2026-01-15 17:24:58,331 -   [XRP] BLOCKED: Already have xrp Up position (size: 16.7 shares)
+2026-01-15 17:25:11,699 -   [XRP] BLOCKED: Already have xrp Up position - cannot bet both sides!
+2026-01-15 17:25:22,552 -   [SOL] BLOCKED: Already have sol Up position - cannot bet both sides!
+2026-01-15 17:25:24,402 -   [XRP] BLOCKED: Already have xrp Up position (size: 16.7 shares)
+2026-01-15 17:25:37,884 -   [XRP] BLOCKED: Already have xrp Up position (size: 16.7 shares)
+2026-01-15 17:45:25,794 -   [ETH] BLOCKED: Already have eth Up position (size: 13.8 shares)
+2026-01-15 17:45:27,774 -   [SOL] BLOCKED: Already have sol Up position - cannot bet both sides!
+2026-01-15 17:45:29,668 -   [XRP] BLOCKED: Already have xrp Up position - cannot bet both sides!
+2026-01-15 17:45:39,373 -   [ETH] BLOCKED: Already have eth Up position (size: 13.8 shares)
+2026-01-15 17:45:41,206 -   [SOL] BLOCKED: Already have sol Up position - cannot bet both sides!
+2026-01-15 17:45:43,150 -   [XRP] BLOCKED: Already have xrp Up position - cannot bet both sides!
+2026-01-15 17:45:58,080 -   [ETH] BLOCKED: Already have eth Up position - cannot bet both sides!
+2026-01-15 17:46:00,142 -   [SOL] BLOCKED: Already have sol Up position - cannot bet both sides!
+2026-01-15 17:46:02,272 -   [XRP] BLOCKED: Already have xrp Up position - cannot bet both sides!
+2026-01-15 17:46:12,700 -   [ETH] BLOCKED: Already have eth Up position - cannot bet both sides!
+2026-01-15 17:46:14,634 -   [SOL] BLOCKED: Already have sol Up position - cannot bet both sides!
+2026-01-15 17:46:16,521 -   [XRP] BLOCKED: Already have xrp Up position - cannot bet both sides!
+2026-01-15 17:46:33,531 -   [SOL] BLOCKED: Already have sol Up position (size: 16.7 shares)
+2026-01-15 17:46:35,470 -   [XRP] BLOCKED: Already have xrp Up position (size: 16.7 shares)
+2026-01-15 17:46:45,884 -   [ETH] BLOCKED: Already have eth Up position (size: 13.8 shares)
+2026-01-15 17:46:47,805 -   [SOL] BLOCKED: Already have sol Up position - cannot bet both sides!
+2026-01-15 17:46:49,631 -   [XRP] BLOCKED: Already have xrp Up position (size: 16.7 shares)
+2026-01-15 17:47:01,865 -   [SOL] BLOCKED: Already have sol Up position - cannot bet both sides!
+2026-01-15 17:47:03,841 -   [XRP] BLOCKED: Already have xrp Up position (size: 16.7 shares)
+2026-01-15 17:47:18,992 -   [ETH] BLOCKED: Already have eth Up position - cannot bet both sides!
+2026-01-15 17:47:20,853 -   [SOL] BLOCKED: Already have sol Up position - cannot bet both sides!
+2026-01-15 17:47:22,890 -   [XRP] BLOCKED: Already have xrp Up position (size: 16.7 shares)
+2026-01-15 18:00:40,501 -   [ETH] BLOCKED: Already have eth Up position - cannot bet both sides!
+2026-01-15 18:00:42,422 -   [SOL] BLOCKED: Already have sol Up position - cannot bet both sides!
+2026-01-15 18:00:44,343 -   [XRP] BLOCKED: Already have xrp Up position - cannot bet both sides!
+2026-01-15 18:00:54,497 -   [ETH] BLOCKED: Already have eth Up position - cannot bet both sides!
+2026-01-15 18:00:56,455 -   [SOL] BLOCKED: Already have sol Up position - cannot bet both sides!
+2026-01-15 18:00:58,367 -   [XRP] BLOCKED: Already have xrp Up position - cannot bet both sides!
+2026-01-15 18:01:09,087 -   [ETH] BLOCKED: Already have eth Up position - cannot bet both sides!
+2026-01-15 18:01:11,259 -   [SOL] BLOCKED: Already have sol Up position - cannot bet both sides!
+2026-01-15 18:01:13,227 -   [XRP] BLOCKED: Already have xrp Up position - cannot bet both sides!
+2026-01-15 18:01:24,429 -   [ETH] BLOCKED: Already have eth Up position - cannot bet both sides!
+2026-01-15 18:01:26,233 -   [SOL] BLOCKED: Already have sol Up position - cannot bet both sides!
+2026-01-15 18:01:28,201 -   [XRP] BLOCKED: Already have xrp Up position - cannot bet both sides!
+2026-01-15 18:01:37,767 -   [ETH] BLOCKED: Already have eth Up position - cannot bet both sides!
+2026-01-15 18:01:41,384 -   [XRP] BLOCKED: Already have xrp Up position - cannot bet both sides!
+2026-01-15 18:01:51,696 -   [ETH] BLOCKED: Already have eth Up position - cannot bet both sides!
+2026-01-15 18:02:10,779 -   [ETH] BLOCKED: Already have eth Up position - cannot bet both sides!
+2026-01-15 18:02:14,288 -   [XRP] BLOCKED: Already have xrp Up position - cannot bet both sides!
+2026-01-15 18:02:29,100 -   [XRP] BLOCKED: Already have xrp Up position - cannot bet both sides!
+2026-01-15 18:02:39,447 -   [ETH] BLOCKED: Already have eth Up position - cannot bet both sides!
+2026-01-15 18:02:43,106 -   [XRP] BLOCKED: Already have xrp Up position - cannot bet both sides!
+2026-01-15 18:03:01,791 -   [XRP] BLOCKED: Already have xrp Up position - cannot bet both sides!
+2026-01-15 18:03:15,519 -   [XRP] BLOCKED: Already have xrp Up position - cannot bet both sides!
+2026-01-15 18:03:57,510 -   [ETH] BLOCKED: Already have eth Up position - cannot bet both sides!
+2026-01-15 18:03:59,449 -   [SOL] BLOCKED: Already have sol Up position - cannot bet both sides!
+2026-01-15 18:04:01,468 -   [XRP] BLOCKED: Already have xrp Up position (size: 16.7 shares)
+2026-01-15 18:05:05,280 -   [XRP] BLOCKED: Already have xrp Up position - cannot bet both sides!
+2026-01-15 18:05:34,735 -   [XRP] BLOCKED: Already have xrp Up position (size: 12.8 shares)
+2026-01-15 18:15:17,030 -   [XRP] BLOCKED: Already have xrp Up position - cannot bet both sides!
+2026-01-15 18:15:27,562 -   [ETH] BLOCKED: Already have eth Up position - cannot bet both sides!
+2026-01-15 18:15:31,280 -   [XRP] BLOCKED: Already have xrp Up position - cannot bet both sides!
+2026-01-15 18:15:51,094 -   [XRP] BLOCKED: Already have xrp Up position - cannot bet both sides!
+2026-01-15 18:17:15,836 -   [ETH] BLOCKED: Already have eth Up position (size: 12.8 shares)
+2026-01-15 18:17:17,732 -   [SOL] BLOCKED: Already have sol Up position (size: 9.0 shares)
+2026-01-15 18:17:35,895 -   [ETH] BLOCKED: Already have eth Up position (size: 12.8 shares)
+2026-01-15 18:17:37,961 -   [SOL] BLOCKED: Already have sol Up position (size: 9.0 shares)
+2026-01-15 18:18:15,931 -   [ETH] BLOCKED: Already have eth Up position (size: 12.8 shares)
+2026-01-15 18:18:17,830 -   [SOL] BLOCKED: Already have sol Up position (size: 9.0 shares)
+2026-01-15 18:18:32,132 -   [SOL] BLOCKED: Already have sol Up position - cannot bet both sides!
+2026-01-15 18:18:46,780 -   [SOL] BLOCKED: Already have sol Up position - cannot bet both sides!
+2026-01-15 18:18:57,598 -   [ETH] BLOCKED: Already have eth Up position (size: 10.8 shares)
+2026-01-15 18:18:59,490 -   [SOL] BLOCKED: Already have sol Up position - cannot bet both sides!
+2026-01-15 18:19:10,678 -   [ETH] BLOCKED: Already have eth Up position (size: 10.8 shares)
+2026-01-15 18:19:12,626 -   [SOL] BLOCKED: Already have sol Up position - cannot bet both sides!
+2026-01-15 18:19:22,963 -   [ETH] BLOCKED: Already have eth Up position (size: 10.8 shares)
+2026-01-15 18:19:24,887 -   [SOL] BLOCKED: Already have sol Up position - cannot bet both sides!
+2026-01-15 18:19:36,364 -   [ETH] BLOCKED: Already have eth Up position (size: 10.8 shares)
+2026-01-15 18:19:38,246 -   [SOL] BLOCKED: Already have sol Up position - cannot bet both sides!
+2026-01-15 18:19:49,582 -   [ETH] BLOCKED: Already have eth Up position (size: 10.8 shares)
+2026-01-15 18:19:51,481 -   [SOL] BLOCKED: Already have sol Up position - cannot bet both sides!
+2026-01-15 18:20:04,826 -   [SOL] BLOCKED: Already have sol Up position - cannot bet both sides!
+2026-01-15 18:20:17,898 -   [SOL] BLOCKED: Already have sol Up position (size: 9.0 shares)
+2026-01-15 18:20:36,585 -   [ETH] BLOCKED: Already have eth Up position (size: 23.8 shares)
+2026-01-15 18:20:38,377 -   [SOL] BLOCKED: Already have sol Up position (size: 9.0 shares)
+2026-01-15 18:20:54,982 -   [ETH] BLOCKED: Already have eth Up position (size: 23.8 shares)
+2026-01-15 18:20:56,846 -   [SOL] BLOCKED: Already have sol Up position (size: 9.0 shares)
+2026-01-15 18:34:14,161 -   [SOL] BLOCKED: Already have sol Up position (size: 14.0 shares)
+2026-01-15 18:35:30,700 -   [ETH] BLOCKED: Already have eth Up position (size: 30.6 shares)
+2026-01-15 18:35:56,789 -   [ETH] BLOCKED: Already have eth Up position (size: 30.6 shares)
+2026-01-15 18:37:42,449 -   [XRP] BLOCKED: Already have xrp Up position (size: 32.8 shares)
+2026-01-15 18:44:59,310 -   [XRP] BLOCKED: Already have xrp Up position (size: 32.8 shares)
+2026-01-15 18:45:26,668 -   [XRP] BLOCKED: Already have xrp Up position - cannot bet both sides!
+2026-01-15 18:46:14,886 -   [ETH] BLOCKED: Already have eth Up position (size: 30.6 shares)
+2026-01-15 18:46:16,802 -   [SOL] BLOCKED: Already have sol Up position (size: 14.0 shares)
+2026-01-15 18:46:18,720 -   [XRP] BLOCKED: Already have xrp Up position (size: 32.8 shares)
+2026-01-15 18:47:00,596 -   [SOL] BLOCKED: Already have sol Up position (size: 14.0 shares)
+2026-01-15 18:47:22,866 -   [XRP] BLOCKED: Already have xrp Up position (size: 13.8 shares)
+2026-01-15 18:47:41,474 -   [XRP] BLOCKED: Already have xrp Up position (size: 13.8 shares)
+2026-01-15 18:47:55,401 -   [XRP] BLOCKED: Already have xrp Up position - cannot bet both sides!
+2026-01-15 18:48:14,081 -   [XRP] BLOCKED: Already have xrp Up position (size: 13.8 shares)
+2026-01-15 19:31:03,829 -   [SOL] BLOCKED: Already have sol Up position - cannot bet both sides!
+2026-01-15 19:31:47,301 -   [ETH] BLOCKED: Already have eth Up position (size: 10.8 shares)
+2026-01-15 19:31:49,381 -   [SOL] BLOCKED: Already have sol Up position - cannot bet both sides!
+2026-01-15 19:32:00,706 -   [ETH] BLOCKED: Already have eth Up position - cannot bet both sides!
+2026-01-15 19:32:04,345 -   [XRP] BLOCKED: Already have xrp Up position (size: 9.3 shares)
+2026-01-15 19:32:23,573 -   [XRP] BLOCKED: Already have xrp Up position (size: 9.3 shares)
+2026-01-15 19:32:38,062 -   [XRP] BLOCKED: Already have xrp Up position (size: 9.3 shares)
+2026-01-15 19:32:51,798 -   [XRP] BLOCKED: Already have xrp Up position (size: 9.3 shares)
+2026-01-15 19:33:04,762 -   [XRP] BLOCKED: Already have xrp Up position - cannot bet both sides!
+2026-01-15 19:33:19,082 -   [XRP] BLOCKED: Already have xrp Up position - cannot bet both sides!
+2026-01-15 19:33:32,428 -   [XRP] BLOCKED: Already have xrp Up position - cannot bet both sides!
+2026-01-15 19:34:00,539 -   [XRP] BLOCKED: Already have xrp Up position - cannot bet both sides!
+2026-01-15 19:34:15,407 -   [XRP] BLOCKED: Already have xrp Up position - cannot bet both sides!
+2026-01-15 19:34:29,688 -   [XRP] BLOCKED: Already have xrp Up position - cannot bet both sides!
+2026-01-15 19:34:42,832 -   [XRP] BLOCKED: Already have xrp Up position - cannot bet both sides!
+2026-01-15 19:35:28,138 -   [XRP] BLOCKED: Already have xrp Up position (size: 9.3 shares)
+2026-01-15 19:35:53,002 -   [XRP] BLOCKED: Already have xrp Up position (size: 9.3 shares)
+2026-01-15 19:46:18,702 -   [ETH] BLOCKED: Already have eth Up position - cannot bet both sides!
+2026-01-15 20:15:35,490 -   [ETH] BLOCKED: Already have eth Up position (size: 13.8 shares)
+2026-01-15 20:16:17,538 -   [XRP] BLOCKED: Already have xrp Up position (size: 13.8 shares)
+2026-01-15 20:16:57,410 -   [ETH] BLOCKED: Already have eth Up position (size: 13.8 shares)
+2026-01-15 20:17:14,639 -   [SOL] BLOCKED: Already have sol Up position (size: 15.0 shares)
+2026-01-15 20:18:16,556 -   [ETH] BLOCKED: Already have eth Up position (size: 13.8 shares)
+2026-01-15 20:18:33,346 -   [SOL] BLOCKED: Already have sol Up position (size: 15.0 shares)
+2026-01-15 20:18:49,352 -   [XRP] BLOCKED: Already have xrp Up position (size: 13.8 shares)
+2026-01-15 20:47:01,953 -   [SOL] BLOCKED: Already have sol Up position (size: 13.8 shares)
+2026-01-15 20:47:19,842 -   [XRP] BLOCKED: Already have xrp Up position - cannot bet both sides!
+2026-01-15 20:48:42,609 -   [XRP] BLOCKED: Already have xrp Up position - cannot bet both sides!
+2026-01-15 21:01:10,819 -   [SOL] BLOCKED: Already have sol Up position (size: 13.8 shares)
+2026-01-15 21:17:21,630 -   [SOL] BLOCKED: Already have sol Up position - cannot bet both sides!
+2026-01-15 21:39:53,197 -   [XRP] BLOCKED: Already have xrp Up position (size: 15.0 shares)
+2026-01-15 21:45:41,968 -   [ETH] BLOCKED: Already have eth Up position (size: 14.0 shares)
+2026-01-15 21:46:56,641 -   [ETH] BLOCKED: Already have eth Up position - cannot bet both sides!
+2026-01-15 22:01:08,978 -   [SOL] BLOCKED: Already have sol Up position (size: 15.0 shares)
+2026-01-15 22:05:49,394 -   [XRP] BLOCKED: Already have xrp Up position - cannot bet both sides!
+2026-01-15 22:07:06,424 -   [XRP] BLOCKED: Already have xrp Up position (size: 13.8 shares)
+2026-01-15 22:08:30,606 -   [XRP] BLOCKED: Already have xrp Up position (size: 13.8 shares)
+2026-01-15 22:09:52,194 -   [XRP] BLOCKED: Already have xrp Up position (size: 13.8 shares)
+2026-01-15 22:11:11,189 -   [XRP] BLOCKED: Already have xrp Up position (size: 13.8 shares)
+2026-01-15 22:16:02,942 -   [SOL] BLOCKED: Already have sol Up position (size: 13.8 shares)
+2026-01-15 22:20:02,291 -   [ETH] BLOCKED: Already have eth Up position - cannot bet both sides!
+2026-01-15 22:21:43,658 -   [SOL] BLOCKED: Already have sol Up position - cannot bet both sides!
+2026-01-15 22:30:29,728 -   [ETH] BLOCKED: Already have eth Up position (size: 14.8 shares)
+2026-01-15 22:31:47,465 -   [ETH] BLOCKED: Already have eth Up position (size: 14.8 shares)
+2026-01-15 22:32:05,154 -   [SOL] BLOCKED: Already have sol Up position (size: 15.0 shares)
+2026-01-15 22:43:05,403 -   [SOL] BLOCKED: Already have sol Up position (size: 15.8 shares)
+2026-01-15 22:45:43,856 -   [SOL] BLOCKED: Already have sol Up position - cannot bet both sides!
+2026-01-15 22:46:42,807 -   [ETH] BLOCKED: Already have eth Up position - cannot bet both sides!
+2026-01-15 22:49:53,517 -   [ETH] BLOCKED: Already have eth Up position (size: 13.8 shares)
+2026-01-15 23:16:18,810 -   [ETH] BLOCKED: Already have eth Up position (size: 14.9 shares)
+2026-01-15 23:16:55,253 -   [XRP] BLOCKED: Already have xrp Up position (size: 17.7 shares)
+2026-01-15 23:19:44,619 -   [XRP] BLOCKED: Already have xrp Up position - cannot bet both sides!
+2026-01-15 23:21:03,375 -   [XRP] BLOCKED: Already have xrp Up position - cannot bet both sides!
+2026-01-15 23:32:10,352 -   [XRP] BLOCKED: Already have xrp Up position (size: 17.7 shares)
+2026-01-15 23:38:21,611 -   [ETH] BLOCKED: Already have eth Up position (size: 15.8 shares)
+2026-01-15 23:39:38,147 -   [ETH] BLOCKED: Already have eth Up position (size: 15.8 shares)
+2026-01-16 00:01:53,114 -   [SOL] BLOCKED: Already have sol Up position (size: 19.8 shares)
+2026-01-16 00:03:11,254 -   [SOL] BLOCKED: Already have sol Up position (size: 19.8 shares)
+2026-01-16 00:04:31,338 -   [SOL] BLOCKED: Already have sol Up position - cannot bet both sides!
+2026-01-16 00:04:49,566 -   [XRP] BLOCKED: Already have xrp Up position - cannot bet both sides!
+2026-01-16 00:09:49,583 -   [SOL] BLOCKED: Already have sol Up position - cannot bet both sides!
+2026-01-16 00:10:14,167 -   [XRP] BLOCKED: Already have xrp Up position (size: 16.0 shares)
+2026-01-16 00:11:14,666 -   [SOL] BLOCKED: Already have sol Up position (size: 19.8 shares)
+2026-01-16 00:12:36,024 -   [SOL] BLOCKED: Already have sol Up position - cannot bet both sides!
+2026-01-16 00:13:52,859 -   [ETH] BLOCKED: Already have eth Up position (size: 16.0 shares)
+2026-01-16 00:15:31,794 -   [SOL] BLOCKED: Already have sol Up position - cannot bet both sides!
+2026-01-16 00:16:33,762 -   [ETH] BLOCKED: Already have eth Up position - cannot bet both sides!
+2026-01-16 00:17:10,645 -   [XRP] BLOCKED: Already have xrp Up position - cannot bet both sides!
+2026-01-16 00:18:41,007 -   [XRP] BLOCKED: Already have xrp Up position - cannot bet both sides!
+2026-01-16 00:22:55,756 -   [XRP] BLOCKED: Already have xrp Up position - cannot bet both sides!
+2026-01-16 00:23:38,692 -   [ETH] BLOCKED: Already have eth Up position - cannot bet both sides!
+2026-01-16 00:29:29,116 -   [SOL] BLOCKED: Already have sol Up position - cannot bet both sides!
+2026-01-16 00:29:47,669 -   [XRP] BLOCKED: Already have xrp Up position - cannot bet both sides!
+2026-01-16 00:30:43,445 -   [ETH] BLOCKED: Already have eth Up position - cannot bet both sides!
+2026-01-16 00:31:01,679 -   [SOL] BLOCKED: Already have sol Up position - cannot bet both sides!
+2026-01-16 00:31:20,473 -   [XRP] BLOCKED: Already have xrp Up position - cannot bet both sides!
+2026-01-16 00:32:02,269 -   [ETH] BLOCKED: Already have eth Up position - cannot bet both sides!
+2026-01-16 00:32:20,171 -   [SOL] BLOCKED: Already have sol Up position (size: 36.9 shares)
+2026-01-16 00:32:38,049 -   [XRP] BLOCKED: Already have xrp Up position - cannot bet both sides!
+2026-01-16 00:45:32,873 -   [SOL] BLOCKED: Already have sol Up position (size: 20.0 shares)
+2026-01-16 00:52:03,798 -   [ETH] BLOCKED: Already have eth Up position (size: 15.8 shares)
+2026-01-16 00:54:00,204 -   [XRP] BLOCKED: Already have xrp Up position - cannot bet both sides!
+2026-01-16 00:55:01,517 -   [SOL] BLOCKED: Already have sol Up position (size: 15.9 shares)
+2026-01-16 00:55:19,617 -   [XRP] BLOCKED: Already have xrp Up position - cannot bet both sides!
+2026-01-16 01:01:26,874 -   [ETH] BLOCKED: Already have eth Up position - cannot bet both sides!
+2026-01-16 01:01:53,562 -   [SOL] BLOCKED: Already have sol Up position - cannot bet both sides!
+2026-01-16 02:52:02,861 - __main__ - WARNING -   [SOL] BLOCKED: Already have sol Up position - cannot bet both sides!
+2026-01-16 02:53:32,613 - __main__ - WARNING -   [SOL] BLOCKED: Already have sol Up position - cannot bet both sides!
+2026-01-16 03:00:39,511 - __main__ - WARNING -   [SOL] BLOCKED: Already have sol Up position - cannot bet both sides!
+2026-01-16 03:02:09,100 - __main__ - WARNING -   [SOL] BLOCKED: Already have sol Up position (size: 12.0 shares)
+2026-01-16 03:03:35,446 - __main__ - WARNING -   [SOL] BLOCKED: Already have sol Up position - cannot bet both sides!
+2026-01-16 03:03:53,337 - __main__ - WARNING -   [XRP] BLOCKED: Already have xrp Up position - cannot bet both sides!
+2026-01-16 03:15:20,707 - __main__ - WARNING -   [ETH] BLOCKED: Already have eth Up position (size: 9.0 shares)
+2026-01-16 03:16:39,724 - __main__ - WARNING -   [ETH] BLOCKED: Already have eth Up position (size: 9.0 shares)
+2026-01-16 03:20:07,931 - __main__ - WARNING -   [ETH] BLOCKED: Already have eth Up position (size: 15.0 shares)
+2026-01-16 12:57:26,533 - __main__ - WARNING -   [ETH] BLOCKED: Already have eth Up position (size: 166.0 shares)
+2026-01-16 13:11:05,686 - __main__ - WARNING -   [SOL] BLOCKED: Already have sol Up position (size: 122.0 shares)
+2026-01-16 13:12:31,809 - __main__ - WARNING -   [SOL] BLOCKED: Already have sol Up position (size: 122.0 shares)
+2026-01-16 15:23:25,066 - __main__ - WARNING -   [SOL] BLOCKED: Already have sol Up position (size: 267.0 shares)
+2026-01-16 16:11:59,750 - __main__ - WARNING -   [SOL] BLOCKED: Already have sol Up position - cannot bet both sides!
+2026-01-16 16:12:18,906 - __main__ - WARNING -   [XRP] BLOCKED: Already have xrp Up position - cannot bet both sides!
