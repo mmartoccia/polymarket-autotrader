@@ -116,11 +116,11 @@ this PRD translates findings into executable code changes to achieve 60-65% win 
 - Consensus diluted by poor performers
 
 **Acceptance Criteria:**
-- [ ] 1. Read `reports/vic_ramanujan/per_agent_performance.md`
-- [ ] 2. Identify agents with <53% WR (below breakeven)
-- [ ] 3. Update `config/agent_config.py`:
-- [ ] 4. Keep high performers: ML, RegimeAgent, RiskAgent
-- [ ] Typecheck passes
+- [x] 1. Read `reports/vic_ramanujan/per_agent_performance.md`
+- [x] 2. Identify agents with <53% WR (below breakeven)
+- [x] 3. Update `config/agent_config.py`:
+- [x] 4. Keep high performers: ML, RegimeAgent, RiskAgent
+- [x] Typecheck passes
 - [ ] Verify success metrics:
   - Trade frequency: Should drop 20-30% (higher quality bar)
   - Win rate: Should improve 2-3% (removing bad votes)

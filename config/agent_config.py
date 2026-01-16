@@ -19,11 +19,12 @@ MIN_INDIVIDUAL_CONFIDENCE = 0.30  # Minimum per-agent confidence (enforced in vo
 ADAPTIVE_WEIGHTS = True        # Enable performance-based weight tuning
 
 # Agent weights (base multipliers, will be adjusted by performance)
+# US-RI-003 (Jan 16, 2026): Disabled underperforming agents (TechAgent, SentimentAgent, CandlestickAgent)
 AGENT_WEIGHTS = {
-    'TechAgent': 1.0,              # Technical analysis
-    'SentimentAgent': 1.0,         # Contrarian signals
+    'TechAgent': 0.0,              # DISABLED (US-RI-003): 0% WR impact
+    'SentimentAgent': 0.0,         # DISABLED (US-RI-003): 0% WR impact
     'RegimeAgent': 1.0,            # Market classification
-    'CandlestickAgent': 1.0,       # Candlestick pattern analysis
+    'CandlestickAgent': 0.0,       # DISABLED (US-RI-003): 0% WR impact
     'TimePatternAgent': 0.5,       # Historical hourly patterns (ENABLED for live trading)
     'OrderBookAgent': 0.8,         # Orderbook microstructure analysis (NEW - Phase 1)
     'FundingRateAgent': 0.8,       # Derivatives funding rate analysis (NEW - Phase 1)
@@ -40,18 +41,24 @@ AGENT_WEIGHTS = {
 # Per-Agent Enable/Disable Flags
 # Set to False to disable specific agents based on performance tracking
 # Use analytics/agent_performance_tracker.py to identify underperformers
+#
+# US-RI-003 (Jan 16, 2026): Disabled underperforming agents per elimination_candidates.md
+# - TechAgent: 0% WR impact (Score 7.0 - DISABLE)
+# - SentimentAgent: 0% WR impact (Score 7.0 - DISABLE, also ENABLE_CONTRARIAN_TRADES=False)
+# - CandlestickAgent: 0% WR impact (Score 5.0 - REVIEW low value)
+# Kept: RegimeAgent (regime awareness), RiskAgent (essential), GamblerAgent (gating)
 AGENT_ENABLED = {
-    'TechAgent': True,
-    'SentimentAgent': True,
-    'RegimeAgent': True,
-    'CandlestickAgent': True,
-    'TimePatternAgent': True,
-    'OrderBookAgent': True,
-    'FundingRateAgent': True,
+    'TechAgent': False,  # DISABLED: 0% WR impact, 254 LOC burden (US-RI-003)
+    'SentimentAgent': False,  # DISABLED: 0% WR impact, 238 LOC burden (US-RI-003)
+    'RegimeAgent': True,  # KEPT: Regime-based weight adjustments
+    'CandlestickAgent': False,  # DISABLED: 0% WR impact, 154 LOC burden (US-RI-003)
+    'TimePatternAgent': True,  # KEPT: Shadow testing shows promise
+    'OrderBookAgent': True,  # KEPT: Phase 1 testing
+    'FundingRateAgent': True,  # KEPT: Phase 1 testing
     'OnChainAgent': False,  # Disabled: No API keys configured
     'SocialSentimentAgent': False,  # Disabled: No API keys configured
-    'RiskAgent': True,
-    'GamblerAgent': True,
+    'RiskAgent': True,  # ESSENTIAL: Position sizing and risk management
+    'GamblerAgent': True,  # KEPT: Probability gating (60% threshold)
 }
 
 def get_enabled_agents():
