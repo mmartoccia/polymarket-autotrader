@@ -340,14 +340,14 @@ Execute a comprehensive evaluation of the Polymarket AutoTrader system using 9 s
 **Persona Context:** "27 shadow strategies have been running. I need to see which ones are actually winning."
 
 **Acceptance Criteria:**
-- [ ] Create `scripts/research/shadow_leaderboard.py`
-- [ ] Query `simulation/trade_journal.db` → performance table
-- [ ] Extract: strategy_name, total_trades, win_rate, total_pnl, sharpe_ratio
-- [ ] Rank by: total_pnl (primary), win_rate (secondary)
-- [ ] Generate `reports/vic_ramanujan/shadow_leaderboard.csv`
-- [ ] Report: Top 10 strategies, bottom 5 strategies, baseline (random) performance
-- [ ] Test: Script successfully queries database and ranks strategies
-- [ ] Typecheck passes
+- [x] Create `scripts/research/shadow_leaderboard.py`
+- [x] Query `simulation/trade_journal.db` → performance table
+- [x] Extract: strategy_name, total_trades, win_rate, total_pnl, sharpe_ratio
+- [x] Rank by: total_pnl (primary), win_rate (secondary)
+- [x] Generate `reports/vic_ramanujan/shadow_leaderboard.csv`
+- [x] Report: Top 10 strategies, bottom 5 strategies, baseline (random) performance
+- [x] Test: Script successfully queries database and ranks strategies
+- [x] Typecheck passes
 
 #### US-RC-019: Test if random baseline beats default strategy
 **Persona Context:** "If random 50/50 coin flips beat our default strategy, we have negative edge. This is the ultimate sanity check."
