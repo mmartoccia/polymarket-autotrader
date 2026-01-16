@@ -548,3 +548,70 @@
 
 ---
 
+
+## Iteration 9 - US-RC-003: Reconcile balance from trade history
+**Persona:** Dr. Kenji Nakamoto (Data Forensics Specialist)
+**Completed:** 2026-01-16 10:48
+**Files Changed:**
+- scripts/research/reconcile_balance.py (created)
+- reports/kenji_nakamoto/balance_reconciliation.md (generated)
+- PRD-research-crew.md (marked US-RC-003 complete)
+
+**Learnings:**
+- Pattern: Balance reconciliation requires tracking multiple transaction types:
+  - Trade wins (positive P&L)
+  - Trade losses (negative P&L)  
+  - Deposits (positive cash flow)
+  - Withdrawals (negative cash flow)
+- Pattern: Starting balance determination strategy:
+  - Priority 1: Use day_start_balance from state file
+  - Priority 2: Use first deposit amount
+  - Priority 3: Default to $0 (will show full discrepancy)
+- Pattern: Discrepancy tolerance thresholds:
+  - <$1 = MATCH (excellent)
+  - $1-$10 = MINOR_DISCREPANCY (acceptable)
+  - >$10 = MAJOR_DISCREPANCY (critical)
+- Pattern: Transaction parsing requires flexible regex patterns:
+  - WIN pattern: timestamp + WIN + crypto + direction + P&L
+  - LOSS pattern: timestamp + LOSS + crypto + direction + P&L
+  - Losses must be negated (if parsed as positive, convert to negative)
+- Gotcha: Log files may not exist in dev environment
+  - Handle gracefully with warning message
+  - Generate report with zero transactions (still valid)
+- Gotcha: Timestamp parsing can fail
+  - Wrap in try/except
+  - Use format: '%Y-%m-%d %H:%M:%S'
+- Context: Reconciliation formula:
+  - calculated_balance = starting_balance + deposits - withdrawals + trade_pnl
+  - discrepancy = actual_balance - calculated_balance
+- Context: Report includes:
+  - Executive summary with status (MATCH/MINOR/MAJOR)
+  - Balance calculation breakdown
+  - Transaction summary (counts and totals)
+  - Discrepancy analysis with recommendations
+  - Recent transactions table (last 20)
+  - Data sources documentation
+
+**Implementation Notes:**
+- Created comprehensive balance reconciler with Transaction dataclass
+- Parses bot.log for all financial events (wins, losses, deposits, withdrawals)
+- Compares calculated balance to state file balance
+- Generates detailed markdown report with:
+  - Visual balance calculation (ASCII table)
+  - Transaction breakdown by type
+  - Status-based recommendations
+  - Recent transaction history
+- Handles edge cases:
+  - Missing log file (generates empty report)
+  - Missing state file (uses $0 default)
+  - No transactions (still produces valid report)
+  - Parsing failures (gracefully skips malformed entries)
+- Exit codes:
+  - 0 = MATCH or MINOR_DISCREPANCY
+  - 1 = MAJOR_DISCREPANCY (signals urgent investigation needed)
+- Typecheck passed with py_compile
+- Successfully runs in dev environment (no data = $0 match)
+- Ready for production use with actual bot.log and trading_state.json
+
+---
+
