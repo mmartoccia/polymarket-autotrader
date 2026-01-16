@@ -504,14 +504,14 @@ Execute a comprehensive evaluation of the Polymarket AutoTrader system using 9 s
 **Persona Context:** "Are consecutive epoch outcomes independent? Or is there momentum (winning begets winning)?"
 
 **Acceptance Criteria:**
-- [ ] Create `scripts/research/epoch_autocorrelation.py`
-- [ ] Extract sequential outcomes from logs: W, L, W, W, L, ...
-- [ ] Calculate autocorrelation: Correlation between outcome_t and outcome_(t-1)
-- [ ] Test: Ljung-Box test for independence (p < 0.05 = momentum exists)
-- [ ] Generate `reports/eleanor_nash/epoch_autocorrelation.md`
-- [ ] Report: Autocorrelation coefficient, p-value, conclusion (independent or not)
-- [ ] Test: Script correctly calculates autocorrelation on test sequence
-- [ ] Typecheck passes
+- [x] Create `scripts/research/epoch_autocorrelation.py`
+- [x] Extract sequential outcomes from logs: W, L, W, W, L, ...
+- [x] Calculate autocorrelation: Correlation between outcome_t and outcome_(t-1)
+- [x] Test: Ljung-Box test for independence (p < 0.05 = momentum exists)
+- [x] Generate `reports/eleanor_nash/epoch_autocorrelation.md`
+- [x] Report: Autocorrelation coefficient, p-value, conclusion (independent or not)
+- [x] Test: Script correctly calculates autocorrelation on test sequence
+- [x] Typecheck passes
 
 #### US-RC-030: Analyze regime classification accuracy
 **Persona Context:** "RegimeAgent classifies markets as bull/bear/sideways/volatile. Is it accurate? Or is it noise?"
