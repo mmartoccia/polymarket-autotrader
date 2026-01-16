@@ -174,7 +174,7 @@ class AgentDecisionTracker:
             # Find decision entries
             for i, line in enumerate(lines):
                 if 'VOTE AGGREGATION SUMMARY' in line:
-                    decision = self.parse_log_entry(lines, i-10)  # Look back 10 lines for context
+                    decision = self.parse_log_entry(lines, i)  # Start at the aggregation box
                     if decision and 'crypto' in decision:
                         crypto = decision['crypto']
                         # Only add if it's newer than our last entry
