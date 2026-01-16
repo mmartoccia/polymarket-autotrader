@@ -602,16 +602,106 @@ Execute a comprehensive evaluation of the Polymarket AutoTrader system using 8 s
 - [ ] Optional: Export to PDF using pandoc or similar
 - [ ] Deliverable is markdown (no typecheck needed)
 
+#### US-RC-037: Auto-generate implementation PRD from research findings
+**Persona Context:** "All the research is done. Now I need to translate insights into executable code changes. Create a new PRD that Ralph can execute autonomously."
+
+**Acceptance Criteria:**
+- [ ] Create `scripts/research/generate_implementation_prd.py`
+- [ ] Read all synthesis documents:
+  - `reports/RESEARCH_SYNTHESIS.md` (top 10 priorities)
+  - `reports/DEPLOYMENT_ROADMAP.md` (timeline and milestones)
+  - Individual researcher reports from `reports/*/`
+- [ ] Extract actionable items from each priority:
+  - Code files to modify (agents, config, bot logic)
+  - Specific changes needed (disable agent X, raise threshold Y to Z)
+  - Test criteria (how to verify it works)
+  - Success metrics (win rate improvement expected)
+- [ ] Generate `PRD-research-implementation.md` with structure:
+  - Introduction (references research synthesis)
+  - Goals (60-65% WR, identified improvements)
+  - User stories (US-RI-001 to US-RI-XXX, one per actionable change)
+  - Each US format: Description, Acceptance Criteria with checkboxes, File paths, Test requirements
+- [ ] Auto-prioritize: Quick wins first (Week 1), then medium effort (Week 2-3), long-term (Week 4)
+- [ ] Include rollback plan for each change (how to undo if it fails)
+- [ ] Generate companion `progress-research-implementation.txt` (empty, ready for Ralph)
+- [ ] Add execution instructions: `./ralph.sh PRD-research-implementation.md 50 2`
+- [ ] Test: Generated PRD has valid markdown syntax
+- [ ] Test: Generated PRD has ≥10 user stories (one per top priority)
+- [ ] Test: Each user story has file paths that exist in codebase
+- [ ] Output message: "✅ Implementation PRD generated. Run: ./ralph.sh PRD-research-implementation.md 50 2"
+- [ ] Typecheck passes
+
+**Expected Output Example:**
+```markdown
+# PRD: Research Implementation - Optimization Roadmap
+
+## Introduction
+Based on comprehensive research by 8 specialized personas (31 reports),
+this PRD translates findings into executable code changes to achieve
+60-65% win rate target.
+
+**Source:** Research Synthesis Report (reports/RESEARCH_SYNTHESIS.md)
+
+## Goals
+- Increase win rate from 56% to 60-65%
+- Reduce directional bias to 40-60% range
+- Lower average entry price to <$0.25
+- Improve agent confidence calibration
+
+## User Stories - Week 1: Quick Wins
+
+### US-RI-001: Disable underperforming agents
+**Source:** Vic Ramanujan - Agent Performance Report
+**Finding:** TechAgent has 48% WR, dragging down consensus
+
+**Acceptance Criteria:**
+- [ ] Read `reports/vic_ramanujan/agent_performance_ranking.md`
+- [ ] Identify agents with <50% WR
+- [ ] Update `config/agent_config.py` - set ENABLE_TECH_AGENT=False
+- [ ] Test: Bot runs without TechAgent votes
+- [ ] Monitor: Shadow test for 24hr, compare WR improvement
+- [ ] Rollback: Set ENABLE_TECH_AGENT=True if WR drops
+- [ ] Typecheck passes
+
+### US-RI-002: Raise consensus threshold
+**Source:** Dr. Sarah Chen - Statistical Validation
+**Finding:** Current 0.75 threshold allows 52% WR trades (too low)
+
+**Acceptance Criteria:**
+- [ ] Read `reports/sarah_chen/optimal_threshold_analysis.md`
+- [ ] Extract recommended threshold (likely 0.80-0.85)
+- [ ] Update `config/agent_config.py` - CONSENSUS_THRESHOLD = 0.82
+- [ ] Test: Threshold enforced in decision_engine.py
+- [ ] Monitor: Trade frequency should drop 30-40%
+- [ ] Monitor: WR should increase 3-5%
+- [ ] Rollback: Revert to 0.75 if trade frequency <2/day
+- [ ] Typecheck passes
+
+[... 8 more user stories ...]
+```
+
 ---
 
 ## Completion Criteria
 
-**ALL 36 user stories complete** when:
+**ALL 37 user stories complete** when:
 - ✅ All checkboxes marked `[x]`
 - ✅ All reports generated in `reports/` directory
 - ✅ All scripts in `scripts/research/` directory
 - ✅ Final synthesis report approved by stakeholders
 - ✅ Deployment roadmap has clear milestones
+- ✅ **Implementation PRD auto-generated** (`PRD-research-implementation.md`)
+
+**Next Steps After Completion:**
+```bash
+# Ralph will output this message when US-RC-037 completes:
+✅ Implementation PRD generated: PRD-research-implementation.md
+🚀 Ready to execute optimizations. Run:
+   ./ralph.sh PRD-research-implementation.md 50 2
+
+# This creates a fully autonomous pipeline:
+# Research → Synthesis → Implementation → Deployment
+```
 
 ---
 
