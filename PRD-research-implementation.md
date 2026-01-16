@@ -233,9 +233,9 @@ this PRD translates findings into executable code changes to achieve 60-65% win 
 - Current `MAX_ENTRY_PRICE = 0.30` (too permissive)
 
 **Acceptance Criteria:**
-- [ ] 1. Read `reports/jimmy_martinez/entry_vs_outcome.csv`
-- [ ] 2. Update `config/agent_config.py`:
-- [ ] Typecheck passes
+- [x] 1. Read `reports/jimmy_martinez/entry_vs_outcome.csv`
+- [x] 2. Update `config/agent_config.py`:
+- [x] Typecheck passes
 - [ ] Verify success metrics:
   - Average entry price: <$0.20 (from ~$0.24)
   - Cheap entries (<$0.15): ≥40% of trades

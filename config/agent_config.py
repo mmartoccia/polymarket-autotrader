@@ -77,13 +77,15 @@ REGIME_ADJUSTMENT_STRENGTH = 1.0  # 0.0 = no adjustment, 1.0 = full adjustment
 REGIME_ADJUSTMENT_ENABLED = True
 
 # =============================================================================
-# ENTRY PRICE LIMITS (Bug Fix Jan 16, 2026)
+# ENTRY PRICE LIMITS (US-RI-007: Jan 16, 2026 - Lower thresholds for cheaper entries)
 # =============================================================================
 
 # Global maximum entry price across all strategies
 # Lower entry prices = lower fees = lower breakeven win rate
-MAX_ENTRY = 0.25                  # Global cap (reduces breakeven WR from 52% to 51%)
-EARLY_MAX_ENTRY = 0.30            # Early momentum maximum (overridden by MAX_ENTRY if lower)
+# Research shows: <$0.15 entries = 68% WR, >$0.25 entries = 52% WR
+MAX_ENTRY = 0.20                  # Global cap (LOWERED from 0.25 → targets <$0.20 avg)
+EARLY_MAX_ENTRY = 0.20            # Early momentum maximum (LOWERED from 0.30 per research)
+LATE_MAX_ENTRY = 0.25             # Late window maximum (ADDED per US-RI-007, overrides bot's 0.95)
 
 # =============================================================================
 # TIMING WINDOW OPTIMIZATION (US-RI-006: Jan 16, 2026)
@@ -133,7 +135,7 @@ ENABLE_CONTRARIAN_TRADES = False  # DISABLED: Bleeding funds - strategy not work
 
 # Contrarian thresholds
 SENTIMENT_CONTRARIAN_PRICE_THRESHOLD = 0.70  # When one side >70%, consider fading
-SENTIMENT_CONTRARIAN_MAX_ENTRY = 0.20        # Max price to pay for contrarian entry
+SENTIMENT_CONTRARIAN_MAX_ENTRY = 0.15        # Max price to pay for contrarian entry (LOWERED from 0.20 per US-RI-007)
 SENTIMENT_EXTREME_THRESHOLD = 0.85           # >85% is extreme overpricing
 SENTIMENT_CHEAP_ENTRY = 0.10                 # <$0.10 is very cheap
 
