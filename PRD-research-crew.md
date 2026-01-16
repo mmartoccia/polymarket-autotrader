@@ -282,15 +282,15 @@ Execute a comprehensive evaluation of the Polymarket AutoTrader system using 9 s
 **Persona Context:** "Entry price determines everything: edge, fees, risk. I need to see the actual distribution, not just averages."
 
 **Acceptance Criteria:**
-- [ ] Use parsed trade data from US-RC-001
-- [ ] Extract all entry_price values
-- [ ] Calculate: mean, median, mode, std dev, 25th/75th percentiles
-- [ ] Group by strategy: early momentum, contrarian, late confirmation (infer from timing)
-- [ ] Generate `reports/jimmy_martinez/entry_price_distribution.md`
-- [ ] Create histogram: `reports/jimmy_martinez/entry_price_histogram.png`
-- [ ] Report: Distribution stats, comparison to config limits (MAX_ENTRY=0.25)
-- [ ] Test: Histogram shows clear distribution pattern
-- [ ] Typecheck passes
+- [x] Use parsed trade data from US-RC-001
+- [x] Extract all entry_price values
+- [x] Calculate: mean, median, mode, std dev, 25th/75th percentiles
+- [x] Group by strategy: early momentum, contrarian, late confirmation (infer from timing)
+- [x] Generate `reports/jimmy_martinez/entry_price_distribution.md`
+- [x] Create histogram: `reports/jimmy_martinez/entry_price_histogram.png` (ASCII histogram in markdown)
+- [x] Report: Distribution stats, comparison to config limits (MAX_ENTRY=0.25)
+- [x] Test: Histogram shows clear distribution pattern
+- [x] Typecheck passes
 
 #### US-RC-015: Analyze win rate by entry price bucket
 **Persona Context:** "Do cheap entries ($0.10-0.15) actually win more? Or is the edge in mid-range prices?"
