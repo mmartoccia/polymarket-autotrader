@@ -2050,6 +2050,23 @@ def run_bot():
                                     outcome=outcome
                                 )
                                 log.info(f"[Shadow] Resolved {crypto} epoch {matching_pos.epoch}: {outcome}")
+
+                                # TELEGRAM: Send redemption notification for WIN
+                                if TELEGRAM_NOTIFICATIONS_AVAILABLE:
+                                    try:
+                                        from telegram_bot.telegram_notifier import notify_redemption
+                                        pnl = matching_pos.shares - matching_pos.cost  # Win = shares * $1.00 - cost
+                                        notify_redemption(
+                                            crypto=matching_pos.crypto.upper(),
+                                            direction=matching_pos.direction,
+                                            outcome="win",
+                                            pnl=pnl,
+                                            shares_redeemed=matching_pos.shares,
+                                            entry_price=matching_pos.entry_price,
+                                            new_balance=balance
+                                        )
+                                    except Exception as e:
+                                        log.error(f"Telegram redemption notification failed: {e}")
                     except Exception as e:
                         log.error(f"Shadow trading outcome resolution failed: {e}")
 
@@ -2070,6 +2087,23 @@ def run_bot():
                                 outcome=outcome
                             )
                             log.info(f"[Shadow] Expired position {pos.crypto} epoch {pos.epoch}: predicted {pos.direction}, actual {outcome}")
+
+                            # TELEGRAM: Send redemption notification for LOSS
+                            if TELEGRAM_NOTIFICATIONS_AVAILABLE:
+                                try:
+                                    from telegram_bot.telegram_notifier import notify_redemption
+                                    pnl = -pos.cost  # Loss = $0.00 payout - cost
+                                    notify_redemption(
+                                        crypto=pos.crypto.upper(),
+                                        direction=pos.direction,
+                                        outcome="loss",
+                                        pnl=pnl,
+                                        shares_redeemed=pos.shares,
+                                        entry_price=pos.entry_price,
+                                        new_balance=balance
+                                    )
+                                except Exception as e:
+                                    log.error(f"Telegram redemption notification failed: {e}")
                 except Exception as e:
                     log.error(f"Shadow trading expired position check failed: {e}")
 

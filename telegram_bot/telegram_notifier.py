@@ -268,6 +268,97 @@ def notify_trade(
         logger.error(f"Error in notify_trade wrapper: {e}", exc_info=True)
 
 
+async def send_redemption_notification(
+    crypto: str,
+    direction: str,
+    outcome: str,
+    pnl: float,
+    shares_redeemed: float,
+    entry_price: float,
+    new_balance: float
+) -> None:
+    """
+    Send notification when a position is redeemed.
+
+    Args:
+        crypto: Cryptocurrency symbol (e.g., "BTC", "ETH")
+        direction: Trade direction ("Up" or "Down")
+        outcome: Result of the trade ("win" or "loss")
+        pnl: Profit/loss amount in USD
+        shares_redeemed: Number of shares redeemed
+        entry_price: Original entry price per share
+        new_balance: Account balance after redemption
+    """
+    if not NOTIFICATIONS_ENABLED or not _application:
+        return
+
+    try:
+        # Determine emoji and outcome text
+        if outcome.lower() == "win":
+            emoji = "✅"
+            outcome_text = "WIN"
+            payout = 1.00
+        else:
+            emoji = "❌"
+            outcome_text = "LOSS"
+            payout = 0.00
+
+        # Format P&L with sign
+        pnl_sign = "+" if pnl >= 0 else ""
+
+        message = (
+            f"{emoji} *REDEMPTION - {outcome_text}*\n\n"
+            f"*{crypto.upper()} {direction}:* {shares_redeemed:.0f} shares\n"
+            f"P&L: ${pnl_sign}{pnl:.2f}\n"
+            f"Entry: ${entry_price:.2f} → Payout: ${payout:.2f}\n\n"
+            f"💰 New Balance: ${new_balance:.2f}\n\n"
+            f"⏰ {datetime.now().strftime('%H:%M:%S UTC')}"
+        )
+
+        await _application.bot.send_message(
+            chat_id=AUTHORIZED_USER_ID,
+            text=message,
+            parse_mode='Markdown'
+        )
+        logger.info(f"Redemption notification sent: {crypto} {direction} - {outcome_text}")
+
+    except Exception as e:
+        logger.error(f"Error sending redemption notification: {e}", exc_info=True)
+        # Don't raise - notifications should never break trading bot
+
+
+def notify_redemption(
+    crypto: str,
+    direction: str,
+    outcome: str,
+    pnl: float,
+    shares_redeemed: float,
+    entry_price: float,
+    new_balance: float
+) -> None:
+    """
+    Synchronous wrapper for send_redemption_notification.
+    Safe to call from non-async code (e.g., trading bot main loop).
+    """
+    # Run the async function in a new event loop (non-blocking)
+    try:
+        # Create a new event loop for this thread if needed
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
+        loop.run_until_complete(send_redemption_notification(
+            crypto=crypto,
+            direction=direction,
+            outcome=outcome,
+            pnl=pnl,
+            shares_redeemed=shares_redeemed,
+            entry_price=entry_price,
+            new_balance=new_balance
+        ))
+        loop.close()
+    except Exception as e:
+        logger.error(f"Error in notify_redemption wrapper: {e}", exc_info=True)
+
+
 def main():
     """Start the Telegram bot."""
     if not TELEGRAM_BOT_TOKEN:

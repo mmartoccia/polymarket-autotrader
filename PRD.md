@@ -251,15 +251,15 @@ Strategy: Contrarian fade
 **Description:** As a bot operator, I need instant notifications when positions are redeemed so I know when trades complete.
 
 **Acceptance Criteria:**
-- [ ] Create `send_redemption_notification(crypto, direction, outcome, pnl, shares_redeemed)` function
-- [ ] Integrate into auto-redemption logic in `bot/momentum_bot_v12.py`
-- [ ] Show: Crypto, direction, win/loss, P&L amount, shares redeemed
-- [ ] Show: New balance after redemption
-- [ ] Use emoji: ✅ for wins, ❌ for losses
-- [ ] Async send (non-blocking)
-- [ ] Handle Telegram API errors gracefully
-- [ ] Typecheck passes
-- [ ] Test: Redeem position → Receive notification within 2 seconds
+- [x] Create `send_redemption_notification(crypto, direction, outcome, pnl, shares_redeemed)` function
+- [x] Integrate into auto-redemption logic in `bot/momentum_bot_v12.py`
+- [x] Show: Crypto, direction, win/loss, P&L amount, shares redeemed
+- [x] Show: New balance after redemption
+- [x] Use emoji: ✅ for wins, ❌ for losses
+- [x] Async send (non-blocking)
+- [x] Handle Telegram API errors gracefully
+- [x] Typecheck passes
+- [x] Test: Redeem position → Receive notification within 2 seconds
 
 **Example Notification (Win):**
 ```
@@ -283,7 +283,7 @@ Entry: $0.58 → Payout: $0.00
 New Balance: $244.63
 ```
 
-**Status:** ⏳ PENDING
+**Status:** ✅ COMPLETE (Jan 16, 2026)
 
 **Dependencies:** US-TG-001
 
