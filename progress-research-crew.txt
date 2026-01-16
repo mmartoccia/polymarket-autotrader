@@ -1982,3 +1982,81 @@ Report provides clear path forward: enable shadow trading, collect data, re-anal
 Cannot make ML deployment decision without actual performance data.
 
 ---
+
+## Iteration 22 - US-RC-022: Validate drawdown calculation formula
+**Persona:** Colonel Rita "The Guardian" Stevens (Risk Management Architect)
+**Completed:** 2026-01-16 19:45
+**Files Changed:**
+- scripts/research/test_drawdown_calculation.py (created)
+- reports/rita_stevens/drawdown_audit.md (created)
+- PRD-research-crew.md (marked US-RC-022 complete)
+
+**Learnings:**
+- Pattern: Critical bugs hide in edge cases, not normal operation
+  - Jan 16 bug only appeared after: Win → Redeem → Lose sequence
+  - Normal operation (steady trading) masked the peak tracking issue
+  - Audit must simulate failure scenarios, not just success paths
+- Pattern: State tracking must separate realized vs unrealized value
+  - Peak should track cash-only (realized)
+  - Effective balance includes redeemable (near-realized)
+  - Open positions excluded (unrealized)
+  - Mixing these categories causes false signals
+- Pattern: Emergency fixes create technical debt
+  - Automatic peak tracking disabled as quick fix
+  - Prevents worse bugs but requires manual intervention
+  - Must re-enable with proper formula (cash-only)
+- Gotcha: Boundary conditions matter (> vs >=)
+  - MAX_DRAWDOWN_PCT = 0.30 with > comparison
+  - Exactly 30.0% does NOT halt (exclusive boundary)
+  - 30.1% DOES halt
+  - Tests must verify boundary behavior explicitly
+- Context: Three balance concepts in drawdown calculation:
+  1. **current_balance** (state file): Last known balance
+  2. **cash_balance** (blockchain): Liquid USDC only
+  3. **effective_balance** (calculated): cash + redeemable winners
+  - Drawdown uses effective_balance (includes near-liquid winners)
+  - Peak should use cash_balance (only realized gains)
+  - Mixing formulas = Jan 16 bug
+- Context: Peak tracking disabled as of Jan 16, 2026
+  - Line 2183: `# state.peak_balance = max(state.peak_balance, balance)`
+  - Only initializes if peak=0, never increases automatically
+  - Prevents false halts but limits profit potential
+  - Manual resets required via state file editing
+- Context: validate_and_fix_state() catches balance desyncs
+  - Compares state file vs blockchain every startup
+  - Auto-corrects if >10% discrepancy
+  - Does NOT fix peak_balance (only current_balance)
+  - This is why Jan 16 needed manual peak reset
+
+**Implementation Notes:**
+- Created comprehensive drawdown audit report (7 pages)
+- Analyzed Guardian.check_kill_switch() formula
+- Identified root cause: Peak included unredeemed positions
+  - Example: Peak=$386.97 (cash $200 + positions $186)
+  - After redemption: Cash=$380, positions redeemed
+  - Subsequent loss: Cash=$200
+  - False drawdown: ($386-$200)/$386 = 48% → HALT
+  - Correct: Peak should be $200 (cash-only)
+- Documented three bugs:
+  1. CRITICAL: Peak includes positions (Jan 16 incident)
+  2. MEDIUM: Peak never resets after losses (by design)
+  3. LOW: Division by zero (already protected)
+- Created unit test suite with 10 test cases:
+  - Normal operation (10% drawdown)
+  - Boundary testing (exactly 30%)
+  - Danger zone (35% drawdown)
+  - Edge cases (peak=0, negative balance, profit scenario)
+  - Jan 16 bug reproduction
+  - Redeemable value handling
+  - Division by zero protection
+- All tests pass (10/10) ✅
+- Typecheck passed with py_compile
+- Recommendations structured by urgency:
+  - IMMEDIATE: Re-enable automatic peak tracking with cash-only
+  - SHORT-TERM: Add peak validation, logging
+  - LONG-TERM: Rolling peak window, drawdown visualization
+
+**Key Finding:**
+Drawdown formula is mathematically correct, but peak tracking implementation was flawed. Bug caused false halt at 48% drawdown when actual drawdown was 0%. Current mitigation (disabled automatic tracking) prevents false halts but requires manual intervention. Recommended fix: Update peak only on redemption events using cash-only balance.
+
+---
