@@ -21,7 +21,7 @@ sys.path.insert(0, str(Path(__file__).parent.parent))
 from telegram_bot.telegram_notifier import (
     notify_trade,
     notify_redemption,
-    notify_critical_alert,
+    notify_alert,
     notify_daily_summary
 )
 
@@ -208,18 +208,18 @@ class TelegramTestHarness:
         except Exception as e:
             self.print_fail(str(e))
 
-    def test_notify_critical_alert(self):
-        """Test critical alert notification."""
-        self.print_test("notify_critical_alert()")
+    def test_notify_alert(self):
+        """Test alert notification."""
+        self.print_test("notify_alert()")
         try:
-            result = notify_critical_alert(
+            result = notify_alert(
+                level="warning",
                 title="Test Alert",
-                message="This is a test alert from the test harness. Please ignore.",
-                severity="warning"
+                message="This is a test alert from the test harness. Please ignore."
             )
 
             self.print_pass("Notification sent")
-            self.print_info("Check Telegram for: ⚠️ CRITICAL ALERT - Test Alert")
+            self.print_info("Check Telegram for: ⚠️ WARNING - Test Alert")
         except Exception as e:
             self.print_fail(str(e))
 
