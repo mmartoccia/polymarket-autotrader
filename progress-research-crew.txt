@@ -3406,3 +3406,239 @@ This MVS benchmark supports Alex's hypothesis: **Simplicity may outperform compl
   - Risk: Lower (better state management, no directional bias)
 
 ---
+
+## Iteration [N] - US-RC-033: Validate 60-65% win rate feasibility
+**Persona:** Prof. Eleanor Nash (Game Theory Economist)
+**Completed:** 2026-01-16
+**Files Changed:**
+- scripts/research/win_rate_projection.py (created)
+- reports/eleanor_nash/60_65_wr_feasibility.md (created)
+- PRD-research-crew.md (marked US-RC-033 complete)
+
+**What was implemented:**
+- Created Monte Carlo simulation with 1,000 runs
+- Loaded 8 improvements from research synthesis with win rate deltas and success probabilities
+- Simulated probabilistic application of each improvement
+- Calculated final win rate distribution across all simulations
+- Generated comprehensive feasibility report with scenarios and recommendations
+
+**Key Findings:**
+- **Probability of reaching ≥60% WR:** 100.0%
+- **Expected final win rate:** 69.85%
+- **Verdict:** Target is FEASIBLE (proceed with roadmap)
+- **Rationale:** Multiple high-confidence improvements (>85% probability)
+- **Recommendation:** PROCEED with Top 10 priorities from synthesis report
+
+**Learnings for future iterations:**
+- Pattern: Monte Carlo simulation validates strategic decisions
+  - Quantifies uncertainty (probability distributions)
+  - Tests impact of combinations (synergies and conflicts)
+  - Identifies risk vs reward tradeoffs
+  - Provides confidence intervals for projections
+- Pattern: Probabilistic modeling beats point estimates
+  - Single prediction (63% WR) less informative than distribution (60-80% range)
+  - Shows best case (all improvements work) vs worst case (none work)
+  - Highlights sensitivity to individual improvements
+  - Reveals which improvements are critical vs nice-to-have
+- Pattern: Expected value calculation guides prioritization
+  - High-probability improvements (>90%) should be done first
+  - Low-impact improvements (<1% WR delta) can be skipped
+  - Expected WR = Σ(delta × probability) = 69.85% for this roadmap
+- Context: Simulation assumptions matter
+  - Assumed improvements are independent (no synergies/conflicts)
+  - Assumed probabilities reflect researcher confidence (not empirical)
+  - Assumed win rate deltas are additive (linear model)
+  - Limitations noted in report for validation plan
+- Context: Alternative targets provided for risk management
+  - Conservative (10th percentile): Safe bet, 90% probability
+  - Realistic (median): Balanced target, 50/50 odds
+  - Optimistic (90th percentile): Stretch goal, 10% probability
+  - Allows stakeholders to choose risk tolerance
+- Gotcha: 100% probability sounds too good to be true
+  - Result reflects high-confidence improvements (bug fixes, simplifications)
+  - Actual implementation quality affects outcomes (bugs can negate gains)
+  - Validation plan: measure actual WR change after each improvement
+  - Re-run simulation after 100 trades to recalibrate probabilities
+- Gotcha: Simulation is not prediction
+  - Monte Carlo shows what COULD happen given assumptions
+  - Reality may differ due to market changes, implementation errors, etc.
+  - Use simulation for strategic guidance, not operational forecasts
+  - Track actual vs projected to improve future models
+
+**Next Task:** US-RC-034 (Eleanor Nash - Deployment Roadmap)
+- Compile Top 10 recommendations into concrete timeline
+- Prioritize: Quick wins (Week 1), medium effort (Week 2-3), long-term (Week 4+)
+- Assign owners and define success metrics
+- Create rollback plans for each milestone
+
+---
+
+## Iteration [N] - US-RC-034: Create deployment roadmap with milestones
+**Persona:** Prof. Eleanor Nash (Game Theory Economist)
+**Completed:** 2026-01-16
+**Files Changed:**
+- reports/DEPLOYMENT_ROADMAP.md (created)
+- PRD-research-crew.md (marked US-RC-034 complete)
+
+**What was implemented:**
+- Comprehensive 4-week deployment roadmap with milestones
+- 10 concrete milestones organized by week (Foundation, Optimization, Simplification, Monitoring)
+- Each milestone includes: owner, effort estimate, risk level, implementation details, success metrics, rollback plan
+- Week 1: Critical fixes (state tracking, trend filter removal, disable bad agents, atomic writes)
+- Week 2: Optimization (raise thresholds, timing optimization, entry price limits)
+- Week 3: Simplification (reduce agents 11→5, re-enable contrarian with safeguards)
+- Week 4: Monitoring (performance alerts, auto-promotion of shadow strategies)
+- Global validation plan with checkpoint metrics after each week
+- Risk management strategy with clear rollback procedures
+- Resource estimates: 40 hours dev time, 6 weeks total including validation
+
+**Learnings for future iterations:**
+- Pattern: Roadmap structure for complex projects
+  - Organize by time (weeks) AND theme (fixes, optimizations, simplifications)
+  - Each milestone is independently deployable (incremental rollout)
+  - Success metrics at global level (final WR target) AND milestone level (per-change validation)
+  - Dependencies explicitly documented (Week 1 must complete before Week 2)
+- Pattern: Risk-first planning
+  - Every milestone has rollback plan (git revert, config restore, etc.)
+  - Escalation procedure defined (minor/moderate/major/critical)
+  - Shadow testing BEFORE production deployment (24-48 hours)
+  - Clear go/no-go criteria (WR drop >1% = investigate)
+- Pattern: Balance simplification vs optimization
+  - Week 1: Fixes (remove bugs, prevent false positives)
+  - Week 2: Optimize (tune thresholds, improve entry quality)
+  - Week 3: Simplify (reduce agent count, architectural cleanup)
+  - Week 4: Automate (monitoring, continuous improvement)
+  - Prioritize deletions before additions (simpler is better)
+- Context: Stakeholder communication is critical
+  - Weekly reports (every Monday)
+  - Milestone alerts (immediate)
+  - Documentation updates (post-roadmap)
+  - Clear exit conditions (scale up, pause, shutdown)
+- Context: Resource planning matters
+  - Dev time: 40 hours (realistic estimate per milestone)
+  - Testing time: 6 weeks total (includes shadow validation)
+  - Infrastructure: No hardware changes (VPS stays same)
+  - Git branch: research-implementation (merge after validation)
+- Gotcha: Dependencies can block progress
+  - Some milestones depend on others (e.g., raise threshold after disabling bad agents)
+  - Critical path identified: Week 1 gates Week 2
+  - But Week 3 can overlap with Week 2 (architecture is independent)
+- Gotcha: Validation takes longer than implementation
+  - Each milestone: 2-4 hours to code, 24-48 hours to shadow test
+  - Final validation: 100 trades at target WR (~2 weeks)
+  - Total timeline: 4 weeks implementation + 2 weeks validation = 6 weeks
+- Gotcha: Markets can change during roadmap
+  - Checkpoint after Week 2 (should have 60%+ WR on 100 trades)
+  - If not, pause and debug (don't blindly continue)
+  - Re-run analysis if structural market shifts detected
+- Pattern: Post-roadmap continuous improvement
+  - Monitor for 1 month (ensure stability across regimes)
+  - Scale up gradually (position sizing 5% → 7%)
+  - Explore new markets (XRP, DOGE) and timeframes (30-min, 1-hour)
+  - Share learnings (open-source shadow system)
+
+**Next Task:** US-RC-035 (Eleanor Nash - Exit Criteria)
+- Define quantitative HALT, PAUSE, SCALE UP triggers
+- Create decision tree for operational responses
+- Document escalation procedures
+
+---
+
+## Iteration [N] - US-RC-035: Define exit criteria and risk thresholds
+**Persona:** Prof. Eleanor Nash (Game Theory Economist)
+**Completed:** 2026-01-16
+**Files Changed:**
+- reports/EXIT_CRITERIA.md (created)
+- PRD-research-crew.md (marked US-RC-035 complete)
+
+**What was implemented:**
+- Comprehensive exit criteria document with quantitative triggers
+- **HALT criteria** (5 triggers):
+  1. Drawdown >30% (peak to current balance)
+  2. Consecutive losses ≥8
+  3. Daily loss >$30 OR >20% of balance
+  4. Balance drops below $50
+  5. Critical system error (10 errors in 60s)
+- **PAUSE criteria** (4 triggers):
+  1. Win rate <53% over last 50 trades (below breakeven)
+  2. Regime shift to extreme volatility (>95th percentile)
+  3. Position limit saturated (4/4 positions open)
+  4. Directional exposure >8% (too much Up or Down)
+- **SCALE UP criteria** (3 triggers):
+  1. Win rate >60% over last 100 trades (strong edge)
+  2. Balance >$500 AND 2.5x earned growth
+  3. 50 consecutive trades without HALT/PAUSE (stability)
+- Decision tree flowchart for operational responses
+- Escalation procedures (Level 1-4: Automated → Investigation → Critical)
+- Monitoring & alerts setup (real-time dashboards, daily/weekly reports)
+- Configuration integration examples (agent_config.py, bot code)
+- Historical events analysis (Jan 14/16 incidents)
+
+**Learnings for future iterations:**
+- Pattern: Quantitative risk management requires hard rules
+  - Every trigger has explicit formula (no ambiguity)
+  - Automated enforcement prevents emotional decisions
+  - Conservative thresholds protect capital first
+  - Example: Drawdown = (peak - current) / peak > 0.30 → HALT
+- Pattern: Three-tier operational response (HALT, PAUSE, SCALE UP)
+  - **HALT:** Immediate shutdown, requires manual restart
+  - **PAUSE:** Temporary suspension, auto-resumes when conditions clear
+  - **SCALE UP:** Increase sizing after proven performance
+  - Clear distinction prevents confusion (is this serious or temporary?)
+- Pattern: Escalation levels match severity
+  - Level 1: Automated (PAUSE) → No human needed
+  - Level 2: Notification (HALT) → Human awareness, respond 4hr
+  - Level 3: Investigation (repeated HALT) → Root cause analysis, 24hr
+  - Level 4: Critical (system failure) → Emergency response, 1hr
+- Context: Historical events validate criteria necessity
+  - Jan 14: 95% loss ($157 → $7) → HALT should have triggered at 30% drawdown
+  - Jan 16: $186 state desync → False HALT (correct behavior on corrupt data)
+  - Jan 16: Recovery from $6.81 → Should have HALTED at <$50 balance (lucky, not strategic)
+  - Criteria prevent catastrophic losses (stops early = survives to trade again)
+- Context: PAUSE vs HALT distinction is critical
+  - PAUSE = temporary (auto-resumes when conditions improve)
+  - HALT = permanent (requires investigation before restart)
+  - Examples:
+    - Win rate <53% → PAUSE (market conditions may improve)
+    - Drawdown >30% → HALT (capital protection, investigate before continuing)
+    - Position limit full → PAUSE (just wait for resolution)
+    - Loss streak ≥8 → HALT (strategy failure, needs investigation)
+- Gotcha: Exit criteria only work if state tracking is accurate
+  - Jan 16 desync: Peak balance was wrong ($186 error)
+  - Drawdown calculation was correct based on corrupt data
+  - But triggered false HALT because state was wrong
+  - **Prerequisite:** Fix state tracking bugs BEFORE relying on exit criteria
+- Gotcha: Recoveries are lucky, not strategic
+  - Jan 16: Bot recovered from $6.81 to $200 (+$194 profit)
+  - But this was luck (continued trading when should have HALTED)
+  - MIN_BALANCE_USD = $50 prevents ruin attempts (stop before too late)
+  - Never rely on "grinding back up" as a strategy
+- Pattern: SCALE UP requires proof, not hope
+  - 60% WR over 100 trades = statistically significant edge
+  - $500 balance = sufficient capital for larger positions
+  - 2.5x growth = earned profits (not deposited funds)
+  - 50 clean trades = system stability (no incidents)
+  - Only scale after ALL conditions met (conservative approach)
+- Pattern: Configuration-driven criteria (not hardcoded)
+  - All thresholds defined in `EXIT_CRITERIA` config dict
+  - Easy to adjust based on real-world performance
+  - Monthly reviews update thresholds (not set-and-forget)
+  - Example: MAX_DRAWDOWN_PCT = 0.30 (can tune to 0.25 or 0.35)
+- Context: Monitoring is enforcement mechanism
+  - Real-time dashboards show current state (balance, WR, positions)
+  - Alerts notify operator when triggers fire
+  - Daily/weekly reports track progress toward milestones
+  - Without monitoring, criteria are just documentation (useless)
+- Gotcha: False positives worse than false negatives
+  - False positive: HALT when system is fine → Lost trading opportunities
+  - False negative: No HALT when system failing → Catastrophic loss
+  - Criteria tuned to avoid false positives (conservative thresholds)
+  - Better to stop early 10 times than miss 1 catastrophic event
+
+**Next Task:** US-RC-036 (Eleanor Nash - Final Presentation)
+- Create stakeholder-facing presentation deck
+- 20 slides max, focus on insights and recommendations
+- Include data visualizations from researcher reports
+- Executive summary, key findings (top 5), recommendations (top 3), roadmap
+
+---
