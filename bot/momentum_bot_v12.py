@@ -2005,12 +2005,15 @@ def run_bot():
 
     # Load state
     state = load_state()
+    log.info(f"DEBUG: Loaded state - peak_balance=${state.peak_balance:.2f}, current_balance=${state.current_balance:.2f}")
 
     # Initialize balance tracking
     balance = get_usdc_balance()
+    log.info(f"DEBUG: Blockchain balance=${balance:.2f}")
 
     # CRITICAL: Validate state against blockchain (prevents Jan 15, 2026 incident)
     state = validate_and_fix_state(state, balance)
+    log.info(f"DEBUG: After validate - peak_balance=${state.peak_balance:.2f}, current_balance=${state.current_balance:.2f}")
 
     # Update current balance (may have been corrected by validation)
     state.current_balance = balance
