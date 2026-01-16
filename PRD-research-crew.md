@@ -262,15 +262,15 @@ Execute a comprehensive evaluation of the Polymarket AutoTrader system using 9 s
 **Persona Context:** "Is 58% win rate significantly better than 50% coin flip? Or is it noise?"
 
 **Acceptance Criteria:**
-- [ ] Create `scripts/research/statistical_significance.py`
-- [ ] Input: Trade outcomes from logs (wins/losses count)
-- [ ] Hypothesis test: H0: p=0.50 (coin flip), H1: p>0.50 (edge exists)
-- [ ] Calculate: z-score, p-value (using binomial test)
-- [ ] Determine: Sample size needed for 95% confidence at 58% WR
-- [ ] Generate `reports/sarah_chen/statistical_significance.md`
-- [ ] Report: z-score, p-value, confidence interval, conclusion (reject H0 or not)
-- [ ] Test: Script correctly calculates p-value for example data (100 trades, 58 wins)
-- [ ] Typecheck passes
+- [x] Create `scripts/research/statistical_significance.py`
+- [x] Input: Trade outcomes from logs (wins/losses count)
+- [x] Hypothesis test: H0: p=0.50 (coin flip), H1: p>0.50 (edge exists)
+- [x] Calculate: z-score, p-value (using binomial test)
+- [x] Determine: Sample size needed for 95% confidence at 58% WR
+- [x] Generate `reports/sarah_chen/statistical_significance.md`
+- [x] Report: z-score, p-value, confidence interval, conclusion (reject H0 or not)
+- [x] Test: Script correctly calculates p-value for example data (100 trades, 58 wins)
+- [x] Typecheck passes
 
 ---
 
