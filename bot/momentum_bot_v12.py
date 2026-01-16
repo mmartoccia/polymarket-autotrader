@@ -1879,11 +1879,46 @@ def load_state() -> TradingState:
 
 
 def save_state(state: TradingState):
+    """
+    Save trading state to JSON file using atomic write pattern.
+
+    Atomic write ensures state file is never corrupted even if bot crashes mid-write:
+    1. Write to temp file (trading_state.json.tmp)
+    2. Sync to disk (fsync)
+    3. Atomically rename temp file to actual file (OS-level atomic operation)
+
+    If crash occurs during steps 1-2, old state file remains intact.
+    Step 3 is atomic on all modern filesystems (POSIX rename guarantees).
+
+    This prevents the corruption issue where bot crashes during write,
+    leaving trading_state.json incomplete/invalid, causing bot to fail on restart.
+    """
     os.makedirs(STATE_DIR, exist_ok=True)
     state_file = os.path.join(STATE_DIR, "trading_state.json")
+    temp_file = state_file + ".tmp"
 
-    with open(state_file, 'w') as f:
-        json.dump(asdict(state), f, indent=2)
+    try:
+        # Step 1: Write to temporary file
+        with open(temp_file, 'w') as f:
+            json.dump(asdict(state), f, indent=2)
+            # Step 2: Force write to disk (prevent buffering issues)
+            f.flush()
+            os.fsync(f.fileno())
+
+        # Step 3: Atomic rename (overwrites state_file if exists)
+        # This is atomic on all POSIX systems (Linux, macOS, BSD)
+        os.replace(temp_file, state_file)
+
+    except Exception as e:
+        log.error(f"Failed to save state atomically: {e}")
+        # Clean up temp file if it exists
+        if os.path.exists(temp_file):
+            try:
+                os.remove(temp_file)
+            except:
+                pass
+        # Re-raise to alert caller of failure
+        raise
 
 
 def validate_and_fix_state(state: TradingState, actual_balance: float) -> TradingState:

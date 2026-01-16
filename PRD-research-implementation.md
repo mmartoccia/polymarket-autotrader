@@ -146,10 +146,10 @@ this PRD translates findings into executable code changes to achieve 60-65% win 
 - Bot fails to start after corruption
 
 **Acceptance Criteria:**
-- [ ] 1. Review `bot/momentum_bot_v12.py` → `save_state()` function
-- [ ] 2. Implement atomic write pattern:
-- [ ] 3. Add error handling: if write fails, don't delete old state
-- [ ] Typecheck passes
+- [x] 1. Review `bot/momentum_bot_v12.py` → `save_state()` function
+- [x] 2. Implement atomic write pattern:
+- [x] 3. Add error handling: if write fails, don't delete old state
+- [x] Typecheck passes
 - [ ] Verify success metrics:
   - No state corruption in crash tests
   - State file always valid JSON
