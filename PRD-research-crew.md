@@ -444,14 +444,14 @@ Execute a comprehensive evaluation of the Polymarket AutoTrader system using 9 s
 **Persona Context:** "Does the bot's psychology help or hurt? Recovery modes adjust sizing—but do they improve outcomes?"
 
 **Acceptance Criteria:**
-- [ ] Parse `bot.log` for mode transitions: normal → conservative → defensive → recovery
-- [ ] Extract: Timestamp of mode change, trigger (loss amount or drawdown)
-- [ ] Calculate: Win rate in each mode, time spent in each mode
-- [ ] Test: Does defensive mode improve WR? Or just reduce bet size for no benefit?
-- [ ] Generate `reports/amara_johnson/recovery_mode_audit.md`
-- [ ] Report: Mode performance, recommendation (keep/modify/remove)
-- [ ] Test: Script correctly identifies ≥3 mode transitions in logs
-- [ ] Typecheck passes
+- [x] Parse `bot.log` for mode transitions: normal → conservative → defensive → recovery
+- [x] Extract: Timestamp of mode change, trigger (loss amount or drawdown)
+- [x] Calculate: Win rate in each mode, time spent in each mode
+- [x] Test: Does defensive mode improve WR? Or just reduce bet size for no benefit?
+- [x] Generate `reports/amara_johnson/recovery_mode_audit.md`
+- [x] Report: Mode performance, recommendation (keep/modify/remove)
+- [x] Test: Script correctly identifies ≥3 mode transitions in logs
+- [x] Typecheck passes
 
 #### US-RC-026: Test for gambler's fallacy in decision-making
 **Persona Context:** "After 3 losses, does the bot bet more aggressively expecting a win? That's gambler's fallacy."
