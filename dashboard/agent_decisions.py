@@ -41,18 +41,21 @@ class AgentDecisionTracker:
         """Parse a single decision entry from log lines"""
         decision = {}
 
-        # Look backward for crypto context (e.g., "Making decision for BTC epoch" or "[BTC] Agent Decision")
-        for i in range(max(0, start_idx-15), min(len(lines), start_idx+10)):
-            crypto_match = re.search(r'Making decision for (\w+) epoch', lines[i])
-            if crypto_match:
-                decision['crypto'] = crypto_match.group(1)
-                break
-
-            # Also check for "[BTC] Agent Decision" pattern
+        # Look for crypto context - appears AFTER vote aggregation in "[BTC] Agent Decision" line
+        for i in range(start_idx, min(len(lines), start_idx+30)):
+            # Check for "[BTC] Agent Decision" pattern (comes after aggregation box)
             agent_decision = re.search(r'\[(\w+)\] Agent Decision', lines[i])
             if agent_decision:
                 decision['crypto'] = agent_decision.group(1)
                 break
+
+        # Also look backward for "Making decision for BTC epoch" (comes before)
+        if 'crypto' not in decision:
+            for i in range(max(0, start_idx-15), start_idx):
+                crypto_match = re.search(r'Making decision for (\w+) epoch', lines[i])
+                if crypto_match:
+                    decision['crypto'] = crypto_match.group(1)
+                    break
 
         # Look for crypto symbol
         for line in lines[start_idx:start_idx+30]:
