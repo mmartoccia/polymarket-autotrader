@@ -345,21 +345,21 @@ class MessageFormatter:
 
             if total == 0 or total is None:
                 conn.close()
-                return "📊 *TRADING STATISTICS*\\n\\nNo trades recorded yet\\."
+                return "📊 TRADING STATISTICS\n\nNo trades recorded yet."
 
             win_rate = (wins / total * 100) if total > 0 else 0
 
-            # Escape special characters for Telegram MarkdownV2
-            message = "📊 *TRADING STATISTICS* \\(All\\-Time\\)\\n\\n"
-            message += f"Total Trades: `{total}`\\n"
-            message += f"Wins: `{wins}` \\({win_rate:.1f}%\\)\\n"
-            message += f"Losses: `{losses}` \\({100-win_rate:.1f}%\\)\\n\\n"
+            # Plain text formatting (no Markdown)
+            message = "📊 TRADING STATISTICS (All-Time)\n\n"
+            message += f"Total Trades: {total}\n"
+            message += f"Wins: {wins} ({win_rate:.1f}%)\n"
+            message += f"Losses: {losses} ({100-win_rate:.1f}%)\n\n"
 
-            message += f"Total P&L: `${total_pnl:.2f}`\\n"
-            message += f"Avg P&L/Trade: `${avg_pnl:.2f}`\\n\\n"
+            message += f"Total P&L: ${total_pnl:.2f}\n"
+            message += f"Avg P&L/Trade: ${avg_pnl:.2f}\n\n"
 
-            message += f"Best: `${best_trade:+.2f}`\\n"
-            message += f"Worst: `${worst_trade:+.2f}`\\n\\n"
+            message += f"Best: ${best_trade:+.2f}\n"
+            message += f"Worst: ${worst_trade:+.2f}\n\n"
 
             # Current streak
             state = self.get_bot_state()
@@ -368,11 +368,11 @@ class MessageFormatter:
                 consecutive_losses = state.get('consecutive_losses', 0)
 
                 if consecutive_wins > 0:
-                    message += f"Current Streak: `{consecutive_wins}W` 🔥"
+                    message += f"Current Streak: {consecutive_wins}W 🔥"
                 elif consecutive_losses > 0:
-                    message += f"Current Streak: `{consecutive_losses}L` ⚠️"
+                    message += f"Current Streak: {consecutive_losses}L ⚠️"
                 else:
-                    message += "Current Streak: _None_"
+                    message += "Current Streak: None"
 
             conn.close()
             return message

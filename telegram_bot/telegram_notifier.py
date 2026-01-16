@@ -146,7 +146,7 @@ async def stats_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     try:
         formatter = MessageFormatter()
         message = formatter.format_statistics()
-        await update.message.reply_text(message, parse_mode='Markdown')
+        await update.message.reply_text(message)  # Plain text, no Markdown parsing
         logger.info(f"Stats query by {update.effective_user.username}")
     except Exception as e:
         logger.error(f"Error in stats_command: {e}", exc_info=True)
