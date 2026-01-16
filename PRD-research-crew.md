@@ -457,15 +457,15 @@ Execute a comprehensive evaluation of the Polymarket AutoTrader system using 9 s
 **Persona Context:** "After 3 losses, does the bot bet more aggressively expecting a win? That's gambler's fallacy."
 
 **Acceptance Criteria:**
-- [ ] Create `scripts/research/gamblers_fallacy_test.py`
-- [ ] Extract consecutive loss sequences from logs
-- [ ] Measure: Position size after 1 loss, 2 losses, 3 losses
-- [ ] Measure: Entry price threshold after loss streaks (does bot lower standards?)
-- [ ] Statistical test: Is bet sizing correlated with recent losses? (should be independent)
-- [ ] Generate `reports/amara_johnson/gambler_fallacy_test.md`
-- [ ] Report: Correlation coefficient, p-value, conclusion (fallacy present or not)
-- [ ] Test: Script detects loss streaks and measures bet sizing changes
-- [ ] Typecheck passes
+- [x] Create `scripts/research/gamblers_fallacy_test.py`
+- [x] Extract consecutive loss sequences from logs
+- [x] Measure: Position size after 1 loss, 2 losses, 3 losses
+- [x] Measure: Entry price threshold after loss streaks (does bot lower standards?)
+- [x] Statistical test: Is bet sizing correlated with recent losses? (should be independent)
+- [x] Generate `reports/amara_johnson/gambler_fallacy_test.md`
+- [x] Report: Correlation coefficient, p-value, conclusion (fallacy present or not)
+- [x] Test: Script detects loss streaks and measures bet sizing changes
+- [x] Typecheck passes
 
 #### US-RC-027: Analyze agent voting herding (correlation matrix)
 **Persona Context:** "Do agents independently assess the market? Or do they copy each other (herding)?"
