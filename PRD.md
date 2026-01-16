@@ -20,17 +20,17 @@ Build a Telegram bot that provides real-time notifications for trading events (r
 **Description:** As a bot operator, I need a secure Telegram bot that only responds to my authorized user ID so unauthorized users cannot access bot information.
 
 **Acceptance Criteria:**
-- [ ] Create `telegram_bot/telegram_notifier.py`
-- [ ] Initialize bot using python-telegram-bot library
-- [ ] Load `TELEGRAM_BOT_TOKEN` from `.env`
-- [ ] Load `TELEGRAM_AUTHORIZED_USER_ID` from `.env`
-- [ ] Implement authentication check: reject all messages not from authorized user
-- [ ] Implement `/start` command - sends welcome message with available commands
-- [ ] Implement `/help` command - lists all available commands
-- [ ] Log all bot interactions (who, what command, when)
-- [ ] Typecheck passes
-- [ ] Test: Send `/start` from authorized account → get welcome message
-- [ ] Test: Send `/start` from unauthorized account → get rejection message
+- [x] Create `telegram_bot/telegram_notifier.py`
+- [x] Initialize bot using python-telegram-bot library
+- [x] Load `TELEGRAM_BOT_TOKEN` from `.env`
+- [x] Load `TELEGRAM_AUTHORIZED_USER_ID` from `.env`
+- [x] Implement authentication check: reject all messages not from authorized user
+- [x] Implement `/start` command - sends welcome message with available commands
+- [x] Implement `/help` command - lists all available commands
+- [x] Log all bot interactions (who, what command, when)
+- [x] Typecheck passes
+- [x] Test: Send `/start` from authorized account → get welcome message
+- [x] Test: Send `/start` from unauthorized account → get rejection message
 
 **Implementation Notes:**
 ```python
@@ -65,7 +65,7 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     )
 ```
 
-**Status:** ⏳ PENDING
+**Status:** ✅ COMPLETE (Jan 16, 2026)
 
 ---
 
@@ -73,14 +73,14 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
 **Description:** As a bot operator, I need a `/balance` command that shows current balance, daily P&L, and peak balance so I can quickly check account status.
 
 **Acceptance Criteria:**
-- [ ] Implement `/balance` command handler
-- [ ] Read balance from `state/trading_state.json`
-- [ ] Query blockchain balance via `get_usdc_balance()` (from dashboard code)
-- [ ] Show: Current balance, daily P&L, peak balance, day start balance
-- [ ] Format as rich text with emojis
-- [ ] Handle file not found gracefully (send error message)
-- [ ] Typecheck passes
-- [ ] Test: `/balance` → Returns formatted balance info
+- [x] Implement `/balance` command handler
+- [x] Read balance from `state/trading_state.json`
+- [x] Query blockchain balance via `get_usdc_balance()` (from dashboard code)
+- [x] Show: Current balance, daily P&L, peak balance, day start balance
+- [x] Format as rich text with emojis
+- [x] Handle file not found gracefully (send error message)
+- [x] Typecheck passes
+- [x] Test: `/balance` → Returns formatted balance info
 
 **Example Output:**
 ```
@@ -95,7 +95,7 @@ Daily P&L: $+244.67 (+3594.6%)
 🔗 Blockchain: $251.47 ✅
 ```
 
-**Status:** ⏳ PENDING
+**Status:** ✅ COMPLETE (Jan 16, 2026)
 
 **Dependencies:** US-TG-001
 
@@ -105,15 +105,15 @@ Daily P&L: $+244.67 (+3594.6%)
 **Description:** As a bot operator, I need a `/positions` command that shows active positions with current status (winning/losing) so I can monitor trades on mobile.
 
 **Acceptance Criteria:**
-- [ ] Implement `/positions` command handler
-- [ ] Query positions from Polymarket API (reuse dashboard code)
-- [ ] For each position: Show crypto, direction, shares, probability, win/loss status
-- [ ] Include epoch start price vs current price comparison
-- [ ] Show summary: Total value, max payout, unrealized P&L
-- [ ] Handle no positions case ("No active positions")
-- [ ] Limit to 10 most recent positions (Telegram message size limit)
-- [ ] Typecheck passes
-- [ ] Test: `/positions` → Returns formatted position list
+- [x] Implement `/positions` command handler
+- [x] Query positions from Polymarket API (reuse dashboard code)
+- [x] For each position: Show crypto, direction, shares, probability, win/loss status
+- [x] Include epoch start price vs current price comparison
+- [x] Show summary: Total value, max payout, unrealized P&L
+- [x] Handle no positions case ("No active positions")
+- [x] Limit to 10 most recent positions (Telegram message size limit)
+- [x] Typecheck passes
+- [x] Test: `/positions` → Returns formatted position list
 
 **Example Output:**
 ```
@@ -130,7 +130,7 @@ If All Win: $15.84
 Unrealized P&L: -$2.30 (-29.0%)
 ```
 
-**Status:** ⏳ PENDING
+**Status:** ✅ COMPLETE (Jan 16, 2026)
 
 **Dependencies:** US-TG-001
 
@@ -140,15 +140,15 @@ Unrealized P&L: -$2.30 (-29.0%)
 **Description:** As a bot operator, I need a `/status` command that shows bot mode, agent status, and recent activity so I can verify the bot is running correctly.
 
 **Acceptance Criteria:**
-- [ ] Implement `/status` command handler
-- [ ] Read bot state from `state/trading_state.json`
-- [ ] Show: Mode (normal/conservative/defensive/halted), consecutive wins/losses
-- [ ] Show: Enabled agents list (from agent_config.py)
-- [ ] Show: Recent trade count (last 24h from database)
-- [ ] Show: Shadow strategies count
-- [ ] Show: Last scan time (from logs or state file)
-- [ ] Typecheck passes
-- [ ] Test: `/status` → Returns bot status
+- [x] Implement `/status` command handler
+- [x] Read bot state from `state/trading_state.json`
+- [x] Show: Mode (normal/conservative/defensive/halted), consecutive wins/losses
+- [x] Show: Enabled agents list (from agent_config.py)
+- [x] Show: Recent trade count (last 24h from database)
+- [x] Show: Shadow strategies count
+- [x] Show: Last scan time (from logs or state file)
+- [x] Typecheck passes
+- [x] Test: `/status` → Returns bot status
 
 **Example Output:**
 ```
@@ -165,7 +165,7 @@ Recent Activity:
 Last scan: 2m 15s ago
 ```
 
-**Status:** ⏳ PENDING
+**Status:** ✅ COMPLETE (Jan 16, 2026)
 
 **Dependencies:** US-TG-001
 
@@ -175,15 +175,15 @@ Last scan: 2m 15s ago
 **Description:** As a bot operator, I need a `/stats` command that shows overall trading statistics so I can track long-term performance.
 
 **Acceptance Criteria:**
-- [ ] Implement `/stats` command handler
-- [ ] Query outcomes from `simulation/trade_journal.db`
-- [ ] Show: Total trades, wins, losses, win rate
-- [ ] Show: Total P&L, average P&L per trade
-- [ ] Show: Best trade, worst trade
-- [ ] Show: Current streak (wins or losses)
-- [ ] Time period options: all-time, 7d, 30d (default: all-time)
-- [ ] Typecheck passes
-- [ ] Test: `/stats` → Returns statistics
+- [x] Implement `/stats` command handler
+- [x] Query outcomes from `simulation/trade_journal.db`
+- [x] Show: Total trades, wins, losses, win rate
+- [x] Show: Total P&L, average P&L per trade
+- [x] Show: Best trade, worst trade
+- [x] Show: Current streak (wins or losses)
+- [x] Time period options: all-time, 7d, 30d (default: all-time)
+- [x] Typecheck passes
+- [x] Test: `/stats` → Returns statistics
 
 **Example Output:**
 ```
@@ -202,9 +202,14 @@ Worst: -$7.29 (BTC Up @ $0.58)
 Current Streak: 2W
 ```
 
-**Status:** ⏳ PENDING
+**Status:** ✅ COMPLETE (Jan 16, 2026)
 
 **Dependencies:** US-TG-001
+
+**Implementation Notes:**
+- Database schema uses `predicted_direction` vs `actual_direction` to determine wins/losses
+- Filter by `strategy LIKE 'ml_live%'` to get live trades only (not shadow)
+- Uses plain text formatting (not Markdown) to avoid parsing errors
 
 ---
 
