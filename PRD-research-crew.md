@@ -724,13 +724,13 @@ Execute a comprehensive evaluation of the Polymarket AutoTrader system using 9 s
 **Persona Context:** "Stakeholders need a visual presentation, not a 100-page report. 20 slides max, focus on insights and recommendations."
 
 **Acceptance Criteria:**
-- [ ] Create `reports/FINAL_PRESENTATION.md` (markdown slides or outline)
-- [ ] Slides: Executive summary, key findings (top 5), recommendations (top 3), roadmap
-- [ ] Include: Data visualizations from researchers (charts, graphs, heatmaps)
-- [ ] Format: Each slide = H2 heading, bullet points, max 1 chart per slide
-- [ ] Test: Presentation flows logically, under 20 slides
-- [ ] Optional: Export to PDF using pandoc or similar
-- [ ] Deliverable is markdown (no typecheck needed)
+- [x] Create `reports/FINAL_PRESENTATION.md` (markdown slides or outline)
+- [x] Slides: Executive summary, key findings (top 5), recommendations (top 3), roadmap
+- [x] Include: Data visualizations from researchers (charts, graphs, heatmaps)
+- [x] Format: Each slide = H2 heading, bullet points, max 1 chart per slide
+- [x] Test: Presentation flows logically, under 20 slides
+- [x] Optional: Export to PDF using pandoc or similar
+- [x] Deliverable is markdown (no typecheck needed)
 
 #### US-RC-037: Auto-generate implementation PRD from research findings
 **Persona Context:** "All the research is done. Now I need to translate insights into executable code changes. Create a new PRD that Ralph can execute autonomously."
