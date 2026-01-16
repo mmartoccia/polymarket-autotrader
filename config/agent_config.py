@@ -70,6 +70,15 @@ REGIME_ADJUSTMENT_STRENGTH = 1.0  # 0.0 = no adjustment, 1.0 = full adjustment
 REGIME_ADJUSTMENT_ENABLED = True
 
 # =============================================================================
+# ENTRY PRICE LIMITS (Bug Fix Jan 16, 2026)
+# =============================================================================
+
+# Global maximum entry price across all strategies
+# Lower entry prices = lower fees = lower breakeven win rate
+MAX_ENTRY = 0.25                  # Global cap (reduces breakeven WR from 52% to 51%)
+EARLY_MAX_ENTRY = 0.30            # Early momentum maximum (overridden by MAX_ENTRY if lower)
+
+# =============================================================================
 # TECH AGENT SETTINGS
 # =============================================================================
 

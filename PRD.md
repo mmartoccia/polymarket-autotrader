@@ -47,12 +47,12 @@ This PRD addresses both the underlying bugs AND profitability restoration throug
 **Description:** As a developer, I need to lower entry price limits to reduce fee drag and improve profitability by lowering the breakeven win rate from 52% to 51%.
 
 **Acceptance Criteria:**
-- [ ] Update MAX_ENTRY from 0.40 to 0.25 in config
-- [ ] Update EARLY_MAX_ENTRY from 0.75 to 0.30 in config
-- [ ] Log warning if attempting to trade above new thresholds
-- [ ] Test: Entry price >0.25 is rejected with clear reason
-- [ ] Verify existing positions unaffected (config only affects new trades)
-- [ ] Typecheck passes
+- [x] Update MAX_ENTRY from 0.40 to 0.25 in config
+- [x] Update EARLY_MAX_ENTRY from 0.75 to 0.30 in config
+- [x] Log warning if attempting to trade above new thresholds
+- [x] Test: Entry price >0.25 is rejected with clear reason
+- [x] Verify existing positions unaffected (config only affects new trades)
+- [x] Typecheck passes
 
 ### US-BF-015: Check and disable bull market overrides
 **Description:** As a developer, I need to detect and disable bull market overrides if active, as they are inappropriate for current neutral/choppy market conditions.

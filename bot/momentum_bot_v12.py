@@ -2869,6 +2869,17 @@ def run_bot():
                         if not strategy:
                             continue
 
+                # GLOBAL ENTRY PRICE CAP (Bug Fix Jan 16, 2026)
+                # Apply MAX_ENTRY from config to all strategies
+                try:
+                    from config import agent_config
+                    max_entry_cap = getattr(agent_config, 'MAX_ENTRY', 0.40)  # Default to 0.40 if not set
+                    if entry_price > max_entry_cap:
+                        log.warning(f"  [{crypto.upper()}] SKIP: Entry price ${entry_price:.2f} exceeds global MAX_ENTRY ${max_entry_cap:.2f}")
+                        continue
+                except Exception as e:
+                    log.warning(f"  [{crypto.upper()}] Could not check MAX_ENTRY: {e}")
+
                 if direction in epoch_trades[crypto].get(current_epoch, []):
                     continue
 
