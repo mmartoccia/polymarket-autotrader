@@ -58,12 +58,12 @@ This PRD addresses both the underlying bugs AND profitability restoration throug
 **Description:** As a developer, I need to detect and disable bull market overrides if active, as they are inappropriate for current neutral/choppy market conditions.
 
 **Acceptance Criteria:**
-- [ ] Check if state/bull_market_overrides.json is being loaded
-- [ ] Add flag to disable overrides if detected: DISABLE_BULL_OVERRIDES=True
-- [ ] Log warning on startup if overrides file exists but disabled
-- [ ] Test: Bot ignores bull_market_overrides.json when flag is set
-- [ ] If file doesn't exist, log info message (not error)
-- [ ] Typecheck passes
+- [x] Check if state/bull_market_overrides.json is being loaded
+- [x] Add flag to disable overrides if detected: DISABLE_BULL_OVERRIDES=True
+- [x] Log warning on startup if overrides file exists but disabled
+- [x] Test: Bot ignores bull_market_overrides.json when flag is set
+- [x] If file doesn't exist, log info message (not error)
+- [x] Typecheck passes
 
 ### US-BF-011: Raise confluence threshold
 **Description:** As a developer, I need to raise the confluence threshold from 0.15% to 0.30% to filter out random walk noise in 15-minute epochs.

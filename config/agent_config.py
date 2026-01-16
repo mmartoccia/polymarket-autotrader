@@ -330,6 +330,14 @@ apply_mode(CURRENT_MODE)
 USE_ML_MODEL = False  # Set True to enable ML predictions (bypasses agent voting)
 
 # =============================================================================
+# BULL MARKET OVERRIDES (Bug Fix Jan 16, 2026)
+# =============================================================================
+
+# Disable bull market overrides (inappropriate for neutral/choppy markets)
+# If True, ignores state/bull_market_overrides.json even if present
+DISABLE_BULL_OVERRIDES = True  # Keep True to prevent inappropriate bull-biased trading
+
+# =============================================================================
 # SHADOW TRADING SYSTEM
 # =============================================================================
 

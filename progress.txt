@@ -19,3 +19,20 @@
   - Bot will now use agent-only decision making
   - Syntax checks passed for both modified files
 ---
+
+## Iteration 2 - US-BF-014: Lower entry price threshold
+- Added MAX_ENTRY = 0.25 global cap to config/agent_config.py
+- Added EARLY_MAX_ENTRY = 0.30 to config for clarity (bot already had this value)
+- Added validation in bot/momentum_bot_v12.py to enforce MAX_ENTRY before placing trades
+- Files changed:
+  - config/agent_config.py (added MAX_ENTRY and EARLY_MAX_ENTRY constants)
+  - bot/momentum_bot_v12.py (added global entry price validation at line 2872-2881)
+  - PRD.md (marked US-BF-014 complete)
+  - test_entry_price.py (created test to verify entry price rejection)
+- Learnings for future iterations:
+  - MAX_ENTRY is enforced AFTER strategy selection but BEFORE correlation checks
+  - Validation uses getattr() with default fallback for backward compatibility
+  - Entry price cap reduces breakeven win rate from 52% to 51% (fee economics)
+  - Test coverage: Created test_entry_price.py to verify rejection logic
+  - All syntax checks passed for both modified files
+---

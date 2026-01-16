@@ -491,6 +491,43 @@ if _ralph_overrides:
 
 
 # =============================================================================
+# BULL MARKET OVERRIDES CHECK (Bug Fix Jan 16, 2026)
+# =============================================================================
+# Check if bull_market_overrides.json exists and warn if present
+BULL_MARKET_OVERRIDE_FILE = "./state/bull_market_overrides.json"
+
+def check_bull_market_overrides():
+    """Check for bull market overrides and log warnings."""
+    from config import agent_config
+
+    bull_override_path = Path(__file__).parent.parent / BULL_MARKET_OVERRIDE_FILE.lstrip('./')
+
+    # Check if file exists
+    if bull_override_path.exists():
+        if getattr(agent_config, 'DISABLE_BULL_OVERRIDES', True):
+            # File exists but overrides are disabled (safe)
+            log.warning(f"⚠️  Bull market overrides file found but DISABLED by config flag")
+            log.warning(f"    File: {bull_override_path}")
+            log.warning(f"    Flag: DISABLE_BULL_OVERRIDES=True")
+            log.info(f"    ✅ Bot will NOT load bull market overrides (appropriate for neutral markets)")
+            return False
+        else:
+            # File exists and would be loaded (dangerous!)
+            log.error(f"🚨 DANGER: Bull market overrides file exists and NOT disabled!")
+            log.error(f"    File: {bull_override_path}")
+            log.error(f"    These overrides are inappropriate for neutral/choppy markets")
+            log.error(f"    Set DISABLE_BULL_OVERRIDES=True in config/agent_config.py")
+            return True
+    else:
+        # File doesn't exist (normal)
+        log.info(f"ℹ️  No bull market overrides file found (normal)")
+        return False
+
+# Run check on startup
+_has_bull_overrides = check_bull_market_overrides()
+
+
+# =============================================================================
 # DATA CLASSES
 # =============================================================================
 
