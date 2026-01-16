@@ -36,3 +36,24 @@
   - Test coverage: Created test_entry_price.py to verify rejection logic
   - All syntax checks passed for both modified files
 ---
+
+## Iteration 3 - US-BF-015: Check and disable bull market overrides
+- Added DISABLE_BULL_OVERRIDES = True flag to config/agent_config.py
+- Implemented check_bull_market_overrides() function in bot/momentum_bot_v12.py
+- Function checks if state/bull_market_overrides.json exists and logs appropriate warnings
+- Files changed:
+  - config/agent_config.py (added DISABLE_BULL_OVERRIDES flag with section and comments)
+  - bot/momentum_bot_v12.py (added bull market override detection function and startup check)
+  - PRD.md (marked US-BF-015 complete)
+  - test_bull_overrides.py (created comprehensive test suite)
+- Learnings for future iterations:
+  - The bull_market_overrides.json file exists but was NOT being loaded (bot loads ralph_overrides.json instead)
+  - Added preventive check to ensure overrides never accidentally get loaded
+  - Startup logging provides three scenarios:
+    1. File exists + disabled: WARNING with confirmation overrides ignored
+    2. File exists + NOT disabled: ERROR alerting to dangerous config
+    3. File doesn't exist: INFO message (normal state)
+  - getattr() with default value ensures backward compatibility
+  - Test coverage validates flag existence, file detection, and expected behavior
+  - All syntax checks and tests passed
+---

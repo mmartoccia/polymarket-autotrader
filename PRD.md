@@ -69,12 +69,12 @@ This PRD addresses both the underlying bugs AND profitability restoration throug
 **Description:** As a developer, I need to raise the confluence threshold from 0.15% to 0.30% to filter out random walk noise in 15-minute epochs.
 
 **Acceptance Criteria:**
-- [ ] Change CONFLUENCE_THRESHOLD from 0.0015 to 0.003 in config/agent_config.py line 78
-- [ ] Add comment explaining threshold filters ±0.05% typical random walk
-- [ ] Test: 0.20% price move does not trigger confluence
-- [ ] Test: 0.35% price move does trigger confluence
-- [ ] Verify threshold used in TechAgent decision logic
-- [ ] Typecheck passes
+- [x] Change CONFLUENCE_THRESHOLD from 0.0015 to 0.003 in config/agent_config.py line 78
+- [x] Add comment explaining threshold filters ±0.05% typical random walk
+- [x] Test: 0.20% price move does not trigger confluence
+- [x] Test: 0.35% price move does trigger confluence
+- [x] Verify threshold used in TechAgent decision logic
+- [x] Typecheck passes
 
 ### US-BF-005: Implement "Skip" vote type
 **Description:** As a developer, I need agents to abstain when uncertain instead of defaulting to a direction, preventing systematic bias.

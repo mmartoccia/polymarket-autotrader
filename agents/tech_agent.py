@@ -23,7 +23,8 @@ RSI_PERIOD = 14
 RSI_HISTORY_SIZE = 50
 RSI_OVERBOUGHT = 70
 RSI_OVERSOLD = 30
-CONFLUENCE_THRESHOLD = 0.0015  # 0.15% minimum price change
+# Raised from 0.15% to 0.30% to filter random walk noise (±0.05% typical in 15min epochs)
+CONFLUENCE_THRESHOLD = 0.003  # 0.30% minimum price change
 
 
 # Exchange symbol mappings

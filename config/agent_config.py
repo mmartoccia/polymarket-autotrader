@@ -84,7 +84,8 @@ EARLY_MAX_ENTRY = 0.30            # Early momentum maximum (overridden by MAX_EN
 
 # Exchange confluence requirements
 TECH_MIN_EXCHANGES_AGREE = 2      # Minimum exchanges agreeing on direction
-TECH_CONFLUENCE_THRESHOLD = 0.0015 # 0.15% minimum price change
+# Raised from 0.15% to 0.30% to filter random walk noise (±0.05% typical in 15min epochs)
+TECH_CONFLUENCE_THRESHOLD = 0.003  # 0.30% minimum price change
 
 # RSI settings
 TECH_RSI_PERIOD = 14
