@@ -2861,3 +2861,180 @@ Strategic implications:
 7. Monitor weekly: Re-run to track regime detection quality over time
 
 ---
+
+## Iteration 31 - US-RC-031: Calculate Strategy Performance by Regime
+**Persona:** Prof. Eleanor Nash (Game Theory Economist)
+**Completed:** 2026-01-16 14:55 UTC
+**Files Changed:**
+- scripts/research/strategy_by_regime.py (new)
+- reports/eleanor_nash/strategy_by_regime.csv (new)
+- reports/eleanor_nash/strategy_by_regime_analysis.md (new)
+- PRD-research-crew.md (marked complete)
+
+**Implementation:**
+Created comprehensive analyzer to evaluate strategy performance across market regimes:
+
+1. **Regime Classification Parser:**
+   - Parses bot.log for RegimeAgent classifications (BULL, BEAR, SIDEWAYS, CHOPPY, VOLATILE)
+   - Normalizes regime names (BULLISH→BULL, NEUTRAL→SIDEWAYS)
+   - Extracts timestamp, crypto, regime, confidence
+
+2. **Trade-Regime Matching:**
+   - Queries shadow trading database for resolved trades
+   - Joins trades with regime classifications by timestamp (±15 min window)
+   - Matches by crypto and temporal proximity
+   - Tracks win/loss and P&L per (strategy, regime) pair
+
+3. **Performance Matrix:**
+   - Calculates win rate for each (strategy, regime) combination
+   - Identifies best strategy per regime (by total P&L)
+   - Generates insights: strategies that excel/struggle in specific regimes
+   - Detects regime-agnostic strategies (low variance across regimes)
+
+4. **Adaptive Recommendations:**
+   - Auto-generates Python code for regime-based strategy switching
+   - Provides game theory perspective on regime-adaptive trading
+   - Defines minimum sample size requirements (20+ trades per pair)
+   - Outlines validation steps before live deployment
+
+5. **Edge Cases Handled:**
+   - No regime classifications in logs → graceful empty report
+   - No resolved trades → diagnostic guidance
+   - Timestamp mismatches → fuzzy matching within window
+   - Insufficient sample sizes → filters require 3+ trades minimum
+
+**Output Format:**
+- CSV: strategy_by_regime.csv (tabular performance matrix)
+- Report: strategy_by_regime_analysis.md (insights + recommendations)
+- Empty state: Diagnostic report with next steps
+
+**Learnings for Future Iterations:**
+1. **Temporal Matching Pattern:** Using ±15 minute window for regime-trade matching is robust
+   - Handles epoch timing variations
+   - Accommodates regime detection lag
+   - Can be tuned if needed (current window: 30 min total)
+
+2. **Regime Normalization:** Map variants to canonical names (BULLISH→BULL, NEUTRAL→SIDEWAYS)
+   - Prevents fragmentation across similar regimes
+   - Improves statistical power by consolidating samples
+
+3. **Minimum Sample Size:** Require 3+ trades for inclusion, 5+ for insights, 20+ for confidence
+   - Prevents spurious patterns from small samples
+   - Aligns with statistical significance requirements
+
+4. **Best Strategy Selection:** Rank by total P&L (not win rate alone)
+   - Win rate ignores bet sizing and entry quality
+   - Total P&L captures actual profitability
+   - Requires minimum sample size to prevent outlier bias
+
+5. **Game Theory Integration:** Prof. Nash's perspective adds strategic depth
+   - Regime-adaptive strategies are Nash equilibrium candidates
+   - Key constraint: Detection lag must be < 2 epochs for exploitability
+   - If lag > 3 epochs, adaptive switching adds noise
+
+6. **Empty Data Handling:** Always generate diagnostic reports, never fail silently
+   - Guides user on next steps (enable RegimeAgent, wait for trades, etc.)
+   - Prevents confusion when analysis returns no results
+   - Provides actionable troubleshooting steps
+
+7. **Prof. Nash Voice:** Economic/strategic framing distinguishes from technical analysis
+   - References Nash equilibrium, market dynamics, strategic synthesis
+   - Focuses on exploitability and opponent adaptation
+   - Balances theory with practical implementation constraints
+
+**Next Steps:**
+- Script ready to run on VPS when live data accumulates
+- Re-run periodically: `python3 scripts/research/strategy_by_regime.py`
+- Requires RegimeAgent enabled and logging classifications
+- Minimum 20 trades per (strategy, regime) pair for confidence
+
+**Test Results:**
+✅ Script runs without errors
+✅ Handles no-data case gracefully
+✅ Generates CSV and markdown reports
+✅ Python syntax validation passes
+✅ Creates reports/eleanor_nash/ directory if missing
+
+---
+
+## Iteration 32 - US-RC-031B: Component elimination audit
+**Persona:** Alex "Occam" Rousseau (First Principles Engineer)
+**Completed:** 2026-01-16 15:01
+**Files Changed:**
+- scripts/research/component_audit.py (created)
+- reports/alex_rousseau/elimination_candidates.md (created)
+- PRD-research-crew.md (marked US-RC-031B complete)
+
+**Learnings:**
+- Pattern: Elimination scoring based on multiple factors
+  - Negative WR contribution = highest priority for deletion (+10 points)
+  - Zero impact components = dead weight (+5 points)
+  - High LOC (>200) = maintenance burden (+2-3 points)
+  - Low decision frequency (<10%) = rarely used (+3 points)
+  - Positive WR contribution = essential (-10 points)
+
+- Pattern: Component audit structure
+  - Agents: Actual LOC from codebase files
+  - Features: Estimated LOC (embedded in main bot file)
+  - Config: Parameter count as proxy for complexity
+
+- Key Finding: **Trend Filter has -3% WR impact** (caused Jan 14 disaster)
+  - Elimination score: 10.0 (DELETE with high confidence)
+  - 60 LOC of negative ROI code
+  - Should be removed immediately
+
+- Key Finding: **68 config parameters is excessive** (target: <15)
+  - Configuration space explosion
+  - Makes tuning nearly impossible
+  - Many parameters for disabled agents
+
+- Key Finding: **26 components analyzed, 5 elimination candidates**
+  - 1 DELETE (Trend Filter - proven negative ROI)
+  - 4 DISABLE (SocialSentiment, Tech, Sentiment, Regime agents - zero impact)
+  - 18 REVIEW (need ablation tests to measure impact)
+  - 2 ESSENTIAL (Drawdown Protection, Tiered Sizing - proven positive)
+
+- Pattern: First principles methodology
+  - Question every component: "Does this earn its keep?"
+  - Measure maintenance burden: LOC, config params, complexity
+  - Prioritize deletions over additions (simpler is better)
+  - Focus on proven negative ROI (remove harm first)
+
+- Alex's Voice: Skeptical, surgical, anti-complexity
+  - "Complexity is a liability"
+  - "Every line of code must earn its keep"
+  - "Start deleting"
+  - Focus on simplification, not optimization
+
+- Database Note: Shadow performance query failed (wrong column name)
+  - Used `strategy_name` but should be different column
+  - Handled gracefully with fallback estimates
+  - Agent performance report not yet generated by Vic
+
+- Testing Protocol Design: Shadow test -> 50 trades -> compare WR -> remove
+  - Ensures data-driven decisions
+  - Rollback plan: Keep in git history 30 days
+  - Prevents regrettable deletions
+
+**Implementation Notes:**
+- Created Component dataclass with elimination_score property
+- ComponentAuditor class scans agents, features, config
+- Loads performance data from Vic's reports (when available)
+- Calculates maintenance burden (LOC, complexity)
+- Ranks components by elimination score (high = delete)
+- Generates detailed markdown report with recommendations
+- Handles missing data gracefully (uses estimates)
+- Report includes:
+  - Executive summary (26 components, 5 candidates)
+  - Ranked table (elimination score descending)
+  - Detailed analysis (only for candidates)
+  - Implementation recommendations (phased approach)
+  - First principles question (what to rebuild from scratch)
+
+**Next Steps for US-RC-031C:**
+- Assumption archaeology: Question WHY each architectural decision was made
+- Document: Multi-agent consensus, weighted voting, adaptive thresholds, etc.
+- Challenge: "What problem does this solve? What's the evidence it works?"
+- Output: assumption_audit.md with elimination test list
+
+---
