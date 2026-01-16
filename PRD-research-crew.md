@@ -296,14 +296,14 @@ Execute a comprehensive evaluation of the Polymarket AutoTrader system using 9 s
 **Persona Context:** "Do cheap entries ($0.10-0.15) actually win more? Or is the edge in mid-range prices?"
 
 **Acceptance Criteria:**
-- [ ] Create `scripts/research/entry_price_win_rate.py`
-- [ ] Bucket entry prices: $0.05-0.10, $0.10-0.15, $0.15-0.20, $0.20-0.25, $0.25-0.30
-- [ ] Calculate win rate per bucket
-- [ ] Test statistical significance: Are differences real or noise? (chi-square test)
-- [ ] Generate `reports/jimmy_martinez/entry_vs_outcome.csv`
-- [ ] Report: Win rate per bucket, sample size, p-value, optimal entry range
-- [ ] Test: Script correctly buckets trades and calculates WR
-- [ ] Typecheck passes
+- [x] Create `scripts/research/entry_price_win_rate.py`
+- [x] Bucket entry prices: $0.05-0.10, $0.10-0.15, $0.15-0.20, $0.20-0.25, $0.25-0.30
+- [x] Calculate win rate per bucket
+- [x] Test statistical significance: Are differences real or noise? (chi-square test)
+- [x] Generate `reports/jimmy_martinez/entry_vs_outcome.csv`
+- [x] Report: Win rate per bucket, sample size, p-value, optimal entry range
+- [x] Test: Script correctly buckets trades and calculates WR
+- [x] Typecheck passes
 
 #### US-RC-016: Identify optimal timing window (win rate by epoch second)
 **Persona Context:** "Early trades (0-300s) vs late trades (720-900s) have different edges. Data will tell us which is best."
