@@ -57,3 +57,59 @@
   - Test coverage validates flag existence, file detection, and expected behavior
   - All syntax checks and tests passed
 ---
+
+## Iteration 4 - US-BF-011: Raise confluence threshold
+- Changed TECH_CONFLUENCE_THRESHOLD from 0.0015 to 0.003 in config/agent_config.py (0.15% → 0.30%)
+- Updated hardcoded CONFLUENCE_THRESHOLD in agents/tech_agent.py to match
+- Added explanatory comment about filtering random walk noise (±0.05% typical in 15min epochs)
+- Files changed:
+  - config/agent_config.py (line 87-88: raised threshold and added comment)
+  - agents/tech_agent.py (line 26-27: raised threshold and added comment)
+  - PRD.md (marked US-BF-011 complete)
+  - test_confluence_threshold.py (created comprehensive test suite)
+- Learnings for future iterations:
+  - TechAgent has its own hardcoded CONFLUENCE_THRESHOLD (not imported from config)
+  - Both locations need updating: config/agent_config.py AND agents/tech_agent.py
+  - Threshold used in decision logic at lines 226 and 229 (if change > THRESHOLD)
+  - 0.30% threshold filters typical random walk noise (0.05-0.25% moves)
+  - Higher threshold = fewer but higher quality signals
+  - Tests verify: 0.20% move filtered out, 0.35% move triggers confluence
+  - All typechecks passed for both modified files
+---
+
+## Iteration 5 - US-BF-005: Implement "Skip" vote type
+- Added "Skip" as fourth valid direction in agents/base_agent.py Vote dataclass
+- Updated Vote.__post_init__() validation to accept "Skip" alongside Up/Down/Neutral
+- Added comprehensive docstring explaining when to use each direction type
+- Skip votes use confidence=0.0 and quality=0.0 by convention
+- Files changed:
+  - agents/base_agent.py (line 18-51: added Skip direction, updated validation, added docstring)
+  - PRD.md (marked US-BF-005 complete)
+  - test_skip_vote.py (created comprehensive test suite)
+- Learnings for future iterations:
+  - Vote dataclass accepts four directions: "Up", "Down", "Neutral", "Skip"
+  - Skip prevents default-to-direction bias when agents are uncertain
+  - Skip votes return 0.0 weighted score (confidence × quality × weight = 0)
+  - Convention: Use Skip with confidence=0.0 and quality=0.0
+  - All four directions pass validation correctly
+  - Invalid directions (e.g., "Maybe") still properly rejected
+  - Tests verify Skip vote creation, validation, and weighted scoring
+  - Typecheck passed for base_agent.py
+---
+## Iteration 6 - US-BF-001: Remove TechAgent default-to-Up bias
+- Changed agents/tech_agent.py line 317-329 to return Skip vote on tie/flat market
+- Previous behavior: defaulted to "Up" when avg_change >= 0 (line 318)
+- New behavior: returns Skip vote with confidence=0.0, quality=0.0 when tie detected
+- Files changed:
+  - agents/tech_agent.py (line 305-343: added Skip vote return on tie scenario)
+  - test_tech_agent_skip.py (created comprehensive test suite)
+  - PRD.md (marked US-BF-001 complete)
+- Learnings for future iterations:
+  - TechAgent has analyze() method (not vote()) - consistent with base class pattern
+  - Tie detection: up_count == down_count (equal exchange signals)
+  - Skip vote reasoning should be descriptive: "No confluence detected: XUp/YDown tie, avg Z% → ABSTAINING"
+  - Majority cases (3 Up/1 Down or 1 Up/3 Down) still return directional votes
+  - Confluence path (when direction is not None) is unchanged - high confidence votes work as before
+  - All 5 test cases passed: tie scenario, flat market, majority up, majority down, confluence
+  - Typecheck passed for tech_agent.py
+---
