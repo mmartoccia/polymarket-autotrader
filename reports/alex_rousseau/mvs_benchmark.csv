@@ -1,0 +1,7 @@
+Strategy,Description,Total Trades,Wins,Losses,Skips,Win Rate,Total P&L,vs Current System
+"Price Filter Only","Trade any market <$0.20 entry, skip expensive",35,24,11,15,68.6%,+194.28,+10.6%
+"Single Best Agent","Use only the highest-performing agent (62% WR assumed)",32,21,11,18,65.6%,+171.12,+7.6%
+"Random Baseline","50/50 coin flip at $0.15 entry (control group)",36,19,17,14,52.8%,+135.28,-5.2%
+"Contrarian Only","Fade markets >70% on one side (cheap entry <$0.20)",36,19,17,14,52.8%,+148.18,-5.2%
+"Momentum Only","Trade only if 3+ exchanges show agreement (simulated)",22,11,11,28,50.0%,+82.65,-8.0%
+"Current System","Multi-agent consensus (56-60% WR claimed)",-,-,-,-,58.0%,-,baseline

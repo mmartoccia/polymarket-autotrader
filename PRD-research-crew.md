@@ -594,21 +594,21 @@ Execute a comprehensive evaluation of the Polymarket AutoTrader system using 9 s
 **Persona Context:** "What's the simplest strategy that could beat 53% breakeven? Start there, THEN add complexity—only if it helps."
 
 **Acceptance Criteria:**
-- [ ] Create `scripts/research/minimal_viable_strategy.py`
-- [ ] Design ultra-simple baseline strategies:
+- [x] Create `scripts/research/minimal_viable_strategy.py`
+- [x] Design ultra-simple baseline strategies:
   - Strategy 1: Random (50% Up, 50% Down) at $0.15 entry
   - Strategy 2: Momentum only (if 3+ exchanges agree, trade)
   - Strategy 3: Contrarian only (fade >70% side)
   - Strategy 4: Price-based (always buy <$0.20, skip >$0.20)
   - Strategy 5: Single best agent (highest WR from Vic's analysis)
-- [ ] Backtest on historical logs (last 200 trades)
-- [ ] Calculate win rate for each MVS
-- [ ] Compare to current system (56-60% WR)
-- [ ] Generate `reports/alex_rousseau/mvs_benchmark.csv`
-- [ ] Report: If MVS beats current system → current system is over-engineered
-- [ ] Recommendation: Start with MVS, add complexity only if proven beneficial
-- [ ] Test: All 5 MVS strategies tested
-- [ ] Typecheck passes
+- [x] Backtest on historical logs (last 200 trades)
+- [x] Calculate win rate for each MVS
+- [x] Compare to current system (56-60% WR)
+- [x] Generate `reports/alex_rousseau/mvs_benchmark.csv`
+- [x] Report: If MVS beats current system → current system is over-engineered
+- [x] Recommendation: Start with MVS, add complexity only if proven beneficial
+- [x] Test: All 5 MVS strategies tested
+- [x] Typecheck passes
 
 #### US-RC-031E: Complexity cost-benefit analysis
 **Persona Context:** "Every feature has a cost: code maintenance, bugs, cognitive load. Does it earn more than it costs?"
