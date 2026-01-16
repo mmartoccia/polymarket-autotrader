@@ -684,16 +684,16 @@ Execute a comprehensive evaluation of the Polymarket AutoTrader system using 9 s
 **Persona Context:** "Based on all research, can we realistically achieve 60-65% WR? Or should we adjust expectations?"
 
 **Acceptance Criteria:**
-- [ ] Create `scripts/research/win_rate_projection.py`
-- [ ] Input: Current WR (56-60%), identified improvements (per researcher)
-- [ ] Model: If we disable bad agents (+2%), raise thresholds (+3%), optimize entry (+2%)
-- [ ] Cumulative impact: 56% + 2% + 3% + 2% = 63% (example)
-- [ ] Monte Carlo: Run 1000 simulations of improvement combinations
-- [ ] Calculate: Probability of reaching 60-65% target
-- [ ] Generate `reports/eleanor_nash/60_65_wr_feasibility.md`
-- [ ] Report: Probability of success, alternative targets if infeasible
-- [ ] Test: Simulation runs, probability calculated
-- [ ] Typecheck passes
+- [x] Create `scripts/research/win_rate_projection.py`
+- [x] Input: Current WR (56-60%), identified improvements (per researcher)
+- [x] Model: If we disable bad agents (+2%), raise thresholds (+3%), optimize entry (+2%)
+- [x] Cumulative impact: 56% + 2% + 3% + 2% = 63% (example)
+- [x] Monte Carlo: Run 1000 simulations of improvement combinations
+- [x] Calculate: Probability of reaching 60-65% target
+- [x] Generate `reports/eleanor_nash/60_65_wr_feasibility.md`
+- [x] Report: Probability of success, alternative targets if infeasible
+- [x] Test: Simulation runs, probability calculated
+- [x] Typecheck passes
 
 #### US-RC-034: Create deployment roadmap with milestones
 **Persona Context:** "Stakeholders need a concrete plan: What changes, when, who owns it, how we measure success."
