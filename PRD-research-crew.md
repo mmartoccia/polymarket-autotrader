@@ -614,8 +614,8 @@ Execute a comprehensive evaluation of the Polymarket AutoTrader system using 9 s
 **Persona Context:** "Every feature has a cost: code maintenance, bugs, cognitive load. Does it earn more than it costs?"
 
 **Acceptance Criteria:**
-- [ ] Create `reports/alex_rousseau/complexity_analysis.md`
-- [ ] For each major feature, calculate:
+- [x] Create `reports/alex_rousseau/complexity_analysis.md`
+- [x] For each major feature, calculate:
   - **Cost:**
     - Lines of code
     - Bug count (git log search for fixes mentioning feature)
@@ -625,12 +625,12 @@ Execute a comprehensive evaluation of the Polymarket AutoTrader system using 9 s
     - Win rate improvement (from Vic's analysis or ablation test)
     - Trade quality improvement (confidence, entry price, etc.)
     - Risk reduction (drawdown protection, etc.)
-- [ ] Calculate ROI: Benefit / Cost (higher = keep, lower = remove)
-- [ ] Generate ranked list: Features by ROI
-- [ ] Identify: Features with negative or low ROI (<1.0)
-- [ ] Recommendation: Remove bottom 20% of features
-- [ ] Test: Analysis covers ≥15 features
-- [ ] Deliverable is markdown (no typecheck needed)
+- [x] Calculate ROI: Benefit / Cost (higher = keep, lower = remove)
+- [x] Generate ranked list: Features by ROI
+- [x] Identify: Features with negative or low ROI (<1.0)
+- [x] Recommendation: Remove bottom 20% of features
+- [x] Test: Analysis covers ≥15 features (20 features analyzed)
+- [x] Deliverable is markdown (no typecheck needed)
 
 #### US-RC-031F: First principles redesign proposal
 **Persona Context:** "If we started from scratch knowing what we know now, what would we build? Sketch it."
