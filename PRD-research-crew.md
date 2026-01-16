@@ -134,14 +134,14 @@ Execute a comprehensive evaluation of the Polymarket AutoTrader system using 9 s
 **Persona Context:** "On-chain data is the ground truth. If bot logs don't match blockchain, we have a serious problem."
 
 **Acceptance Criteria:**
-- [ ] Create `scripts/research/verify_on_chain.py`
-- [ ] Sample 10 random trades from logs (spread across different days)
-- [ ] For each trade, query Polygon blockchain (Polygonscan API or RPC)
-- [ ] Verify: Transaction exists, amount matches, outcome matches
-- [ ] Generate `reports/kenji_nakamoto/on_chain_verification.md`
-- [ ] Report: X/10 trades verified, discrepancies (if any)
-- [ ] Test: At least 8/10 trades match on-chain data
-- [ ] Typecheck passes
+- [x] Create `scripts/research/verify_on_chain.py`
+- [x] Sample 10 random trades from logs (spread across different days)
+- [x] For each trade, query Polygon blockchain (Polygonscan API or RPC)
+- [x] Verify: Transaction exists, amount matches, outcome matches
+- [x] Generate `reports/kenji_nakamoto/on_chain_verification.md`
+- [x] Report: X/10 trades verified, discrepancies (if any)
+- [x] Test: At least 8/10 trades match on-chain data
+- [x] Typecheck passes
 
 #### US-RC-005: Test for survivorship bias (period selection)
 **Persona Context:** "Is the 56-60% win rate cherry-picked from good periods? I need to check if any time periods are excluded."
