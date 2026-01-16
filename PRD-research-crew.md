@@ -2,11 +2,11 @@
 
 ## Introduction
 
-Execute a comprehensive evaluation of the Polymarket AutoTrader system using 8 specialized researcher personas. Each persona brings domain expertise and executes specific analytical tasks to answer: **Is the system profitable, sustainable, optimizable, safe, and trustworthy?**
+Execute a comprehensive evaluation of the Polymarket AutoTrader system using 9 specialized researcher personas. Each persona brings domain expertise and executes specific analytical tasks to answer: **Is the system profitable, sustainable, optimizable, safe, and trustworthy?**
 
 **Timeline:** 4 weeks (Jan 16 - Feb 13, 2026)
 
-**Expected Outcome:** Validated performance metrics, identified vulnerabilities, and actionable optimization roadmap to achieve 60-65% win rate.
+**Expected Outcome:** Validated performance metrics, identified vulnerabilities, simplified architecture, and actionable optimization roadmap to achieve 60-65% win rate.
 
 ---
 
@@ -51,6 +51,16 @@ Execute a comprehensive evaluation of the Polymarket AutoTrader system using 8 s
 **Mindset:** "Every strategy has a counter-strategy. What's the Nash equilibrium?"
 **Focus:** Multi-epoch dynamics, regime switching, competitive strategy, market adaptation
 **Deliverables:** Strategic synthesis, regime analysis, long-term recommendations
+
+### ⚡ Alex "Occam" Rousseau - First Principles Engineer
+**Mindset:** "Complexity is a liability. What's the simplest thing that could possibly work?"
+**Focus:** Architectural simplification, removing unnecessary components, questioning assumptions, essential complexity vs accidental complexity
+**Deliverables:** Simplification audit, component elimination proposals, first principles redesign, complexity cost-benefit analysis
+**Philosophy:**
+- "Can we delete this entire agent and improve results?"
+- "Are we solving the right problem, or optimizing the wrong solution?"
+- "What would this system look like if we rebuilt it with only what we know works?"
+- "Every line of code is a liability—prove it earns its keep."
 
 ---
 
@@ -532,18 +542,138 @@ Execute a comprehensive evaluation of the Polymarket AutoTrader system using 8 s
 
 ---
 
+## User Stories - Week 3.5: First Principles Simplification
+
+### ⚡ PERSONA: Alex "Occam" Rousseau (First Principles Engineer)
+
+#### US-RC-031B: Component elimination audit
+**Persona Context:** "Before we optimize, let's see what we can DELETE. Every component should justify its existence with data."
+
+**Acceptance Criteria:**
+- [ ] Create `scripts/research/component_audit.py`
+- [ ] List all system components:
+  - Agents (11 total: Tech, Sentiment, Regime, Risk, ML, etc.)
+  - Features (RSI, confluence, regime detection, trend filters, etc.)
+  - Config parameters (50+ thresholds and toggles)
+- [ ] For each component, calculate:
+  - Lines of code (maintenance burden)
+  - Execution time (performance cost)
+  - Win rate contribution (if disabled, does WR improve/degrade?)
+  - Decision frequency (how often does it actually influence trades?)
+- [ ] Identify candidates for removal:
+  - Negative ROI: Component hurts performance
+  - Zero impact: Component doesn't change decisions
+  - Redundant: Two components doing same thing
+- [ ] Generate `reports/alex_rousseau/elimination_candidates.md`
+- [ ] Report: Ranked list of components to remove, expected impact
+- [ ] Test: Script analyzes ≥20 components
+- [ ] Typecheck passes
+
+#### US-RC-031C: Assumption archaeology
+**Persona Context:** "Why do we have 11 agents? Why consensus voting? Who decided this? Let's question every assumption."
+
+**Acceptance Criteria:**
+- [ ] Create `reports/alex_rousseau/assumption_audit.md`
+- [ ] Document every major architectural decision:
+  - Multi-agent consensus (why not single model?)
+  - Weighted voting (why not equal weights?)
+  - Adaptive thresholds (why not static?)
+  - Shadow trading (is this useful or theater?)
+  - Regime detection (is this signal or noise?)
+- [ ] For each assumption, answer:
+  - What problem does this solve?
+  - What's the empirical evidence it works?
+  - What would break if we removed it?
+  - What's the simplest alternative?
+- [ ] Identify assumptions with weak evidence
+- [ ] Generate list: "Assumptions to test by removing"
+- [ ] Test: Audit covers ≥10 architectural decisions
+- [ ] Deliverable is markdown (no typecheck needed)
+
+#### US-RC-031D: Minimal viable strategy (MVS) benchmark
+**Persona Context:** "What's the simplest strategy that could beat 53% breakeven? Start there, THEN add complexity—only if it helps."
+
+**Acceptance Criteria:**
+- [ ] Create `scripts/research/minimal_viable_strategy.py`
+- [ ] Design ultra-simple baseline strategies:
+  - Strategy 1: Random (50% Up, 50% Down) at $0.15 entry
+  - Strategy 2: Momentum only (if 3+ exchanges agree, trade)
+  - Strategy 3: Contrarian only (fade >70% side)
+  - Strategy 4: Price-based (always buy <$0.20, skip >$0.20)
+  - Strategy 5: Single best agent (highest WR from Vic's analysis)
+- [ ] Backtest on historical logs (last 200 trades)
+- [ ] Calculate win rate for each MVS
+- [ ] Compare to current system (56-60% WR)
+- [ ] Generate `reports/alex_rousseau/mvs_benchmark.csv`
+- [ ] Report: If MVS beats current system → current system is over-engineered
+- [ ] Recommendation: Start with MVS, add complexity only if proven beneficial
+- [ ] Test: All 5 MVS strategies tested
+- [ ] Typecheck passes
+
+#### US-RC-031E: Complexity cost-benefit analysis
+**Persona Context:** "Every feature has a cost: code maintenance, bugs, cognitive load. Does it earn more than it costs?"
+
+**Acceptance Criteria:**
+- [ ] Create `reports/alex_rousseau/complexity_analysis.md`
+- [ ] For each major feature, calculate:
+  - **Cost:**
+    - Lines of code
+    - Bug count (git log search for fixes mentioning feature)
+    - Execution time (profiling data)
+    - Cognitive load (# of config parameters)
+  - **Benefit:**
+    - Win rate improvement (from Vic's analysis or ablation test)
+    - Trade quality improvement (confidence, entry price, etc.)
+    - Risk reduction (drawdown protection, etc.)
+- [ ] Calculate ROI: Benefit / Cost (higher = keep, lower = remove)
+- [ ] Generate ranked list: Features by ROI
+- [ ] Identify: Features with negative or low ROI (<1.0)
+- [ ] Recommendation: Remove bottom 20% of features
+- [ ] Test: Analysis covers ≥15 features
+- [ ] Deliverable is markdown (no typecheck needed)
+
+#### US-RC-031F: First principles redesign proposal
+**Persona Context:** "If we started from scratch knowing what we know now, what would we build? Sketch it."
+
+**Acceptance Criteria:**
+- [ ] Create `reports/alex_rousseau/first_principles_design.md`
+- [ ] Design from scratch:
+  - **Goal:** 60% WR at <$0.25 entry with minimal complexity
+  - **Core components:** What's truly essential? (likely 1-3 things)
+  - **Architecture:** How do they interact? (simpler than current)
+  - **Config:** How many parameters? (target: <10)
+  - **Code size:** Lines of code estimate (target: <500 lines)
+- [ ] Compare to current system:
+  - Current: 1600+ lines, 50+ config params, 11 agents
+  - Proposed: ??? lines, ??? params, ??? agents
+- [ ] Migration path: How to get from current to proposed
+- [ ] Risk assessment: What could go wrong?
+- [ ] Generate visual diagram: Current system vs proposed system
+- [ ] Test: Proposal has concrete architecture (not vague ideas)
+- [ ] Deliverable is markdown (no typecheck needed)
+
+---
+
 ## User Stories - Week 4: Synthesis & Recommendations
 
 ### ♟️ PERSONA: Prof. Eleanor Nash (Strategic Synthesis)
 
 #### US-RC-032: Compile all research findings into synthesis report
-**Persona Context:** "I need to integrate all 7 researchers' findings into a coherent narrative with actionable recommendations."
+**Persona Context:** "I need to integrate all 8 researchers' findings into a coherent narrative with actionable recommendations, balancing optimization with simplification."
 
 **Acceptance Criteria:**
-- [ ] Read all reports from `reports/*/` directories (31 previous deliverables)
+- [ ] Read all reports from `reports/*/` directories (37 previous deliverables)
 - [ ] Extract key findings from each researcher
 - [ ] Identify contradictions or conflicting recommendations
-- [ ] Synthesize: Top 10 optimization priorities (ranked by impact)
+- [ ] **Special focus:** Integrate Alex's simplification findings:
+  - Components to remove (elimination candidates)
+  - Minimal Viable Strategy benchmark (MVS vs current system)
+  - First principles redesign proposal
+  - Balance "add features" vs "remove features" recommendations
+- [ ] Synthesize: Top 10 priorities (mix of optimization AND simplification)
+  - Example: "Remove underperforming agents" (simplification)
+  - Example: "Raise consensus threshold" (optimization)
+  - Prioritize: Deletions before additions (simpler is better)
 - [ ] Generate `reports/RESEARCH_SYNTHESIS.md` (comprehensive)
 - [ ] Generate `reports/EXECUTIVE_SUMMARY.md` (2 pages, non-technical)
 - [ ] Report: Findings, priorities, deployment roadmap, exit criteria
@@ -684,7 +814,7 @@ this PRD translates findings into executable code changes to achieve
 
 ## Completion Criteria
 
-**ALL 37 user stories complete** when:
+**ALL 43 user stories complete** when:
 - ✅ All checkboxes marked `[x]`
 - ✅ All reports generated in `reports/` directory
 - ✅ All scripts in `scripts/research/` directory
