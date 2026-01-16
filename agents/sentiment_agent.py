@@ -72,13 +72,13 @@ class SentimentAgent(BaseAgent):
         rsi = data.get('rsi', 50.0)
 
         if not orderbook:
-            # CRITICAL FIX: No orderbook - default to Up with low confidence
+            # CRITICAL FIX: No orderbook - abstain instead of defaulting to Up
             return Vote(
-                direction="Up",  # Default when no data
-                confidence=0.35,  # Raised floor for quality control
-                quality=0.2,
+                direction="Skip",  # Abstain when no data available
+                confidence=0.0,  # Skip votes have 0.0 confidence by convention
+                quality=0.0,     # Skip votes have 0.0 quality by convention
                 agent_name=self.name,
-                reasoning="No orderbook → defaulting to Up",
+                reasoning="No orderbook data available → ABSTAINING",
                 details={}
             )
 
@@ -98,21 +98,17 @@ class SentimentAgent(BaseAgent):
         )
 
         if contrarian_signal is None:
-            # CRITICAL FIX: No contrarian signal - pick based on value
-            # Cheaper side has better value (even if not extreme)
-            if down_price < up_price:
-                direction = "Down"
-                reasoning = f"Down cheaper (${down_price:.2f} vs ${up_price:.2f})"
-            else:
-                direction = "Up"
-                reasoning = f"Up cheaper (${up_price:.2f} vs ${down_price:.2f})"
-
+            # CRITICAL FIX: No contrarian signal - abstain instead of picking cheaper side
             return Vote(
-                direction=direction,  # ALWAYS pick Up or Down
-                confidence=0.40,  # Raised floor for quality control
-                quality=0.4,
+                direction="Skip",  # Abstain when no strong contrarian signal
+                confidence=0.0,  # Skip votes have 0.0 confidence by convention
+                quality=0.0,     # Skip votes have 0.0 quality by convention
                 agent_name=self.name,
-                reasoning=reasoning,
+                reasoning=(
+                    f"No contrarian opportunity detected "
+                    f"(Up ${up_price:.2f}, Down ${down_price:.2f}, "
+                    f"time {time_in_epoch}s) → ABSTAINING"
+                ),
                 details={
                     'up_price': up_price,
                     'down_price': down_price,

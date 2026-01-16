@@ -102,13 +102,13 @@ This PRD addresses both the underlying bugs AND profitability restoration throug
 **Description:** As a developer, I need SentimentAgent to abstain when no orderbook data exists or on errors, instead of defaulting to Up.
 
 **Acceptance Criteria:**
-- [ ] Change agents/sentiment_agent.py line 77: Return Skip vote on missing orderbook
-- [ ] Change agents/sentiment_agent.py line 107: Return Skip vote on API errors
-- [ ] Skip votes have confidence=0.0 and quality=0.0
-- [ ] Reasoning indicates reason for abstaining
-- [ ] Test: Missing orderbook → Skip vote
-- [ ] Test: API timeout → Skip vote
-- [ ] Typecheck passes
+- [x] Change agents/sentiment_agent.py line 77: Return Skip vote on missing orderbook
+- [x] Change agents/sentiment_agent.py line 107: Return Skip vote on API errors
+- [x] Skip votes have confidence=0.0 and quality=0.0
+- [x] Reasoning indicates reason for abstaining
+- [x] Test: Missing orderbook → Skip vote
+- [x] Test: API timeout → Skip vote
+- [x] Typecheck passes
 
 ### US-BF-003: Remove RegimeAgent default-to-Up bias
 **Description:** As a developer, I need RegimeAgent to abstain in sideways/choppy regimes instead of defaulting to Up.
