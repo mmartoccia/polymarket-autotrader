@@ -112,20 +112,39 @@ class RegimeAgent(BaseAgent):
         crypto_trend = crypto_details.get(crypto, {})
         mean_return = crypto_trend.get('mean_return', 0.0)
 
-        # Pick direction based on trend
+        # Pick direction based on regime
+        # In sideways regime, ABSTAIN instead of picking a direction
+        if self.current_regime == 'sideways':
+            return Vote(
+                direction="Skip",
+                confidence=0.0,
+                quality=0.0,
+                agent_name=self.name,
+                reasoning=f"Sideways regime detected → ABSTAINING",
+                details={
+                    'regime': self.current_regime,
+                    'confidence': confidence,
+                    'volatility': self.avg_volatility,
+                    'weight_adjustments': weight_adjustments,
+                    'crypto_details': regime_data.get('crypto_details', {})
+                }
+            )
+
+        # For non-sideways regimes, pick direction based on this crypto's trend
         if mean_return > 0.001:  # Positive trend > 0.1%
             direction = "Up"
         elif mean_return < -0.001:  # Negative trend < -0.1%
             direction = "Down"
         else:
-            # Sideways - pick based on overall regime
+            # Flat trend - use overall regime to break tie
             if self.current_regime in ['bull_momentum']:
                 direction = "Up"
             elif self.current_regime in ['bear_momentum']:
                 direction = "Down"
             else:
-                # True sideways - low confidence but pick Up by default
-                direction = "Up"
+                # Should not reach here (sideways handled above)
+                # But safety fallback: Skip
+                direction = "Skip"
 
         # Adjust confidence based on regime clarity
         vote_confidence = confidence * 0.3  # Lower confidence since regime is slow

@@ -114,12 +114,12 @@ This PRD addresses both the underlying bugs AND profitability restoration throug
 **Description:** As a developer, I need RegimeAgent to abstain in sideways/choppy regimes instead of defaulting to Up.
 
 **Acceptance Criteria:**
-- [ ] Change agents/regime_agent.py line 128: Return Skip vote in sideways regime
-- [ ] Skip vote has confidence=0.0 and quality=0.0
-- [ ] Reasoning indicates "sideways regime → ABSTAINING"
-- [ ] Test: Choppy market detection → Skip vote returned
-- [ ] Test: Bull/bear regime still returns Up/Down votes
-- [ ] Typecheck passes
+- [x] Change agents/regime_agent.py line 128: Return Skip vote in sideways regime
+- [x] Skip vote has confidence=0.0 and quality=0.0
+- [x] Reasoning indicates "sideways regime → ABSTAINING"
+- [x] Test: Choppy market detection → Skip vote returned
+- [x] Test: Bull/bear regime still returns Up/Down votes
+- [x] Typecheck passes
 
 ### US-BF-004: Fix RSI neutral zone scoring
 **Description:** As a developer, I need RSI 40-60 (neutral zone) to return 0.5 confidence instead of 1.0, preventing false high confidence in sideways markets.

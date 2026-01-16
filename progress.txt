@@ -113,3 +113,21 @@
   - All 5 test cases passed: tie scenario, flat market, majority up, majority down, confluence
   - Typecheck passed for tech_agent.py
 ---
+## Iteration 7 - US-BF-002: Remove SentimentAgent default-to-Up bias
+- Changed agents/sentiment_agent.py line 75-83 to return Skip vote on missing orderbook
+- Changed agents/sentiment_agent.py line 100-117 to return Skip vote when no contrarian signal
+- Skip votes use confidence=0.0 and quality=0.0 by convention
+- Files changed:
+  - agents/sentiment_agent.py (two locations: missing orderbook and no contrarian signal)
+  - test_sentiment_agent_skip.py (created comprehensive test suite with 5 test cases)
+  - PRD.md (marked US-BF-002 complete)
+- Learnings for future iterations:
+  - SentimentAgent has two default-to-Up paths: missing orderbook AND no contrarian signal
+  - Missing orderbook path was line 74-83 (no data available)
+  - No contrarian signal path was line 100-121 (data available but no extreme prices/wrong time window)
+  - Previous behavior picked cheaper side when no contrarian signal (still biased)
+  - New behavior: Skip when uncertain → prevents systematic bias
+  - Contrarian path (lines 119+) unchanged - still returns directional votes with high confidence
+  - Test coverage: 5 scenarios (no orderbook, no contrarian, no extreme prices, contrarian Down, contrarian Up)
+  - All 5 tests passed, typecheck passed
+---
