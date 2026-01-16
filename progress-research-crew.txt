@@ -835,3 +835,124 @@
 
 ---
 
+
+## Iteration 13 - Charter Task: Create PRD #1 (Dr. Kenji Nakamoto)
+**Persona:** Ralph (Autonomous Coding Agent)
+**Completed:** 2026-01-16 11:20
+**Files Changed:**
+- docs/PRD-kenji-nakamoto-data-forensics.md (created, 590 lines)
+- docs/PRD-research-team-charter.md (marked PRD #1 complete)
+
+**Learnings:**
+- Pattern: Comprehensive PRD structure from charter template
+  - 9 main sections: Executive, Questions, Methodology, Deliverables, Criteria, Dependencies, Risk, Resources, Appendix
+  - Each section has clear purpose and expected content
+  - Template ensures consistency across all 8 researcher PRDs
+- Pattern: PRD documents COMPLETED work retrospectively
+  - All 7 deliverables were already implemented (US-RC-001 through US-RC-006)
+  - PRD serves as comprehensive documentation of what was done
+  - Includes status markers (✅ COMPLETE) for transparency
+- Pattern: Findings summary section critical for downstream researchers
+  - Highlights CRITICAL atomic write bug for Dmitri Volkov
+  - Flags MODERATE risk (no production data yet)
+  - Documents EXCELLENT defensive programming in scripts
+- Pattern: Dependencies section establishes research sequence
+  - "NONE" for Kenji (first in sequence)
+  - Lists all 7 downstream consumers and how they use Kenji's findings
+  - Ensures proper data flow through research pipeline
+- Gotcha: Charter had wrong filename assumption
+  - Charter referenced "PRD-research-crew.md" but actual file is "PRD-research-team-charter.md"
+  - Used Glob tool to find correct filename before attempting to read
+- Context: PRD creation order follows dependency flow
+  - Kenji (Data Forensics) → validates data integrity first
+  - Dmitri (System Reliability) → ensures system trustworthy
+  - Sarah (Probabilistic Math) → requires clean data from Kenji
+  - Sequential order prevents blocked work
+- Context: PRD serves multiple audiences
+  - Researchers: Clear scope and methodology
+  - Stakeholders: Transparency about what was done
+  - Future work: Documentation of analysis approach
+
+**Implementation Notes:**
+- Created 590-line comprehensive PRD for Dr. Kenji Nakamoto
+- Documented all 7 completed deliverables:
+  1. Trade log completeness report
+  2. Duplicate transaction detection
+  3. Balance reconciliation audit
+  4. On-chain verification (10 trades)
+  5. Survivorship bias analysis
+  6. P-hacking & overfitting detection
+  7. Statistical anomaly detection
+- Each deliverable includes: file path, script path, content description, status
+- Research questions clearly stated (1 primary, 7 secondary, 4 out-of-scope)
+- Methodology section documents all 7 analysis techniques with thresholds
+- Success criteria includes quantitative metrics (coverage, rigor) and qualitative standards (code quality, documentation)
+- Dependencies section establishes Kenji as first in sequence (no upstream, 7 downstream)
+- Risk assessment covers data availability, technical, and analytical risks
+- Resources section documents VPS access, API keys, computational needs
+- Appendix includes code files analyzed, academic references, glossary, change log
+- Findings summary highlights CRITICAL atomic write bug and recommendations
+- Updated charter to mark PRD #1 as complete [x]
+- Committed both files to repository with descriptive commit message
+- Next: Create PRD #2 for Dmitri Volkov (System Reliability)
+
+---
+
+
+## Iteration 14 - Charter Task: Create PRD #2 (Dmitri Volkov)
+**Persona:** Ralph (Autonomous Coding Agent)
+**Completed:** 2026-01-16 11:30
+**Files Changed:**
+- docs/PRD-dmitri-volkov-system-reliability.md (created, 626 lines)
+- docs/PRD-research-team-charter.md (marked PRD #2 complete)
+
+**Learnings:**
+- Pattern: PRD structure follows charter template exactly (9 sections)
+  - Executive Summary, Research Questions, Methodology, Deliverables, Success Criteria
+  - Dependencies, Risk Assessment, Resources, Appendix
+  - Ensures consistency across all researcher PRDs
+- Pattern: Dmitri's PRD documents COMPLETED work (retrospective)
+  - All 4 deliverables already implemented in Iterations 5-7
+  - PRD serves as comprehensive documentation of what was done
+  - Includes status markers (✅ COMPLETE) for each deliverable
+- Pattern: Findings summary highlights critical issues for stakeholders
+  - 🔴 ATOMIC WRITE BUG documented prominently
+  - 🟢 API RELIABILITY strengths identified
+  - Provides actionable recommendations (immediate, short-term, long-term)
+- Pattern: Dependencies section establishes research flow
+  - Upstream: Kenji's data forensics (parallel work, not blocking)
+  - Downstream: 5 researchers rely on Dmitri's findings (Sarah, Victor, Rita, James, Eleanor)
+  - Ensures proper data flow through research pipeline
+- Context: Dmitri's work focuses on infrastructure reliability:
+  - State management safety (atomic writes, crash recovery)
+  - API resilience (timeouts, circuit breakers, error handling)
+  - VPS operational health (monitoring, security, log management)
+  - System-level fault tolerance (multi-process safety, recovery scenarios)
+- Context: Critical atomic write bug impacts downstream researchers
+  - Sarah Chen needs accurate state tracking for probability calculations
+  - Rita Stevens relies on state management for drawdown halt reliability
+  - Victor Ramanujan depends on database integrity for shadow trading analysis
+
+**Implementation Notes:**
+- Created 626-line comprehensive PRD for Dmitri Volkov
+- Documented all 4 completed deliverables:
+  1. State Management Audit Report (state_audit.md)
+  2. Atomic Write Safety Audit (atomic_write_audit.md) - 🔴 CRITICAL BUG FOUND
+  3. API Reliability Assessment (api_reliability_audit.md) - EXCELLENT score
+  4. VPS Operational Health Check (vps_health_report.md)
+- Each deliverable includes: file path, script path, content description, status
+- Research questions clearly stated (1 primary, 6 secondary, 5 out-of-scope)
+- Methodology section documents 5 analysis techniques (code review, state validation, API mapping, VPS health, crash recovery)
+- Success criteria includes quantitative metrics (coverage, audit rigor) and qualitative standards (code quality, documentation)
+- Dependencies section establishes Dmitri as parallel to Kenji (both audit system trustworthiness)
+- Risk assessment covers data availability, technical, and analytical risks
+- Resources section documents VPS access, computational needs, domain expertise
+- Appendix includes code files analyzed, system documentation, glossary, change log
+- Findings summary highlights CRITICAL atomic write bug and EXCELLENT API reliability
+- Recommendations prioritized: immediate (atomic write fix), short-term (backups), long-term (monitoring)
+- Updated charter to mark PRD #2 as complete [x]
+- Verified all 4 Dmitri scripts pass typecheck (py_compile)
+- Ready for commit and next PRD (Sarah Chen)
+
+---
+
