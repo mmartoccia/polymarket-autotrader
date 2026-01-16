@@ -23,3 +23,37 @@ Format:
 
 ---
 
+## Iteration 1 - US-RI-001: Fix State Tracking Bugs
+**Priority:** MEDIUM
+**Completed:** 2026-01-16 09:15 UTC
+**Files Changed:**
+- bot/momentum_bot_v12.py
+- PRD-research-implementation.md
+
+**What was implemented:**
+- Changed peak_balance tracking to use cash-only balance (excludes open positions)
+- Peak now only updates when actual cash balance increases (not position values)
+- Added validation assertion: current_balance <= peak_balance
+- Removed temporary "manual reset" code that disabled peak tracking
+
+**Technical Details:**
+- Found two locations where peak_balance was being updated (startup and main loop)
+- Both now use: `if balance > state.peak_balance: state.peak_balance = balance`
+- Added logging when peak updates to help with debugging
+- Validation assert will catch any logic errors early
+
+**Learnings for future iterations:**
+- Peak balance tracking was intentionally disabled due to Jan 16 incident (comments in code)
+- The root cause was including position values in peak, causing false halts
+- Cash-only tracking is the correct approach for drawdown protection
+- Bot has two peak update locations (startup + main loop) - both must be consistent
+- Import test passed successfully (syntax and structure are correct)
+
+**Testing Status:**
+- ✅ Syntax check: Passed
+- ✅ Import test: Passed
+- ✅ Code review: Logic verified
+- ⏳ Production validation: Requires 24-48 hour monitoring
+
+---
+
