@@ -226,11 +226,14 @@ class MultiExchangePriceFeed:
             if change > CONFLUENCE_THRESHOLD:
                 direction = "Up"
                 up_count += 1
+                self.log.debug(f"✅ {exchange}: {change:+.3%} > {CONFLUENCE_THRESHOLD:.3%} → Up")
             elif change < -CONFLUENCE_THRESHOLD:
                 direction = "Down"
                 down_count += 1
+                self.log.debug(f"✅ {exchange}: {change:+.3%} < -{CONFLUENCE_THRESHOLD:.3%} → Down")
             else:
                 direction = "Flat"
+                self.log.debug(f"❌ {exchange}: {change:+.3%} within ±{CONFLUENCE_THRESHOLD:.3%} → Flat (filtered)")
 
             signals[exchange] = (direction, change)
             total_change += change
@@ -315,7 +318,7 @@ class TechAgent(BaseAgent):
                 direction = "Down"
             else:
                 # Tie or flat market - ABSTAIN instead of guessing
-                return Vote(
+                vote = Vote(
                     direction="Skip",
                     confidence=0.0,
                     quality=0.0,
@@ -327,9 +330,11 @@ class TechAgent(BaseAgent):
                         'exchange_signals': exchange_signals
                     }
                 )
+                self.log.debug(f"[{self.name}] {crypto}: {vote.direction} (conf={vote.confidence:.2f}) - {vote.reasoning}")
+                return vote
 
             # Low confidence since no confluence
-            return Vote(
+            vote = Vote(
                 direction=direction,
                 confidence=0.35,  # Raised floor for quality control
                 quality=0.4,
@@ -341,6 +346,8 @@ class TechAgent(BaseAgent):
                     'exchange_signals': exchange_signals
                 }
             )
+            self.log.debug(f"[{self.name}] {crypto}: {vote.direction} (conf={vote.confidence:.2f}) - {vote.reasoning}")
+            return vote
 
         # Get orderbook entry price if available
         orderbook = data.get('orderbook', {})
@@ -377,7 +384,7 @@ class TechAgent(BaseAgent):
             f"entry ${entry_price:.2f}"
         )
 
-        return Vote(
+        vote = Vote(
             direction=direction,
             confidence=confidence,
             quality=quality,
@@ -392,6 +399,8 @@ class TechAgent(BaseAgent):
                 'exchange_signals': {ex: (d, c*100) for ex, (d, c) in exchange_signals.items()}
             }
         )
+        self.log.debug(f"[{self.name}] {crypto}: {vote.direction} (conf={vote.confidence:.2f}) - {vote.reasoning}")
+        return vote
 
     def _calculate_scores(self,
                          crypto: str,

@@ -115,7 +115,7 @@ class RegimeAgent(BaseAgent):
         # Pick direction based on regime
         # In sideways regime, ABSTAIN instead of picking a direction
         if self.current_regime == 'sideways':
-            return Vote(
+            vote = Vote(
                 direction="Skip",
                 confidence=0.0,
                 quality=0.0,
@@ -129,6 +129,8 @@ class RegimeAgent(BaseAgent):
                     'crypto_details': regime_data.get('crypto_details', {})
                 }
             )
+            self.log.debug(f"[{self.name}] {crypto}: {vote.direction} (conf={vote.confidence:.2f}) - {vote.reasoning}")
+            return vote
 
         # For non-sideways regimes, pick direction based on this crypto's trend
         if mean_return > 0.001:  # Positive trend > 0.1%
@@ -155,7 +157,7 @@ class RegimeAgent(BaseAgent):
             f"volatility: {self.avg_volatility*100:.2f}%"
         )
 
-        return Vote(
+        vote = Vote(
             direction=direction,  # ALWAYS pick Up or Down
             confidence=vote_confidence,
             quality=quality,
@@ -169,6 +171,8 @@ class RegimeAgent(BaseAgent):
                 'crypto_details': regime_data.get('crypto_details', {})
             }
         )
+        self.log.debug(f"[{self.name}] {crypto}: {vote.direction} (conf={vote.confidence:.2f}) - {vote.reasoning}")
+        return vote
 
     def _update_price_history(self, prices: Dict[str, float]):
         """Update price history for all cryptos."""

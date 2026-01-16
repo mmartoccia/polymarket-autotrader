@@ -192,12 +192,12 @@ This PRD addresses both the underlying bugs AND profitability restoration throug
 **Description:** As a developer, I need comprehensive debug logging for all threshold checks to diagnose future issues quickly.
 
 **Acceptance Criteria:**
-- [ ] Log consensus threshold checks with actual values
-- [ ] Log confidence threshold checks with actual values
-- [ ] Log confluence threshold checks with price changes
-- [ ] Include agent name and reasoning in logs
-- [ ] Test: Review logs show all threshold decisions clearly
-- [ ] Typecheck passes
+- [x] Log consensus threshold checks with actual values
+- [x] Log confidence threshold checks with actual values
+- [x] Log confluence threshold checks with price changes
+- [x] Include agent name and reasoning in logs
+- [x] Test: Review logs show all threshold decisions clearly
+- [x] Typecheck passes
 
 ### US-BF-016: Shadow test validation setup
 **Description:** As a developer, I need to create a shadow strategy with all 16 fixes to validate improvements before live deployment.

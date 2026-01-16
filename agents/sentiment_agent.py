@@ -73,7 +73,7 @@ class SentimentAgent(BaseAgent):
 
         if not orderbook:
             # CRITICAL FIX: No orderbook - abstain instead of defaulting to Up
-            return Vote(
+            vote = Vote(
                 direction="Skip",  # Abstain when no data available
                 confidence=0.0,  # Skip votes have 0.0 confidence by convention
                 quality=0.0,     # Skip votes have 0.0 quality by convention
@@ -81,6 +81,8 @@ class SentimentAgent(BaseAgent):
                 reasoning="No orderbook data available → ABSTAINING",
                 details={}
             )
+            self.log.debug(f"[{self.name}] {crypto}: {vote.direction} (conf={vote.confidence:.2f}) - {vote.reasoning}")
+            return vote
 
         # Extract prices (check both 'Up'/'Down' and legacy 'yes'/'no' keys)
         up_data = orderbook.get('Up', orderbook.get('yes', {}))
@@ -99,7 +101,7 @@ class SentimentAgent(BaseAgent):
 
         if contrarian_signal is None:
             # CRITICAL FIX: No contrarian signal - abstain instead of picking cheaper side
-            return Vote(
+            vote = Vote(
                 direction="Skip",  # Abstain when no strong contrarian signal
                 confidence=0.0,  # Skip votes have 0.0 confidence by convention
                 quality=0.0,     # Skip votes have 0.0 quality by convention
@@ -115,6 +117,8 @@ class SentimentAgent(BaseAgent):
                     'time_in_epoch': time_in_epoch
                 }
             )
+            self.log.debug(f"[{self.name}] {crypto}: {vote.direction} (conf={vote.confidence:.2f}) - {vote.reasoning}")
+            return vote
 
         direction, entry_price, scores = contrarian_signal
 
@@ -139,7 +143,7 @@ class SentimentAgent(BaseAgent):
             f"(extremity: {scores['extremity']:.0%}, liquidity: {scores['liquidity']:.0%})"
         )
 
-        return Vote(
+        vote = Vote(
             direction=direction,
             confidence=confidence,
             quality=quality,
@@ -154,6 +158,8 @@ class SentimentAgent(BaseAgent):
                 'rsi': rsi
             }
         )
+        self.log.debug(f"[{self.name}] {crypto}: {vote.direction} (conf={vote.confidence:.2f}) - {vote.reasoning}")
+        return vote
 
     def _check_contrarian_opportunity(self,
                                      up_price: float,

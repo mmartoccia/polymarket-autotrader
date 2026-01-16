@@ -361,7 +361,9 @@ class DecisionEngine:
             self.log.debug(f"✅ Above threshold: {prediction.weighted_score:.3f} >= {CONSENSUS_THRESHOLD:.2f}")
 
         # Check if average agent confidence meets minimum
+        self.log.debug(f"Confidence threshold check: confidence={prediction.confidence:.3f} vs min={MIN_CONFIDENCE:.2f}")
         if prediction.confidence < MIN_CONFIDENCE:
+            self.log.debug(f"❌ Below minimum: {prediction.confidence:.3f} < {MIN_CONFIDENCE:.2f}")
             return TradeDecision(
                 should_trade=False,
                 direction=None,
@@ -372,6 +374,8 @@ class DecisionEngine:
                 crypto=crypto,
                 epoch=epoch
             )
+        else:
+            self.log.debug(f"✅ Above minimum: {prediction.confidence:.3f} >= {MIN_CONFIDENCE:.2f}")
 
         # Step 7: Check for Neutral consensus (no trade)
         if prediction.direction == "Neutral":

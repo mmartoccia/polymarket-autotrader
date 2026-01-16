@@ -271,3 +271,31 @@
   - All 5 tests passed, typecheck passed
   - Debug logs now show exactly when and why consensus checks pass or fail
 ---
+## Iteration 15 - US-BF-012: Add threshold debug logging
+- Added comprehensive debug logging for all threshold checks
+- Added consensus threshold logging in decision_engine.py (line 347-361)
+- Added confidence threshold logging in decision_engine.py (line 364-378)
+- Added confluence threshold logging in tech_agent.py (line 229-236)
+- Added agent vote logging in tech_agent.py (3 return paths: Skip, weak signal, strong)
+- Added agent vote logging in sentiment_agent.py (3 return paths: no orderbook, no signal, contrarian)
+- Added agent vote logging in regime_agent.py (2 return paths: sideways Skip, directional)
+- Files changed:
+  - coordinator/decision_engine.py (added threshold check logging with emoji indicators)
+  - agents/tech_agent.py (added confluence checks + vote logging for all paths)
+  - agents/sentiment_agent.py (added vote logging for all 3 return paths)
+  - agents/regime_agent.py (added vote logging for both return paths)
+  - test_threshold_logging.py (created comprehensive test verifying all logging)
+  - PRD.md (marked US-BF-012 complete)
+- Learnings for future iterations:
+  - Debug logging format: Use emoji indicators (✅/❌) for easy log scanning
+  - Logging placement: Log threshold checks BEFORE returning decision, not after
+  - Consistent format: {score:.3f} for values, {threshold:.2f} for thresholds
+  - Agent vote logging: Format "[{agent_name}] {crypto}: {direction} (conf={conf:.2f}) - {reasoning}"
+  - Confluence logging: Log per-exchange with change % and threshold comparison
+  - All logging at DEBUG level (not info/warning) - reduces noise in production logs
+  - Create vote variable first, then log, then return (prevents logging code duplication)
+  - Test verification: Use inspect.getsource() to verify code changes without instantiating objects
+  - All 5 tests passed, typecheck passed
+  - Logs will now show exactly when/why threshold checks pass or fail for diagnosis
+---
+
