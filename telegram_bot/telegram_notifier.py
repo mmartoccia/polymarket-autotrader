@@ -24,6 +24,24 @@ from dotenv import load_dotenv
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from telegram_bot.message_formatter import MessageFormatter
+from telegram_bot.enhanced_notifications import (
+    format_trade_notification,
+    format_redemption_notification,
+    format_alert_notification,
+    format_daily_summary
+)
+from telegram_bot.management_commands import (
+    logs_command,
+    trades_command,
+    performance_command,
+    risks_command,
+    markets_command,
+    force_redeem_command,
+    confirm_redeem_command,
+    reset_peak_command,
+    confirm_reset_peak_command,
+    export_command
+)
 
 # Load environment variables
 load_dotenv()
@@ -64,21 +82,32 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     welcome_message = (
         "🤖 *Polymarket AutoTrader Bot*\n\n"
         "Available commands:\n\n"
-        "*Query Commands:*\n"
+        "*📊 Query Commands:*\n"
         "/balance - Current balance and P&L\n"
         "/positions - Active positions\n"
         "/status - Bot status and mode\n"
-        "/stats - Trading statistics\n\n"
-        "*Control Commands:*\n"
+        "/stats - Trading statistics\n"
+        "/performance - Quick snapshot\n"
+        "/risks - Risk metrics\n\n"
+        "*🎛️ Control Commands:*\n"
         "/halt - Stop all trading\n"
         "/resume - Resume trading\n"
-        "/mode <mode> - Change trading mode\n\n"
+        "/mode <mode> - Change mode\n"
+        "/force_redeem - Manual redemption\n"
+        "/reset_peak - Reset peak (emergency)\n\n"
+        "*🔧 Management:*\n"
+        "/logs - Recent bot logs\n"
+        "/trades - Recent trade history\n"
+        "/markets - Available markets\n"
+        "/export - Export data\n\n"
         "*Help:*\n"
         "/help - Show this message\n\n"
-        "🔔 Real-time notifications enabled for:\n"
-        "• New trades\n"
-        "• Redemptions\n"
-        "• Critical alerts\n"
+        "🔔 *Real-time notifications:*\n"
+        "• New trades (with risk indicators)\n"
+        "• Redemptions (with ROI)\n"
+        "• Position updates\n"
+        "• Alerts (with recommendations)\n"
+        "• Mode changes\n"
         "• Daily summaries"
     )
 
@@ -704,6 +733,18 @@ def main():
     application.add_handler(CommandHandler("confirm_resume", confirm_resume_command))
     application.add_handler(CommandHandler("mode", mode_command))
     application.add_handler(CommandHandler("confirm_mode", confirm_mode_command))
+
+    # Management commands
+    application.add_handler(CommandHandler("logs", logs_command))
+    application.add_handler(CommandHandler("trades", trades_command))
+    application.add_handler(CommandHandler("performance", performance_command))
+    application.add_handler(CommandHandler("risks", risks_command))
+    application.add_handler(CommandHandler("markets", markets_command))
+    application.add_handler(CommandHandler("force_redeem", force_redeem_command))
+    application.add_handler(CommandHandler("confirm_redeem", confirm_redeem_command))
+    application.add_handler(CommandHandler("reset_peak", reset_peak_command))
+    application.add_handler(CommandHandler("confirm_reset_peak", confirm_reset_peak_command))
+    application.add_handler(CommandHandler("export", export_command))
 
     # Add error handler
     application.add_error_handler(error_handler)
