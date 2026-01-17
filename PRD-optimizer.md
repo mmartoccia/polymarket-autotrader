@@ -184,16 +184,16 @@ Optimizer is an automated hourly performance review system that runs on the VPS 
 **Description:** As a developer, I need tests to verify the optimizer works correctly.
 
 **Acceptance Criteria:**
-- [ ] Create `optimizer/test_optimizer.py`
-- [ ] Tests include:
+- [x] Create `optimizer/test_optimizer.py`
+- [x] Tests include:
   - Data collection returns expected format
   - Analysis calculations are correct
   - Tuning rules fire on correct conditions
   - Bounds are respected (never exceed min/max)
   - Protected parameters are never modified
   - Dry-run mode doesn't modify files
-- [ ] All tests pass
-- [ ] Typecheck passes
+- [x] All tests pass
+- [x] Typecheck passes
 
 ---
 
