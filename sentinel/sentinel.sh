@@ -26,6 +26,7 @@ LOCK_FILE="$STATE_DIR/sentinel.lock"
 RATE_LIMIT_FILE="$STATE_DIR/rate_limit.json"
 DIAGNOSE_PROMPT="$SCRIPT_DIR/sentinel_diagnose.md"
 TELEGRAM_TIMEOUT_SECONDS=900  # 15 minutes - loaded from config
+TELEGRAM_POLL_INTERVAL=10    # Poll every 10 seconds
 
 # Ensure directories exist
 mkdir -p "$STATE_DIR" "$HISTORY_DIR"
@@ -328,6 +329,157 @@ $analysis_summary
     return $?
 }
 
+# Poll Telegram for recent commands from user
+# Returns: command string if found, empty string if none
+poll_telegram_commands() {
+    local since_minutes="${1:-5}"
+
+    # Create Python script to get recent commands
+    local python_script="
+import sys
+sys.path.insert(0, '/opt/polymarket-autotrader')
+from bot.telegram_handler import TelegramBot
+
+bot = TelegramBot()
+if not bot.enabled:
+    sys.exit(1)
+
+commands = bot.get_recent_commands(since_minutes=$since_minutes)
+if commands:
+    # Return the most recent command
+    print(commands[-1])
+else:
+    print('')
+"
+
+    # Execute on VPS
+    local result
+    result=$(ssh -i "$SSH_KEY" -o ConnectTimeout="$SSH_TIMEOUT" -o BatchMode=yes \
+        "$VPS_HOST" "cd /opt/polymarket-autotrader && python3 -c \"$python_script\"" 2>/dev/null)
+
+    echo "$result"
+}
+
+# Wait for user response via Telegram with timeout
+# Returns: "approve", "deny", "custom <action>", or "timeout"
+wait_for_telegram_response() {
+    local timeout_seconds="$1"
+    local poll_interval="${2:-$TELEGRAM_POLL_INTERVAL}"
+
+    local elapsed=0
+    local start_time
+    start_time=$(date +%s)
+
+    log "INFO" "Waiting for Telegram response (timeout: ${timeout_seconds}s)..."
+
+    # Track what commands we've already seen to detect new ones
+    local initial_commands
+    initial_commands=$(poll_telegram_commands 1)
+
+    while [[ $elapsed -lt $timeout_seconds ]]; do
+        sleep "$poll_interval"
+        elapsed=$(($(date +%s) - start_time))
+
+        # Poll for new commands (within last 2 minutes to catch recent)
+        local commands
+        commands=$(poll_telegram_commands 2)
+
+        if [[ -n "$commands" ]] && [[ "$commands" != "$initial_commands" ]]; then
+            # Parse the command
+            local cmd
+            cmd=$(echo "$commands" | tr '[:upper:]' '[:lower:]' | xargs)
+
+            case "$cmd" in
+                /approve|"/approve")
+                    log "INFO" "User approved via Telegram"
+                    echo "approve"
+                    return 0
+                    ;;
+                /deny*|"/deny"*)
+                    log "INFO" "User denied via Telegram: $cmd"
+                    echo "deny"
+                    return 0
+                    ;;
+                /custom*)
+                    local custom_action
+                    custom_action=$(echo "$cmd" | sed 's|^/custom[[:space:]]*||')
+                    log "INFO" "User requested custom action: $custom_action"
+                    echo "custom $custom_action"
+                    return 0
+                    ;;
+                /halt|"/halt")
+                    log "INFO" "User requested halt via Telegram"
+                    echo "deny"
+                    return 0
+                    ;;
+                *)
+                    # Other commands - ignore and continue waiting
+                    ;;
+            esac
+        fi
+
+        # Log progress every minute
+        if (( elapsed % 60 == 0 )) && (( elapsed > 0 )); then
+            local remaining=$((timeout_seconds - elapsed))
+            log "INFO" "Still waiting... ${remaining}s remaining"
+        fi
+    done
+
+    log "INFO" "Telegram response timeout reached"
+    echo "timeout"
+    return 0
+}
+
+# Send confirmation message after action
+send_action_confirmation() {
+    local action="$1"
+    local result="$2"
+    local trigger="$3"  # "user_approved", "user_denied", "timeout_auto_fix", "custom"
+
+    local emoji
+    local header
+
+    case "$trigger" in
+        user_approved)
+            emoji="✅"
+            header="ACTION EXECUTED"
+            ;;
+        user_denied)
+            emoji="🛑"
+            header="ACTION DENIED"
+            ;;
+        timeout_auto_fix)
+            emoji="⚙️"
+            header="SENTINEL AUTO-FIX"
+            ;;
+        custom)
+            emoji="🔧"
+            header="CUSTOM ACTION"
+            ;;
+        *)
+            emoji="ℹ️"
+            header="SENTINEL UPDATE"
+            ;;
+    esac
+
+    local timestamp
+    timestamp=$(date -u +"%Y-%m-%d %H:%M UTC")
+
+    local message="$emoji <b>$header</b>
+
+<b>Action:</b> $action
+<b>Result:</b> $result
+<b>Time:</b> $timestamp"
+
+    if [[ "$trigger" == "timeout_auto_fix" ]]; then
+        message+="
+
+Reply /halt to stop if needed"
+    fi
+
+    send_telegram_notification "$message" "false"
+}
+
 # Gather diagnostics for Claude
 gather_diagnostics() {
     local event="$1"
@@ -501,66 +653,141 @@ process_event() {
     log "INFO" "Claude decision: $decision_type (action: $action, confidence: $confidence%)"
     log "INFO" "Reason: $reason"
 
-    # Send Telegram notification before any action (unless dry run)
-    if [[ "$DRY_RUN" != "true" ]]; then
-        log "INFO" "Sending Telegram halt alert..."
-        if send_halt_alert "$event" "$reason" "$action" "$confidence"; then
-            log "INFO" "Telegram notification sent - waiting for user response..."
-            # Note: Response polling will be implemented in US-007
-            # For now, we proceed to process the decision
-        else
-            log "WARN" "Failed to send Telegram notification - continuing anyway"
-        fi
+    # Dry run check - skip notification and polling
+    if [[ "$DRY_RUN" == "true" ]]; then
+        log "INFO" "[DRY RUN] Would send Telegram notification and wait for response"
+        log "INFO" "[DRY RUN] Decision: $decision_type, Action: $action, Confidence: $confidence%"
+        update_event_status "$event_id" "dry_run" "$action"
+        log_action "$event_id" "dry_run" "$action" "$reason"
+        return 0
     fi
 
-    # Handle escalate decision
+    # Send Telegram notification
+    log "INFO" "Sending Telegram halt alert..."
+    if ! send_halt_alert "$event" "$reason" "$action" "$confidence"; then
+        log "WARN" "Failed to send Telegram notification - escalating"
+        update_event_status "$event_id" "escalated" "telegram_error"
+        log_action "$event_id" "escalate" "telegram_error" "Failed to send notification"
+        return 1
+    fi
+    log "INFO" "Telegram notification sent successfully"
+
+    # Wait for user response (unless Claude recommends escalation)
+    local user_response
     if [[ "$decision_type" == "escalate" ]]; then
-        log "INFO" "Claude recommends escalation"
+        # For escalations, notify but don't wait for response or auto-fix
+        log "INFO" "Claude recommends escalation - notifying user only (no auto-fix)"
         update_event_status "$event_id" "escalated" "claude_escalate"
         log_action "$event_id" "escalate" "claude_decision" "$reason"
         return 0
     fi
 
-    # Handle auto_fix decision
-    if [[ "$decision_type" == "auto_fix" ]]; then
-        # Check confidence threshold
-        if [[ $confidence -lt $MIN_CONFIDENCE ]]; then
-            log "WARN" "Confidence $confidence% below threshold $MIN_CONFIDENCE% - escalating"
-            update_event_status "$event_id" "escalated" "low_confidence"
-            log_action "$event_id" "escalate" "low_confidence" "Confidence below threshold"
+    # Wait for user response
+    user_response=$(wait_for_telegram_response "$TELEGRAM_TIMEOUT_SECONDS" "$TELEGRAM_POLL_INTERVAL")
+
+    # Handle user response
+    case "$user_response" in
+        approve)
+            log "INFO" "User approved action: $action"
+
+            # Check rate limit before execution
+            if ! check_rate_limit; then
+                log "WARN" "Rate limit reached - cannot execute"
+                send_action_confirmation "$action" "FAILED - rate limit exceeded" "user_approved"
+                update_event_status "$event_id" "error" "rate_limit"
+                log_action "$event_id" "error" "rate_limit_on_approve" "User approved but rate limit exceeded"
+                return 0
+            fi
+
+            # Execute the approved action (stub for now, US-008 will implement)
+            log "INFO" "Executing approved action: $action"
+            # TODO: Actual execution in US-008
+            send_action_confirmation "$action" "Executed successfully" "user_approved"
+            update_event_status "$event_id" "completed" "$action"
+            log_action "$event_id" "execute" "$action" "User approved via Telegram"
+            increment_rate_limit
             return 0
-        fi
+            ;;
 
-        # Check rate limit
-        if ! check_rate_limit; then
-            log "WARN" "Rate limit reached - escalating"
-            update_event_status "$event_id" "escalated" "rate_limit"
-            log_action "$event_id" "escalate" "rate_limit" "Rate limit exceeded"
+        deny)
+            log "INFO" "User denied action - leaving bot halted"
+            send_action_confirmation "$action" "Denied by user - bot remains halted" "user_denied"
+            update_event_status "$event_id" "denied" "user_denied"
+            log_action "$event_id" "deny" "user_denied" "User denied via Telegram"
             return 0
-        fi
+            ;;
 
-        # Dry run check
-        if [[ "$DRY_RUN" == "true" ]]; then
-            log "INFO" "[DRY RUN] Would execute action: $action"
-            update_event_status "$event_id" "dry_run" "$action"
-            log_action "$event_id" "dry_run" "$action" "$reason"
+        custom*)
+            local custom_action
+            custom_action=$(echo "$user_response" | sed 's|^custom[[:space:]]*||')
+            log "INFO" "User requested custom action: $custom_action"
+
+            # Validate custom action is in allowed list
+            local allowed_actions="reset_peak_balance resume_trading reset_loss_streak restart_bot"
+            if echo "$allowed_actions" | grep -qw "$custom_action"; then
+                log "INFO" "Custom action is valid: $custom_action"
+                # TODO: Actual execution in US-008
+                send_action_confirmation "$custom_action" "Executed successfully" "custom"
+                update_event_status "$event_id" "completed" "$custom_action"
+                log_action "$event_id" "execute" "$custom_action" "User requested custom action via Telegram"
+                increment_rate_limit
+            else
+                log "WARN" "Invalid custom action: $custom_action"
+                send_action_confirmation "$custom_action" "FAILED - invalid action. Allowed: $allowed_actions" "custom"
+                update_event_status "$event_id" "error" "invalid_custom"
+                log_action "$event_id" "error" "invalid_custom" "User requested invalid custom action: $custom_action"
+            fi
             return 0
-        fi
+            ;;
 
-        # For now, log that we would execute the action
-        # Actual execution will be implemented in US-008
-        log "INFO" "Auto-fix approved: $action (execution not yet implemented)"
-        update_event_status "$event_id" "approved" "$action"
-        log_action "$event_id" "approved" "$action" "$reason"
-        increment_rate_limit
-        return 0
-    fi
+        timeout)
+            log "INFO" "Timeout reached - checking if auto-fix should proceed"
 
-    # Unknown decision type
-    log "ERROR" "Unknown decision type: $decision_type"
-    update_event_status "$event_id" "error" "unknown_decision"
-    log_action "$event_id" "error" "unknown_decision" "Unknown decision type from Claude"
-    return 1
+            # Check confidence threshold for auto-fix
+            if [[ $confidence -lt $MIN_CONFIDENCE ]]; then
+                log "WARN" "Confidence $confidence% below threshold $MIN_CONFIDENCE% - leaving halted"
+                send_telegram_notification "⏰ <b>TIMEOUT - NO AUTO-FIX</b>
+
+Confidence ($confidence%) below threshold ($MIN_CONFIDENCE%)
+Bot remains <b>HALTED</b>
+
+Manual intervention required." "false"
+                update_event_status "$event_id" "timeout_no_fix" "low_confidence"
+                log_action "$event_id" "timeout" "no_auto_fix" "Confidence below threshold after timeout"
+                return 0
+            fi
+
+            # Check rate limit
+            if ! check_rate_limit; then
+                log "WARN" "Rate limit reached - cannot auto-fix"
+                send_telegram_notification "⏰ <b>TIMEOUT - NO AUTO-FIX</b>
+
+Rate limit exceeded (max $MAX_AUTO_FIXES_PER_HOUR/hour)
+Bot remains <b>HALTED</b>
+
+Manual intervention required." "false"
+                update_event_status "$event_id" "timeout_no_fix" "rate_limit"
+                log_action "$event_id" "timeout" "no_auto_fix" "Rate limit exceeded after timeout"
+                return 0
+            fi
+
+            # Auto-fix on timeout
+            log "INFO" "Auto-fix on timeout: $action (confidence: $confidence%)"
+            # TODO: Actual execution in US-008
+            send_action_confirmation "$action" "Executed automatically after ${TELEGRAM_TIMEOUT_SECONDS}s timeout" "timeout_auto_fix"
+            update_event_status "$event_id" "auto_fixed" "$action"
+            log_action "$event_id" "auto_fix" "$action" "Timeout auto-fix (confidence: $confidence%)"
+            increment_rate_limit
+            return 0
+            ;;
+
+        *)
+            log "ERROR" "Unexpected response: $user_response"
+            update_event_status "$event_id" "error" "unexpected_response"
+            log_action "$event_id" "error" "unexpected_response" "Unexpected Telegram response: $user_response"
+            return 1
+            ;;
+    esac
 }
 
 # Get pending events from queue

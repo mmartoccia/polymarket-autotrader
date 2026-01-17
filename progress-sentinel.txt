@@ -116,3 +116,55 @@ ssh -i ~/.ssh/polymarket_vultr root@216.238.85.11 "command"
   - Triple quotes in bash heredocs need careful escaping
   - Telegram is already enabled on VPS with token and chat_id configured
 ---
+
+## Iteration 6 - US-006: Add get_recent_commands method to telegram_handler.py
+- Added `get_recent_commands(self, since_minutes: int = 5) -> list[str]` method to TelegramBot class
+- Method implementation:
+  - Calls getUpdates API with offset=-10 to get recent messages without changing polling offset
+  - Filters to authorized user only (via `is_authorized()`)
+  - Filters by time window using message timestamp vs cutoff
+  - Only returns messages that start with "/" (commands)
+  - Returns full command text (e.g., "/approve", "/deny reason")
+  - Graceful error handling: returns empty list on any failure
+- Added imports: `datetime`, `timedelta`, `timezone` from datetime module
+- Files changed: bot/telegram_handler.py, PRD-sentinel.md
+- Learnings for future iterations:
+  - Use `offset=-10` in getUpdates to fetch recent without modifying main polling offset
+  - Telegram message `date` field is Unix timestamp (needs `datetime.fromtimestamp()`)
+  - Always use timezone-aware datetime for comparisons (timezone.utc)
+  - Type hint `list[str]` requires Python 3.9+ (this codebase uses 3.11+)
+  - Pre-existing mypy error on line 287 is unrelated Optional[float] issue (not blocking)
+---
+
+## Iteration 7 - US-007: Implement Telegram response polling in sentinel.sh
+- Added `TELEGRAM_POLL_INTERVAL=10` configuration variable
+- Implemented `poll_telegram_commands()` function:
+  - Calls TelegramBot.get_recent_commands() via SSH to VPS
+  - Returns most recent command string
+- Implemented `wait_for_telegram_response()` function:
+  - Polls every 10 seconds (configurable) for up to 15 minutes
+  - Tracks initial commands to detect new ones
+  - Recognizes /approve, /deny, /deny <reason>, /custom <action>, /halt
+  - Returns "approve", "deny", "custom <action>", or "timeout"
+  - Logs progress every minute while waiting
+- Implemented `send_action_confirmation()` function:
+  - Formats confirmation message with emoji and header
+  - Includes action, result, timestamp
+  - Adds "/halt to stop if needed" for auto-fixes
+- Updated `process_event()` to use polling:
+  - Sends Telegram alert, then waits for response
+  - On approve: checks rate limit, executes action (stub), sends confirmation
+  - On deny: logs denial, leaves bot halted, sends confirmation
+  - On custom: validates action against allowed list, executes if valid
+  - On timeout: checks confidence >= 70% and rate limit before auto-fix
+  - Sends notification when auto-fix blocked due to low confidence or rate limit
+- Dry-run mode skips notification and polling entirely
+- Files changed: sentinel/sentinel.sh, PRD-sentinel.md
+- Learnings for future iterations:
+  - Pattern for polling: track initial state, compare on each poll to detect changes
+  - Telegram command parsing needs case normalization (tr '[:upper:]' '[:lower:]')
+  - Use xargs for trimming whitespace from command strings
+  - Allowed actions list for /custom validation: reset_peak_balance, resume_trading, reset_loss_streak, restart_bot
+  - Actual execution is stubbed - US-008 will implement the real fix functions
+  - Progress logging (every minute) helps user know the script is still running
+---

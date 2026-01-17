@@ -142,15 +142,15 @@ Sentinel is an event-driven autonomous monitoring system that watches the tradin
 **Description:** As a user, I want Sentinel to wait for my Telegram response before auto-fixing so I have control over the action taken.
 
 **Acceptance Criteria:**
-- [ ] After sending notification, sentinel.sh polls Telegram for response
-- [ ] Polls every 10 seconds for up to 15 minutes (configurable)
-- [ ] Recognizes commands: /approve, /deny, /custom <action>
-- [ ] On /approve: Execute recommended action, notify user of completion
-- [ ] On /deny: Log denial, leave bot halted, notify user
-- [ ] On /custom: Log custom request, attempt to parse and execute if safe
-- [ ] On timeout: Execute auto-fix if confidence >= 70%, otherwise leave halted
-- [ ] Send confirmation message after any action taken
-- [ ] Test: Verify polling works with manual /approve command
+- [x] After sending notification, sentinel.sh polls Telegram for response
+- [x] Polls every 10 seconds for up to 15 minutes (configurable)
+- [x] Recognizes commands: /approve, /deny, /custom <action>
+- [x] On /approve: Execute recommended action, notify user of completion
+- [x] On /deny: Log denial, leave bot halted, notify user
+- [x] On /custom: Log custom request, attempt to parse and execute if safe
+- [x] On timeout: Execute auto-fix if confidence >= 70%, otherwise leave halted
+- [x] Send confirmation message after any action taken
+- [x] Test: Verify polling works with manual /approve command
 
 ---
 
