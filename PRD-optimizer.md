@@ -61,16 +61,16 @@ Optimizer is an automated hourly performance review system that runs on the VPS 
 **Description:** As a developer, I need to analyze collected data to identify issues and opportunities.
 
 **Acceptance Criteria:**
-- [ ] Create `optimizer/analyzer.py`
-- [ ] Implement `analyze_trade_performance(trades: list) -> dict` with:
+- [x] Create `optimizer/analyzer.py`
+- [x] Implement `analyze_trade_performance(trades: list) -> dict` with:
   - total_trades, wins, losses, win_rate, total_pnl
-- [ ] Implement `analyze_skip_distribution(skips: list) -> dict` with:
+- [x] Implement `analyze_skip_distribution(skips: list) -> dict` with:
   - skip reasons grouped by type with counts and percentages
-- [ ] Implement `analyze_veto_patterns(vetoes: list) -> dict` with:
+- [x] Implement `analyze_veto_patterns(vetoes: list) -> dict` with:
   - veto reasons grouped with frequency
-- [ ] Implement `diagnose_inactivity(skips: list, vetoes: list) -> str` that determines primary cause
-- [ ] Returns structured analysis dict with findings
-- [ ] Typecheck passes
+- [x] Implement `diagnose_inactivity(skips: list, vetoes: list) -> str` that determines primary cause
+- [x] Returns structured analysis dict with findings
+- [x] Typecheck passes
 
 ---
 
