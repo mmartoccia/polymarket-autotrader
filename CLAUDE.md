@@ -92,6 +92,16 @@ polymarket-autotrader/
 │   ├── events/                   # Event queue
 │   ├── history/                  # Audit trail
 │   └── state/                    # Runtime state (gitignored)
+├── optimizer/                    # Hourly auto-tuning system (NEW!)
+│   ├── optimizer.py              # Main cron entry point
+│   ├── optimizer_config.json     # Configuration and bounds
+│   ├── data_collector.py         # Collects trades/skips from DB
+│   ├── analyzer.py               # Performance analysis
+│   ├── tuning_rules.py           # Parameter adjustment logic
+│   ├── executor.py               # Applies changes to config files
+│   ├── reporter.py               # Telegram reporting
+│   ├── history/                  # Adjustment audit trail
+│   └── state/                    # Runtime state (gitignored)
 └── CLAUDE.md                     # This file
 ```
 
@@ -630,6 +640,263 @@ cat sentinel/state/heartbeat
 # Failed: 0/20
 #
 # All tests passed!
+```
+
+---
+
+## Optimizer System
+
+**NEW in Jan 17, 2026**: Optimizer is an automated hourly performance review and auto-tuning system that runs on the VPS via cron. It analyzes trading activity, identifies issues (inactivity or poor performance), and auto-adjusts parameters within safe bounds.
+
+### Overview
+
+Optimizer runs **hourly on the VPS** via cron:
+- Analyzes last 2 hours of trading data
+- Detects zero trades (inactivity) or poor win rate (<50%)
+- Identifies which filters are blocking trades
+- Auto-tunes parameters to optimize trade flow
+- Sends Telegram reports (silent when healthy, alerts on issues)
+- Maintains full audit trail of all adjustments
+
+### Architecture
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                         VPS (Cron Hourly)                       │
+│                                                                 │
+│  ┌──────────────┐    ┌──────────────┐    ┌──────────────┐      │
+│  │    Data      │───▶│   Analyzer   │───▶│   Tuning     │      │
+│  │  Collector   │    │              │    │   Rules      │      │
+│  └──────────────┘    └──────────────┘    └──────┬───────┘      │
+│         │                                        │              │
+│         │ Reads                                  │ Selects      │
+│         ▼                                        ▼              │
+│  ┌──────────────┐                        ┌──────────────┐      │
+│  │ trade_journal│                        │   Executor   │      │
+│  │  .db + logs  │                        │ (apply adj.) │      │
+│  └──────────────┘                        └──────┬───────┘      │
+│                                                  │              │
+│                                                  │ Modifies     │
+│                                                  ▼              │
+│                                          ┌──────────────┐      │
+│                                          │  Bot Config  │      │
+│                                          │    Files     │      │
+│                                          └──────────────┘      │
+└─────────────────────────────────────────────────────────────────┘
+                              │
+                              │ Reports
+                              ▼
+                       ┌──────────────┐
+                       │   Telegram   │
+                       │  (hourly)    │
+                       └──────────────┘
+```
+
+### Directory Structure
+
+```
+optimizer/
+├── optimizer.py            # Main orchestrator (cron entry point)
+├── optimizer_config.json   # Configuration and bounds
+├── data_collector.py       # Collects trades, skips, vetoes from DB/logs
+├── analyzer.py             # Analyzes performance and skip patterns
+├── tuning_rules.py         # Decision logic for parameter adjustments
+├── executor.py             # Applies adjustments to config files
+├── reporter.py             # Telegram reporting
+├── test_optimizer.py       # Integration tests
+├── install_cron.sh         # Install cron job on VPS
+├── uninstall_cron.sh       # Remove cron job
+├── history/
+│   └── adjustments.txt     # Audit trail of all adjustments
+└── state/                  # Runtime state (gitignored)
+    ├── last_review.json    # Results of last review
+    ├── rate_limit.json     # Rate limiting state
+    └── parameter_history.json  # Per-parameter change history
+```
+
+### Tunable Parameters
+
+| Parameter | File | Current | Min | Max | Step |
+|-----------|------|---------|-----|-----|------|
+| MAX_ENTRY_PRICE_CAP | bot/intra_epoch_bot.py | 0.50 | 0.35 | 0.65 | 0.05 |
+| MIN_PATTERN_ACCURACY | bot/intra_epoch_bot.py | 0.735 | 0.65 | 0.80 | 0.01 |
+| CONSENSUS_THRESHOLD | config/agent_config.py | 0.40 | 0.30 | 0.55 | 0.05 |
+| MIN_CONFIDENCE | config/agent_config.py | 0.50 | 0.35 | 0.65 | 0.05 |
+| EDGE_BUFFER | bot/intra_epoch_bot.py | 0.05 | 0.02 | 0.10 | 0.01 |
+
+### Protected Parameters (Never Auto-Adjusted)
+
+These safety-critical parameters are never modified by Optimizer:
+- RISK_MAX_DRAWDOWN
+- RISK_DAILY_LOSS_LIMIT
+- RISK_POSITION_TIERS
+- Agent enable/disable flags
+
+### Tuning Rules
+
+Optimizer applies these rules based on analysis:
+
+**When too few trades (0 in 2 hours):**
+| Rule | Trigger | Action |
+|------|---------|--------|
+| too_few_trades_entry_price | >40% SKIP_ENTRY_PRICE | Increase MAX_ENTRY_PRICE_CAP |
+| too_few_trades_weak_pattern | >40% SKIP_WEAK | Decrease MIN_PATTERN_ACCURACY |
+| too_few_trades_consensus | >40% consensus-related | Decrease CONSENSUS_THRESHOLD |
+
+**When poor performance (win rate < 50%):**
+| Rule | Trigger | Action |
+|------|---------|--------|
+| poor_win_rate_tighten | Win rate < 50% | Increase MIN_PATTERN_ACCURACY, CONSENSUS_THRESHOLD |
+
+### Using /optimizer-status
+
+The `/optimizer-status` skill checks optimizer status and history:
+
+```bash
+/optimizer-status           # Show last review and current params
+/optimizer-status history   # Show last 20 adjustments
+/optimizer-status bounds    # Display tuning bounds
+/optimizer-status run       # Manual dry-run
+/optimizer-status run --apply  # Manual run with changes applied
+```
+
+### Viewing Adjustment History
+
+```bash
+# From local (via SSH)
+ssh -i ~/.ssh/polymarket_vultr root@216.238.85.11 "cat /opt/polymarket-autotrader/optimizer/history/adjustments.txt | tail -20"
+
+# On VPS directly
+cat /opt/polymarket-autotrader/optimizer/history/adjustments.txt
+```
+
+### Manually Triggering Optimizer
+
+```bash
+# Dry-run (see what would happen without applying)
+ssh -i ~/.ssh/polymarket_vultr root@216.238.85.11 "cd /opt/polymarket-autotrader && venv/bin/python3 optimizer/optimizer.py --dry-run"
+
+# Apply changes
+ssh -i ~/.ssh/polymarket_vultr root@216.238.85.11 "cd /opt/polymarket-autotrader && venv/bin/python3 optimizer/optimizer.py"
+```
+
+### Cron Schedule
+
+Optimizer runs at minute 0 of every hour:
+```
+0 * * * * cd /opt/polymarket-autotrader && /opt/polymarket-autotrader/venv/bin/python3 optimizer/optimizer.py >> optimizer/cron.log 2>&1
+```
+
+Install/uninstall:
+```bash
+# Install (on VPS)
+./optimizer/install_cron.sh
+
+# Uninstall (on VPS)
+./optimizer/uninstall_cron.sh
+
+# Verify
+crontab -l | grep optimizer
+```
+
+### Example Telegram Report
+
+**Healthy report (silent):**
+```
+✅ OPTIMIZER REPORT (14:00 UTC)
+Period: Last 1h | Status: HEALTHY
+
+📊 Trades
+  Count: 8 (5 resolved)
+  Record: 3W / 2L (60.0%)
+  P&L: +$4.50
+
+💰 Balance
+  Current: $185.50
+  Peak: $200.00 (DD: 7.3%)
+  Daily P&L: +$12.30
+
+🚫 Skips
+  Total: 45
+  • SKIP_ENTRY_PRICE: 18 (40.0%)
+  • SKIP_WEAK: 12 (26.7%)
+  • SKIP_CONFLUENCE: 8 (17.8%)
+
+👍 No adjustments needed
+```
+
+**Alert report (with sound):**
+```
+🚨 OPTIMIZER REPORT (14:00 UTC)
+Period: Last 2h | Status: ALERT
+
+📊 Trades
+  No trades in period
+
+🚫 Skips
+  Total: 120
+  • SKIP_ENTRY_PRICE: 72 (60.0%)
+  • SKIP_WEAK: 30 (25.0%)
+  • SKIP_CONFLUENCE: 12 (10.0%)
+
+⚠️ Issues
+  • No trades in last 2 hours
+  • 60.0% of skips due to SKIP_ENTRY_PRICE
+
+🔧 Adjustments
+  • MAX_ENTRY_PRICE_CAP: 0.50 → 0.55
+    (60% skips due to entry price filter)
+
+🔍 Diagnosis: skip_dominated
+```
+
+### Example Adjustment Log Entry
+
+```
+[2026-01-17 14:00:15 UTC] MAX_ENTRY_PRICE_CAP: 0.50 -> 0.55 (bot/intra_epoch_bot.py) - 60% skips due to entry price filter
+```
+
+### Safety Features
+
+1. **Rate Limiting** - Max 1 adjustment per parameter per hour
+2. **Bounds Enforcement** - Parameters never exceed min/max from config
+3. **Protected Parameters** - Safety-critical params never modified
+4. **Backup Files** - Creates .bak before any modification
+5. **Audit Trail** - All changes logged to history/adjustments.txt
+6. **Dry-Run Mode** - Test without applying changes
+
+### Troubleshooting
+
+**Cron not running:**
+```bash
+# Check cron service
+systemctl status cron
+
+# Check cron log
+tail -50 /opt/polymarket-autotrader/optimizer/cron.log
+
+# Test manually
+cd /opt/polymarket-autotrader && venv/bin/python3 optimizer/optimizer.py --dry-run
+```
+
+**No adjustments when expected:**
+```bash
+# Check rate limiting state
+cat /opt/polymarket-autotrader/optimizer/state/rate_limit.json
+
+# Check last review results
+cat /opt/polymarket-autotrader/optimizer/state/last_review.json | python3 -m json.tool
+```
+
+**Telegram not sending:**
+```bash
+# Test Telegram
+ssh -i ~/.ssh/polymarket_vultr root@216.238.85.11 "cd /opt/polymarket-autotrader && python3 -c \"
+from bot.telegram_handler import TelegramBot
+bot = TelegramBot()
+print('Enabled:', bot.enabled)
+bot.send_message_sync('Test from Optimizer')
+\""
 ```
 
 ---

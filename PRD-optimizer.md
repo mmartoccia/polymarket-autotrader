@@ -201,8 +201,8 @@ Optimizer is an automated hourly performance review system that runs on the VPS 
 **Description:** As a user, I want Optimizer documented in CLAUDE.md so future Claude sessions understand how to use and maintain it.
 
 **Acceptance Criteria:**
-- [ ] Add "Optimizer System" section to CLAUDE.md
-- [ ] Document:
+- [x] Add "Optimizer System" section to CLAUDE.md
+- [x] Document:
   - Purpose and architecture overview
   - How it runs (cron hourly on VPS)
   - Tunable parameters and their bounds
@@ -210,9 +210,9 @@ Optimizer is an automated hourly performance review system that runs on the VPS 
   - How to use /optimizer-status skill
   - How to view adjustment history
   - How to manually trigger
-- [ ] Include example Telegram report format
-- [ ] Include example adjustment log entry
-- [ ] Typecheck passes (N/A - markdown file)
+- [x] Include example Telegram report format
+- [x] Include example adjustment log entry
+- [x] Typecheck passes (N/A - markdown file)
 
 ---
 
