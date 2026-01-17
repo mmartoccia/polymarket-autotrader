@@ -78,18 +78,18 @@ Optimizer is an automated hourly performance review system that runs on the VPS 
 **Description:** As a developer, I need decision logic that maps analysis findings to parameter adjustments.
 
 **Acceptance Criteria:**
-- [ ] Create `optimizer/tuning_rules.py`
-- [ ] Define `TuningRule` dataclass with: name, condition_fn, parameter, direction (increase/decrease), step
-- [ ] Implement rules:
+- [x] Create `optimizer/tuning_rules.py`
+- [x] Define `TuningRule` dataclass with: name, condition_fn, parameter, direction (increase/decrease), step
+- [x] Implement rules:
   - `too_few_trades_entry_price`: If >40% skips are SKIP_ENTRY_PRICE, increase MAX_ENTRY_PRICE_CAP
   - `too_few_trades_weak_pattern`: If >40% skips are SKIP_WEAK, decrease MIN_PATTERN_ACCURACY
   - `too_few_trades_consensus`: If >40% skips are consensus-related, decrease CONSENSUS_THRESHOLD
   - `poor_win_rate_tighten`: If win_rate < 0.50, increase MIN_PATTERN_ACCURACY and CONSENSUS_THRESHOLD
-- [ ] Implement `select_tunings(analysis: dict, config: dict) -> list[dict]` returns list of adjustments
-- [ ] Each adjustment includes: parameter, old_value, new_value, reason
-- [ ] Bounds checking enforced (min/max from config)
-- [ ] Never adjust protected_parameters
-- [ ] Typecheck passes
+- [x] Implement `select_tunings(analysis: dict, config: dict) -> list[dict]` returns list of adjustments
+- [x] Each adjustment includes: parameter, old_value, new_value, reason
+- [x] Bounds checking enforced (min/max from config)
+- [x] Never adjust protected_parameters
+- [x] Typecheck passes
 
 ---
 
