@@ -133,19 +133,19 @@ telegram.start_polling()  # Called at bot startup
 **Description:** Critical alerts when bot halts or encounters issues.
 
 **Acceptance Criteria:**
-- [ ] Implement `notify_halt(reason, balance, drawdown_pct=None)`
-- [ ] Implement `notify_alert(message, level='warning')` where level is 'info', 'warning', 'critical'
-- [ ] Implement `notify_resumed(balance, drawdown_pct)`
-- [ ] Halt format:
+- [x] Implement `notify_halt(reason, balance, drawdown_pct=None)`
+- [x] Implement `notify_alert(message, level='warning')` where level is 'info', 'warning', 'critical'
+- [x] Implement `notify_resumed(balance, drawdown_pct)`
+- [x] Halt format:
   ```
   🚨 BOT HALTED
   <b>Reason:</b> Drawdown exceeded 30%
   Drawdown: 32.5%
   Balance: $45.00
   ```
-- [ ] Alert uses emoji based on level: ℹ️ info, ⚠️ warning, 🚨 critical
-- [ ] Call notify_halt from risk check functions
-- [ ] Call notify_resumed from auto-resume logic
+- [x] Alert uses emoji based on level: ℹ️ info, ⚠️ warning, 🚨 critical
+- [x] Call notify_halt from risk check functions
+- [x] Call notify_resumed from auto-resume logic
 
 ---
 

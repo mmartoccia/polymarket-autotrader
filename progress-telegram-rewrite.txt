@@ -52,3 +52,23 @@
   - notify_result() wrapper now delegates to telegram_handler methods
   - Loss amount passed as negative from caller but abs() applied in both wrapper and method for safety
 ---
+
+## Iteration 4 - US-TG-004: Halt and Alert Notifications
+- Added `notify_halt()`, `notify_alert()`, and `notify_resumed()` methods to TelegramBot class
+- notify_halt: Takes reason, balance, optional drawdown_pct (auto-converts decimal to %)
+- notify_alert: Takes message and level ('info', 'warning', 'critical'), each with distinct emoji
+- notify_resumed: Takes balance and drawdown_pct for resume notifications
+- Updated wrapper functions in intra_epoch_bot.py:
+  - notify_alert now takes optional level parameter, delegates to telegram_handler
+  - Added notify_halt wrapper
+  - Added notify_resumed wrapper
+- Updated call sites in intra_epoch_bot.py:
+  - check_risk_limits: Now calls notify_halt (for drawdown and daily loss halts)
+  - auto-resume logic: Now calls notify_resumed instead of notify_alert
+- Files changed: bot/telegram_handler.py, bot/intra_epoch_bot.py
+- Learnings for future iterations:
+  - Halt notifications include both reason and balance context
+  - Auto-conversion from decimal (0.325) to percent (32.5%) is consistent across methods
+  - Level-based emoji mapping: info=ℹ️, warning=⚠️, critical=🚨
+  - Drawdown halt passes effective_balance (cash + redeemable), daily loss halt passes just cash
+---

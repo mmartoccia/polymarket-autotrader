@@ -206,9 +206,22 @@ def notify_result(crypto: str, direction: str, is_win: bool, profit: float, bala
         telegram.notify_loss(crypto, direction, abs(profit), balance, win_rate)
 
 
-def notify_alert(message: str):
-    """Send alert notification (not silent)."""
-    send_telegram(f"⚠️ ALERT\n{message}", silent=False)
+def notify_alert(message: str, level: str = "warning"):
+    """Send alert notification via telegram_handler."""
+    telegram = get_telegram_bot()
+    telegram.notify_alert(message, level=level)
+
+
+def notify_halt(reason: str, balance: float, drawdown_pct: float = None):
+    """Send halt notification via telegram_handler."""
+    telegram = get_telegram_bot()
+    telegram.notify_halt(reason, balance, drawdown_pct)
+
+
+def notify_resumed(balance: float, drawdown_pct: float):
+    """Send resumed notification via telegram_handler."""
+    telegram = get_telegram_bot()
+    telegram.notify_resumed(balance, drawdown_pct)
 
 
 # =============================================================================
@@ -1833,7 +1846,7 @@ def check_risk_limits(state: BotState) -> bool:
             state.halted = True
             state.halt_reason = f"Drawdown {drawdown:.1%} exceeds {MAX_DRAWDOWN_PCT:.0%}"
             log.error(f"HALTED: {state.halt_reason} (cash=${state.current_balance:.2f} + redeemable=${redeemable:.2f})")
-            notify_alert(f"Bot HALTED!\n{state.halt_reason}\nCash: ${state.current_balance:.2f}\nRedeemable: ${redeemable:.2f}")
+            notify_halt(state.halt_reason, effective_balance, drawdown)
             return False
 
     # Check daily loss
@@ -1841,7 +1854,7 @@ def check_risk_limits(state: BotState) -> bool:
         state.halted = True
         state.halt_reason = f"Daily loss ${abs(state.daily_pnl):.2f} exceeds ${MAX_DAILY_LOSS_USD}"
         log.error(f"HALTED: {state.halt_reason}")
-        notify_alert(f"Bot HALTED!\n{state.halt_reason}\nBalance: ${state.current_balance:.2f}")
+        notify_halt(state.halt_reason, state.current_balance)
         return False
 
     return True
@@ -1959,7 +1972,7 @@ def run_bot():
                                 state.halt_reason = ""
                                 state.save()
                                 log.info(f"AUTO-RESUMED: Drawdown now {current_drawdown:.1%} (below {MAX_DRAWDOWN_PCT:.0%})")
-                                notify_alert(f"Bot AUTO-RESUMED after redemption!\nDrawdown: {current_drawdown:.1%}\nBalance: ${state.current_balance:.2f}")
+                                notify_resumed(state.current_balance, current_drawdown)
 
             # Check if halted (but still allow redemptions above)
             if state.halted:
