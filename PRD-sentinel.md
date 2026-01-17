@@ -53,16 +53,16 @@ Sentinel is an event-driven autonomous monitoring system that watches the tradin
 **Description:** As a user, I want a background daemon that polls the VPS state every 30 seconds so halt events are detected automatically.
 
 **Acceptance Criteria:**
-- [ ] Create `sentinel/sentinel_monitor.sh` with start/stop/status commands
-- [ ] `start` command runs polling loop in background, writes PID to `state/monitor.pid`
-- [ ] `stop` command kills the process using stored PID
-- [ ] `status` command shows if running and last poll time
-- [ ] Polling loop SSHs to VPS, reads state file, compares mode to last known state
-- [ ] On halt transition (mode changed TO "halted"), writes event to `events/queue.json`
-- [ ] Respects kill switch: skips processing if `state/KILL_SWITCH` file exists
-- [ ] Logs activity to `state/monitor.log`
-- [ ] Script is executable (chmod +x)
-- [ ] Test: `./sentinel_monitor.sh status` runs without error
+- [x] Create `sentinel/sentinel_monitor.sh` with start/stop/status commands
+- [x] `start` command runs polling loop in background, writes PID to `state/monitor.pid`
+- [x] `stop` command kills the process using stored PID
+- [x] `status` command shows if running and last poll time
+- [x] Polling loop SSHs to VPS, reads state file, compares mode to last known state
+- [x] On halt transition (mode changed TO "halted"), writes event to `events/queue.json`
+- [x] Respects kill switch: skips processing if `state/KILL_SWITCH` file exists
+- [x] Logs activity to `state/monitor.log`
+- [x] Script is executable (chmod +x)
+- [x] Test: `./sentinel_monitor.sh status` runs without error
 
 ---
 
