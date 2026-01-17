@@ -689,10 +689,13 @@ else:
 }
 
 # Send confirmation message after action
+# Args: action, result, trigger, [reason], [confidence]
 send_action_confirmation() {
     local action="$1"
     local result="$2"
     local trigger="$3"  # "user_approved", "user_denied", "timeout_auto_fix", "custom"
+    local reason="${4:-}"
+    local confidence="${5:-}"
 
     local emoji
     local header
@@ -729,7 +732,16 @@ send_action_confirmation() {
 <b>Result:</b> $result
 <b>Time:</b> $timestamp"
 
+    # Add reason and confidence for auto-fix notifications
     if [[ "$trigger" == "timeout_auto_fix" ]]; then
+        if [[ -n "$reason" ]]; then
+            message+="
+<b>Reason:</b> $reason"
+        fi
+        if [[ -n "$confidence" ]]; then
+            message+="
+<b>Confidence:</b> ${confidence}%"
+        fi
         message+="
 
 Reply /halt to stop if needed"
@@ -1073,15 +1085,15 @@ Bot remains <b>HALTED</b>.
             local fix_exit_code=$?
 
             if [[ $fix_exit_code -eq 0 ]]; then
-                send_action_confirmation "$action" "Executed automatically after ${TELEGRAM_TIMEOUT_SECONDS}s timeout - $fix_result" "timeout_auto_fix"
+                send_action_confirmation "$action" "Executed automatically after ${TELEGRAM_TIMEOUT_SECONDS}s timeout - $fix_result" "timeout_auto_fix" "$reason" "$confidence"
                 update_event_status "$event_id" "auto_fixed" "$action"
-                log_action "$event_id" "auto_fix" "$action" "Timeout auto-fix (confidence: $confidence%) - $fix_result"
+                log_action "$event_id" "auto_fix" "$action" "timeout_auto_fix: (confidence: $confidence%) - $fix_result"
                 increment_rate_limit
                 track_fix "$halt_reason"  # Track fix for loop detection
             else
-                send_action_confirmation "$action" "Auto-fix FAILED: $fix_result" "timeout_auto_fix"
+                send_action_confirmation "$action" "Auto-fix FAILED: $fix_result" "timeout_auto_fix" "$reason" "$confidence"
                 update_event_status "$event_id" "error" "auto_fix_failed"
-                log_action "$event_id" "error" "auto_fix_failed" "Timeout auto-fix failed: $fix_result"
+                log_action "$event_id" "error" "auto_fix_failed" "timeout_auto_fix: failed: $fix_result"
             fi
             return 0
             ;;

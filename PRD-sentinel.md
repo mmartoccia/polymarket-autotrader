@@ -247,15 +247,15 @@ Sentinel is an event-driven autonomous monitoring system that watches the tradin
 **Description:** As a user, I want to be notified when Sentinel auto-fixes an issue (after timeout) so I know what happened and can undo if needed.
 
 **Acceptance Criteria:**
-- [ ] After auto-fix executes (due to timeout), send Telegram notification
-- [ ] Message format:
+- [x] After auto-fix executes (due to timeout), send Telegram notification
+- [x] Message format:
   - ✅ SENTINEL AUTO-FIX header
   - Action taken
   - Reason and confidence level
   - "Reply /halt to stop if needed"
-- [ ] Include timestamp in message
-- [ ] Log auto-fix with "timeout_auto_fix" flag in history
-- [ ] Test: Let timeout expire, verify notification sent
+- [x] Include timestamp in message
+- [x] Log auto-fix with "timeout_auto_fix" flag in history
+- [x] Test: Let timeout expire, verify notification sent
 
 ---
 
