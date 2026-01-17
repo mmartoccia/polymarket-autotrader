@@ -12,17 +12,15 @@ Controls behavior of the multi-expert consensus trading system.
 # Master enable/disable switch
 AGENT_SYSTEM_ENABLED = True  # Set True to enable agent decisions, False for log-only
 
-# Consensus requirements (Jan 17, 2026 - LOWERED for data collection phase)
-# Phase 1: Data Collection - Need 100+ trades to establish baseline
-CONSENSUS_THRESHOLD = 0.55     # LOWERED from 0.82 → 55% majority agreement (data collection mode)
-MIN_CONFIDENCE = 0.40          # LOWERED from 0.65 → 40% positive lean (data collection mode)
+# Consensus requirements
+# US-TO-QUICK-001 (Jan 16, 2026): Keep high threshold while testing cheap entries
+CONSENSUS_THRESHOLD = 0.82     # Keep selective - only trade high consensus signals
+MIN_CONFIDENCE = 0.65          # Require 65% confidence minimum
 MIN_INDIVIDUAL_CONFIDENCE = 0.30  # Minimum per-agent confidence (enforced in vote_aggregator.py)
 ADAPTIVE_WEIGHTS = True        # Enable performance-based weight tuning
 
-# NOTE: After 100 trades, analyze win rate and adjust:
-#   - If WR >60%: Lower to 0.50/0.35 (too conservative)
-#   - If WR 55-60%: Raise to 0.60/0.45 (sweet spot)
-#   - If WR <55%: Raise to 0.70/0.55 (too aggressive)
+# Track 2 (after 24h validation of cheap entries):
+# If avg entry <$0.15 AND WR >=58%, lower to 0.78/0.60 for more trades
 
 # Agent weights (base multipliers, will be adjusted by performance)
 # US-RI-003 (Jan 16, 2026): Disabled underperforming agents (TechAgent, SentimentAgent, CandlestickAgent)
@@ -88,10 +86,11 @@ REGIME_ADJUSTMENT_ENABLED = True
 
 # Global maximum entry price across all strategies
 # Lower entry prices = lower fees = lower breakeven win rate
-# Jan 17, 2026: RAISED for data collection - need volume to optimize
-MAX_ENTRY = 0.30                  # RAISED from 0.12 → 0.30 for data collection (66% WR breakeven)
-EARLY_MAX_ENTRY = 0.30            # RAISED from 0.12 → 0.30 for data collection
-LATE_MAX_ENTRY = 0.35             # RAISED from 0.15 → 0.35 for data collection
+# US-TO-QUICK-001: Focus on cheap entries for guaranteed profit zones
+# At $0.12 entry: Only need 12.1% WR to break even (current: 58% WR)
+MAX_ENTRY = 0.12                  # LOWERED from 0.20 → Focus on cheap entries
+EARLY_MAX_ENTRY = 0.12            # LOWERED from 0.20
+LATE_MAX_ENTRY = 0.15             # LOWERED from 0.25
 
 # =============================================================================
 # TIMING WINDOW OPTIMIZATION (US-RI-006: Jan 16, 2026)
