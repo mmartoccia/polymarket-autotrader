@@ -23,7 +23,7 @@ import logging
 import requests
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Optional, Tuple, Union
 from dotenv import load_dotenv
 from web3 import Web3
 from eth_account import Account
@@ -388,8 +388,18 @@ def get_current_epoch() -> Tuple[int, int]:
     return epoch_start, time_in_epoch
 
 
-def fetch_minute_candles(crypto: str, epoch_start: int) -> Optional[List[str]]:
-    """Fetch 1-minute candles for the current epoch. Returns list of 'Up'/'Down'."""
+def fetch_minute_candles(crypto: str, epoch_start: int) -> Optional[List[Dict[str, Union[str, float]]]]:
+    """
+    Fetch 1-minute candles for the current epoch.
+
+    Returns list of dicts with:
+        - direction: "Up" or "Down"
+        - change_pct: Percent change (close - open) / open * 100
+        - volume: Trading volume for the candle
+
+    Example:
+        [{"direction": "Down", "change_pct": -0.25, "volume": 1234.5}, ...]
+    """
     try:
         symbol = f"{crypto}USDT"
         url = "https://api.binance.com/api/v3/klines"
@@ -406,18 +416,47 @@ def fetch_minute_candles(crypto: str, epoch_start: int) -> Optional[List[str]]:
 
         klines = resp.json()
 
-        # Convert to Up/Down (skip last incomplete candle)
-        minutes = []
+        # Convert to candle dicts with direction, magnitude, and volume
+        # Binance kline format: [open_time, open, high, low, close, volume, ...]
+        # Skip last incomplete candle
+        candles: List[Dict[str, Union[str, float]]] = []
         for k in klines[:-1]:
             open_p = float(k[1])
             close_p = float(k[4])
-            minutes.append('Up' if close_p > open_p else 'Down')
+            volume = float(k[5])
+            change_pct = (close_p - open_p) / open_p * 100 if open_p > 0 else 0.0
 
-        return minutes
+            candles.append({
+                'direction': 'Up' if close_p > open_p else 'Down',
+                'change_pct': change_pct,
+                'volume': volume
+            })
+
+        return candles
 
     except Exception as e:
         log.warning(f"Failed to fetch candles for {crypto}: {e}")
         return None
+
+
+def get_directions_from_candles(candles: Optional[List[Dict[str, Union[str, float]]]]) -> Optional[List[str]]:
+    """
+    Extract direction-only list from candle dicts for backward compatibility.
+
+    Args:
+        candles: List of candle dicts from fetch_minute_candles()
+
+    Returns:
+        List of direction strings ("Up"/"Down"), or None if input is None
+
+    Example:
+        >>> candles = [{"direction": "Down", "change_pct": -0.25, "volume": 100}]
+        >>> get_directions_from_candles(candles)
+        ["Down"]
+    """
+    if candles is None:
+        return None
+    return [c['direction'] for c in candles]
 
 
 def fetch_polymarket_prices(crypto: str, epoch_start: int) -> Optional[Dict]:
@@ -1072,8 +1111,14 @@ def run_bot():
                     scan_results.append(f"{crypto}:max_pos")
                     continue
 
-                # Fetch minute candles
-                minutes = fetch_minute_candles(crypto, epoch_start)
+                # Fetch minute candles (now returns dicts with magnitude data)
+                candles = fetch_minute_candles(crypto, epoch_start)
+                if not candles:
+                    scan_results.append(f"{crypto}:no_data")
+                    continue
+
+                # Get direction-only list for pattern analysis (backward compatibility)
+                minutes = get_directions_from_candles(candles)
                 if not minutes:
                     scan_results.append(f"{crypto}:no_data")
                     continue

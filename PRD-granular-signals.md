@@ -43,13 +43,13 @@ Both features are toggleable via configuration constants and will be shadow-test
 **Description:** As a developer, I need fetch_minute_candles to return magnitude data so we can analyze move strength.
 
 **Acceptance Criteria:**
-- [ ] Modify `fetch_minute_candles()` to return list of dicts instead of strings
-- [ ] Each dict contains: `{"direction": "Up"/"Down", "change_pct": float, "volume": float}`
-- [ ] Change calculated as `(close - open) / open * 100`
-- [ ] Volume extracted from kline data (index 5 in Binance response)
-- [ ] Add helper function `get_directions_from_candles(candles)` for backward compatibility
-- [ ] Existing code continues to work with direction-only list
-- [ ] Typecheck passes
+- [x] Modify `fetch_minute_candles()` to return list of dicts instead of strings
+- [x] Each dict contains: `{"direction": "Up"/"Down", "change_pct": float, "volume": float}`
+- [x] Change calculated as `(close - open) / open * 100`
+- [x] Volume extracted from kline data (index 5 in Binance response)
+- [x] Add helper function `get_directions_from_candles(candles)` for backward compatibility
+- [x] Existing code continues to work with direction-only list
+- [x] Typecheck passes
 
 ---
 
