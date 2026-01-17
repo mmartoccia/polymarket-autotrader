@@ -228,18 +228,18 @@ Sentinel is an event-driven autonomous monitoring system that watches the tradin
 **Description:** As a user, I want the /auto-manage skill to actually execute the commands when invoked.
 
 **Acceptance Criteria:**
-- [ ] Skill reads command argument and routes to appropriate action
-- [ ] `status` subcommand outputs:
+- [x] Skill reads command argument and routes to appropriate action
+- [x] `status` subcommand outputs:
   - Monitor running/stopped (check PID file)
   - Last state from `state/last_state.json`
   - Pending events count from queue
   - Rate limit usage (X/3 this hour)
-- [ ] `start` subcommand calls `./sentinel/sentinel_monitor.sh start`
-- [ ] `stop` subcommand calls `./sentinel/sentinel_monitor.sh stop`
-- [ ] `history` subcommand reads and displays `history/actions.log`
-- [ ] `config` subcommand displays `sentinel_config.json` formatted
-- [ ] Default (diagnose) gathers state and runs Claude analysis inline
-- [ ] Test: Run `/auto-manage status` and verify output
+- [x] `start` subcommand calls `./sentinel/sentinel_monitor.sh start`
+- [x] `stop` subcommand calls `./sentinel/sentinel_monitor.sh stop`
+- [x] `history` subcommand reads and displays `history/actions.log`
+- [x] `config` subcommand displays `sentinel_config.json` formatted
+- [x] Default (diagnose) gathers state and runs Claude analysis inline
+- [x] Test: Run `/auto-manage status` and verify output
 
 ---
 

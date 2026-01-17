@@ -193,3 +193,94 @@ ssh -i ~/.ssh/polymarket_vultr root@216.238.85.11 "command"
   - Include both old and new values in status messages for audit trail
   - Handle "none" and empty action strings gracefully (no-op with success)
 ---
+
+## Iteration 9 - US-009: Implement consecutive fix loop detection
+- Added `RECENT_FIXES_FILE="$STATE_DIR/recent_fixes.json"` variable
+- Implemented three new functions in sentinel.sh:
+  - `track_fix(issue_type)`: Records fix with Unix timestamp, cleans entries older than 30 min
+  - `check_fix_loop(issue_type)`: Returns 0 (true) if 2+ fixes for same issue in last 30 min
+  - `clear_fix_history(issue_type)`: Removes all entries for given issue type
+- Integration points in `process_event()`:
+  - Check for fix loop after rate limit check (before timeout auto-fix)
+  - If loop detected: sends escalation message, updates status, returns early
+  - Escalation message includes issue type and explains manual intervention needed
+  - `track_fix()` called after successful timeout auto-fix
+  - `clear_fix_history()` called on user approve, deny, and custom action success
+- Uses `halt_reason` as the `issue_type` for tracking consistency
+- Files changed: sentinel/sentinel.sh, PRD-sentinel.md
+- Learnings for future iterations:
+  - Unix timestamps (date +%s) are easier for arithmetic comparisons than ISO strings
+  - jq `--argjson` for numeric values, `--arg` for strings
+  - Fix loop check happens BEFORE the fix attempt to prevent unnecessary work
+  - Clearing history on manual intervention prevents false positives after user confirms fix is working
+  - CONSECUTIVE_FIX_LIMIT=2 is loaded from config, matches rate_limits.consecutive_fix_limit
+---
+
+## Iteration 10 - US-010: Implement configurable alert rules system
+- Added default alert rules to sentinel_config.json:
+  - `low_balance`: balance < 75, severity=warning, cooldown=60 min
+  - `critical_balance`: balance < 30, severity=critical, cooldown=30 min
+  - `high_drawdown`: drawdown_pct > 25, severity=warning, cooldown=60 min
+  - `losing_streak`: consecutive_losses >= 3, severity=warning, cooldown=30 min
+- Added ALERT_COOLDOWNS_FILE variable to sentinel_monitor.sh
+- Implemented new functions in sentinel_monitor.sh:
+  - `init_alert_cooldowns()`: Creates empty JSON file if needed
+  - `check_alert_cooldown(name, minutes)`: Returns 0 if in cooldown, 1 if can trigger
+  - `update_alert_cooldown(name)`: Updates timestamp for alert
+  - `evaluate_condition(condition, state)`: Uses sed+bc to evaluate condition strings
+  - `get_severity_emoji(severity)`: Returns ℹ️/⚠️/🚨 based on severity
+  - `send_alert_notification(name, severity, condition, state)`: Formats and sends via Telegram
+  - `evaluate_alerts(state)`: Main loop that evaluates all alert rules
+- Integrated `evaluate_alerts()` call into poll_loop() after halt transition check
+- Alert messages include severity, condition, timestamp, and current state values
+- Files changed: sentinel/sentinel_config.json, sentinel/sentinel_monitor.sh, PRD-sentinel.md
+- Learnings for future iterations:
+  - Condition evaluation with sed substitution + bc works for simple expressions
+  - Cooldowns use Unix timestamps stored in JSON for easy comparison
+  - Alert rules are defined as JSON objects in config with name, condition, severity, cooldown_minutes
+  - jq `--arg` for string vars, `--argjson` for numeric values (timestamps)
+  - Each alert has independent cooldown tracking to prevent spam
+---
+
+## Iteration 11 - US-011: Create /auto-manage skill definition
+- Rewrote `.claude/commands/auto-manage.md` to interface with Sentinel system (was referencing old event_orchestrator.py)
+- Default behavior (no args): Manual diagnostic with SSH commands to gather VPS state, logs, balance
+- Implemented all 5 subcommands:
+  - `status`: Check monitor PID, show last state, pending events, rate limit usage
+  - `start`: Run sentinel_monitor.sh start
+  - `stop`: Run sentinel_monitor.sh stop
+  - `history`: tail -20 history/actions.log
+  - `config`: Display sentinel_config.json formatted
+- Comprehensive safety section:
+  - Kill switch location and commands
+  - Rate limits table with all values
+  - Fix loop detection explanation
+  - Allowed vs prohibited actions list
+- Added architecture diagram, file locations table, troubleshooting guide, and examples
+- Files changed: .claude/commands/auto-manage.md, PRD-sentinel.md
+- Learnings for future iterations:
+  - Skill files are markdown prompts that Claude follows (not executable code)
+  - Skills should provide executable bash snippets for Claude to run
+  - The "Execute:" pattern with code blocks guides Claude on what commands to run
+  - Including example outputs helps users understand expected behavior
+  - Safety information should be prominent and easily findable
+---
+
+## Iteration 12 - US-012: Implement /auto-manage skill execution logic
+- Added "Argument Parsing" section at top of auto-manage.md with explicit routing rules
+- Routing logic: empty/no args → diagnostic, status/start/stop/history/config → subcommand
+- All subcommands verified working:
+  - status: Shows monitor PID status, last state JSON, pending events count, rate limit usage
+  - start: Calls sentinel_monitor.sh start with verify step
+  - stop: Calls sentinel_monitor.sh stop with verify step
+  - history: Shows last 20 lines from history/actions.log
+  - config: Displays sentinel_config.json with python3 -m json.tool formatting
+- Default diagnostic gathers VPS state, recent logs, on-chain balance via SSH
+- Files changed: .claude/commands/auto-manage.md, PRD-sentinel.md
+- Learnings for future iterations:
+  - Skill files need explicit argument parsing section for Claude to route correctly
+  - The numbered list format (1. If X → Do Y) is clear for routing logic
+  - Testing each subcommand manually verifies the bash snippets work
+  - Skills that call external scripts (sentinel_monitor.sh) should include verify steps
+  - Unknown subcommand handling improves user experience
+---

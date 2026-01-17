@@ -6,6 +6,18 @@
 
 Interact with the Sentinel monitoring system which watches the trading bot for halt events, performance degradation, and configurable alerts. Sentinel runs locally on Mac, polling the VPS every 30 seconds.
 
+## Argument Parsing
+
+**IMPORTANT:** Parse the user's argument to determine which subcommand to execute:
+
+1. If argument is empty or not provided → Execute **Default: Run Manual Diagnostic**
+2. If argument is `status` → Execute **Subcommand: status**
+3. If argument is `start` → Execute **Subcommand: start**
+4. If argument is `stop` → Execute **Subcommand: stop**
+5. If argument is `history` → Execute **Subcommand: history**
+6. If argument is `config` → Execute **Subcommand: config**
+7. If argument is anything else → Show "Unknown subcommand. Valid options: status, start, stop, history, config"
+
 ## Quick Reference
 
 | Subcommand | Action |
