@@ -619,22 +619,28 @@ def run_bot():
                 continue
 
             # Scan each crypto
+            scan_results = []  # Track what happened with each crypto
+
             for crypto in CRYPTOS:
                 # Skip if already traded this epoch
                 if state.last_epoch_traded.get(crypto) == epoch_start:
+                    scan_results.append(f"{crypto}:traded")
                     continue
 
                 # Skip if already have position in this crypto
                 if crypto in state.positions:
+                    scan_results.append(f"{crypto}:holding")
                     continue
 
                 # Check position limit
                 if len(state.positions) >= MAX_POSITIONS:
+                    scan_results.append(f"{crypto}:max_pos")
                     continue
 
                 # Fetch minute candles
                 minutes = fetch_minute_candles(crypto, epoch_start)
                 if not minutes:
+                    scan_results.append(f"{crypto}:no_data")
                     continue
 
                 # Analyze pattern
@@ -642,7 +648,12 @@ def run_bot():
 
                 # Skip weak patterns
                 if not direction or accuracy < MIN_PATTERN_ACCURACY:
+                    ups = sum(1 for m in minutes if m == 'Up')
+                    downs = len(minutes) - ups
+                    scan_results.append(f"{crypto}:{ups}↑{downs}↓(weak)")
                     continue
+
+                scan_results.append(f"{crypto}:{direction}({accuracy*100:.0f}%)")
 
                 # Fetch Polymarket prices
                 prices = fetch_polymarket_prices(crypto, epoch_start)
@@ -690,6 +701,11 @@ def run_bot():
                     state.save()
 
                     log.info(f"Trade recorded. Total positions: {len(state.positions)}")
+
+            # Log scan summary
+            mins_in = time_in_epoch // 60
+            secs_in = time_in_epoch % 60
+            log.info(f"[min {mins_in}:{secs_in:02d}] Scan: {' | '.join(scan_results)}")
 
             time.sleep(SCAN_INTERVAL)
 
