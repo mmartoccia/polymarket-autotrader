@@ -199,6 +199,7 @@ def notify_trade(
 
 def notify_result(crypto: str, direction: str, is_win: bool, profit: float, balance: float, win_rate: float = 0.0):
     """Send trade result notification via telegram_handler."""
+    from telegram_handler import get_telegram_bot
     telegram = get_telegram_bot()
     if is_win:
         telegram.notify_win(crypto, direction, profit, balance, win_rate)
@@ -208,18 +209,21 @@ def notify_result(crypto: str, direction: str, is_win: bool, profit: float, bala
 
 def notify_alert(message: str, level: str = "warning"):
     """Send alert notification via telegram_handler."""
+    from telegram_handler import get_telegram_bot
     telegram = get_telegram_bot()
     telegram.notify_alert(message, level=level)
 
 
 def notify_halt(reason: str, balance: float, drawdown_pct: float = None):
     """Send halt notification via telegram_handler."""
+    from telegram_handler import get_telegram_bot
     telegram = get_telegram_bot()
     telegram.notify_halt(reason, balance, drawdown_pct)
 
 
 def notify_resumed(balance: float, drawdown_pct: float):
     """Send resumed notification via telegram_handler."""
+    from telegram_handler import get_telegram_bot
     telegram = get_telegram_bot()
     telegram.notify_resumed(balance, drawdown_pct)
 
