@@ -818,6 +818,16 @@ def render_dashboard(data: Dict[str, List[dict]], prices_data: Dict[str, Dict],
                                   active_positions.get(c))
               for c in cryptos]
 
+    # Normalize panel heights - find max length and pad shorter panels
+    max_len = max(len(p) for p in panels)
+    panel_width = 40  # Width of each panel including borders
+    empty_line = f"│{' ' * 38}│"  # Empty line with borders for padding
+
+    for p in panels:
+        while len(p) < max_len:
+            # Insert empty line before the closing border
+            p.insert(-1, empty_line)
+
     # Print top row (BTC, ETH)
     for i in range(len(panels[0])):
         print(f"  {panels[0][i]}  {panels[1][i]}")
