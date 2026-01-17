@@ -11,6 +11,10 @@
 
 set -o pipefail
 
+# Error handling: log errors and continue (don't exit on error in daemon)
+# We intentionally don't use set -e here because the polling loop should continue
+# even when individual operations fail
+
 # Get script directory for relative paths
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 CONFIG_FILE="$SCRIPT_DIR/sentinel_config.json"
@@ -22,6 +26,12 @@ LAST_STATE_FILE="$STATE_DIR/last_state.json"
 KILL_SWITCH_FILE="$STATE_DIR/KILL_SWITCH"
 QUEUE_FILE="$EVENTS_DIR/queue.json"
 ALERT_COOLDOWNS_FILE="$STATE_DIR/alert_cooldowns.json"
+ERROR_LOG_FILE="$STATE_DIR/error.log"
+HEARTBEAT_FILE="$STATE_DIR/heartbeat"
+
+# Track consecutive SSH failures
+SSH_FAILURE_COUNT=0
+MAX_SSH_FAILURES=5
 
 # Ensure state directory exists
 mkdir -p "$STATE_DIR"
@@ -49,24 +59,111 @@ log() {
     echo "[$(date '+%Y-%m-%d %H:%M:%S')] [$level] $msg" >> "$LOG_FILE"
 }
 
-# Get VPS state via SSH
+# Log error with stack trace to error.log
+log_error() {
+    local msg="$1"
+    local timestamp
+    timestamp=$(date '+%Y-%m-%d %H:%M:%S')
+    {
+        echo "=========================================="
+        echo "[$timestamp] ERROR: $msg"
+        echo "Stack trace:"
+        local frame=0
+        while caller $frame; do
+            ((frame++))
+        done
+        echo "=========================================="
+    } >> "$ERROR_LOG_FILE"
+
+    # Also log to regular log
+    log "ERROR" "$msg"
+}
+
+# Send critical error notification via Telegram (best effort)
+# This is a simplified version that doesn't retry to avoid loops
+send_critical_error_notification() {
+    local error_msg="$1"
+
+    # Escape for Python string
+    local escaped_msg
+    escaped_msg=$(echo "$error_msg" | sed 's/\\/\\\\/g; s/"/\\"/g')
+
+    local message="🔴 <b>SENTINEL CRITICAL ERROR</b>
+
+<code>$escaped_msg</code>
+
+Time: $(date -u '+%Y-%m-%d %H:%M UTC')
+
+⚠️ Sentinel monitor may require attention"
+
+    # Try to send via VPS telegram_handler (best effort, no retry)
+    local python_script="
+import sys
+sys.path.insert(0, '/opt/polymarket-autotrader')
+from bot.telegram_handler import TelegramBot
+
+bot = TelegramBot()
+if bot.enabled:
+    bot.send_message_sync('''$message''', parse_mode='HTML', silent=False)
+"
+
+    ssh -i "$SSH_KEY" -o ConnectTimeout=5 -o BatchMode=yes \
+        "$VPS_HOST" "cd /opt/polymarket-autotrader && python3 -c \"$python_script\"" 2>/dev/null || true
+}
+
+# Get VPS state via SSH with retry logic
+# Returns: 0 on success, 1 on failure
+# Sets global SSH_FAILURE_COUNT for tracking consecutive failures
 get_vps_state() {
     local state_file
     local state_json
+    local max_retries=3
+    local retry_delay=2
 
     # Try each state file in order (primary first, then fallback)
     for state_file in $STATE_FILES; do
-        state_json=$(ssh -i "$SSH_KEY" -o ConnectTimeout="$SSH_TIMEOUT" -o BatchMode=yes \
-            "$VPS_HOST" "cat '$state_file' 2>/dev/null" 2>/dev/null)
+        local retry=0
+        while [[ $retry -lt $max_retries ]]; do
+            state_json=$(ssh -i "$SSH_KEY" -o ConnectTimeout="$SSH_TIMEOUT" -o BatchMode=yes \
+                -o ServerAliveInterval=5 -o ServerAliveCountMax=2 \
+                "$VPS_HOST" "cat '$state_file' 2>/dev/null" 2>/dev/null)
 
-        if [[ $? -eq 0 ]] && [[ -n "$state_json" ]]; then
-            # Validate it's valid JSON
-            if echo "$state_json" | jq . >/dev/null 2>&1; then
-                echo "$state_json"
-                return 0
+            local ssh_exit_code=$?
+
+            if [[ $ssh_exit_code -eq 0 ]] && [[ -n "$state_json" ]]; then
+                # Validate it's valid JSON
+                if echo "$state_json" | jq . >/dev/null 2>&1; then
+                    # Reset failure counter on success
+                    SSH_FAILURE_COUNT=0
+                    echo "$state_json"
+                    return 0
+                else
+                    # Malformed JSON in state file
+                    log_error "Malformed JSON in state file: $state_file"
+                    log "WARN" "State file $state_file contains invalid JSON, trying next file"
+                    break  # Try next state file
+                fi
             fi
-        fi
+
+            # SSH failed, retry
+            ((retry++))
+            if [[ $retry -lt $max_retries ]]; then
+                log "WARN" "SSH attempt $retry/$max_retries failed for $state_file, retrying in ${retry_delay}s..."
+                sleep $retry_delay
+            fi
+        done
     done
+
+    # All attempts failed
+    ((SSH_FAILURE_COUNT++))
+    log_error "SSH connection failed after $max_retries retries (consecutive failures: $SSH_FAILURE_COUNT)"
+
+    # Check for critical threshold
+    if [[ $SSH_FAILURE_COUNT -ge $MAX_SSH_FAILURES ]]; then
+        log_error "Critical: $SSH_FAILURE_COUNT consecutive SSH failures (threshold: $MAX_SSH_FAILURES)"
+        send_critical_error_notification "SSH connection to VPS failed $SSH_FAILURE_COUNT times consecutively"
+        # Don't reset the counter - let it continue to accumulate
+    fi
 
     return 1
 }
@@ -233,12 +330,16 @@ get_severity_emoji() {
     esac
 }
 
-# Send alert via Telegram (using VPS telegram_handler.py)
+# Send alert via Telegram with retry logic (using VPS telegram_handler.py)
+# Retries up to 3 times with exponential backoff
 send_alert_notification() {
     local alert_name="$1"
     local severity="$2"
     local condition="$3"
     local state="$4"
+
+    local max_retries=3
+    local retry_delay=2
 
     local emoji
     emoji=$(get_severity_emoji "$severity")
@@ -270,7 +371,7 @@ send_alert_notification() {
     local escaped_message
     escaped_message=$(echo "$message" | sed 's/\\/\\\\/g; s/"/\\"/g')
 
-    # Send via SSH to VPS telegram_handler
+    # Send via SSH to VPS telegram_handler with retry
     local python_script="
 import sys
 sys.path.insert(0, '/opt/polymarket-autotrader')
@@ -284,10 +385,26 @@ result = bot.send_message_sync('''$escaped_message''', parse_mode='HTML', silent
 sys.exit(0 if result else 1)
 "
 
-    ssh -i "$SSH_KEY" -o ConnectTimeout="$SSH_TIMEOUT" -o BatchMode=yes \
-        "$VPS_HOST" "cd /opt/polymarket-autotrader && python3 -c \"$python_script\"" 2>/dev/null
+    local retry=0
+    while [[ $retry -lt $max_retries ]]; do
+        ssh -i "$SSH_KEY" -o ConnectTimeout="$SSH_TIMEOUT" -o BatchMode=yes \
+            "$VPS_HOST" "cd /opt/polymarket-autotrader && python3 -c \"$python_script\"" 2>/dev/null
 
-    return $?
+        if [[ $? -eq 0 ]]; then
+            return 0
+        fi
+
+        ((retry++))
+        if [[ $retry -lt $max_retries ]]; then
+            log "WARN" "Telegram send attempt $retry/$max_retries failed, retrying in ${retry_delay}s..."
+            sleep $retry_delay
+            retry_delay=$((retry_delay * 2))  # Exponential backoff
+        fi
+    done
+
+    # All retries failed
+    log_error "Failed to send Telegram alert '$alert_name' after $max_retries retries"
+    return 1
 }
 
 # Evaluate all alert rules against current state
@@ -331,11 +448,19 @@ evaluate_alerts() {
     done
 }
 
+# Write heartbeat timestamp
+write_heartbeat() {
+    date +%s > "$HEARTBEAT_FILE"
+}
+
 # Main polling loop
 poll_loop() {
     log "INFO" "Monitor started with PID $$"
 
     while true; do
+        # Write heartbeat at start of each poll
+        write_heartbeat
+
         # Check kill switch
         if [[ -f "$KILL_SWITCH_FILE" ]]; then
             log "WARN" "Kill switch active, skipping poll cycle"
@@ -343,12 +468,14 @@ poll_loop() {
             continue
         fi
 
-        # Get VPS state
+        # Get VPS state (includes retry logic and error handling)
         local state
         state=$(get_vps_state)
+        local get_state_result=$?
 
-        if [[ $? -ne 0 ]] || [[ -z "$state" ]]; then
-            log "ERROR" "Failed to get VPS state"
+        if [[ $get_state_result -ne 0 ]] || [[ -z "$state" ]]; then
+            # Error already logged by get_vps_state
+            log "DEBUG" "Skipping poll cycle due to state retrieval failure"
             sleep "$POLL_INTERVAL"
             continue
         fi
@@ -359,8 +486,10 @@ poll_loop() {
             add_halt_event "$state"
         fi
 
-        # Evaluate alert rules
-        evaluate_alerts "$state"
+        # Evaluate alert rules (wrapped in error handling)
+        if ! evaluate_alerts "$state" 2>/dev/null; then
+            log "WARN" "Alert evaluation encountered issues (non-critical)"
+        fi
 
         log "DEBUG" "Poll complete, mode=$(echo "$state" | jq -r '.mode // "unknown"')"
 

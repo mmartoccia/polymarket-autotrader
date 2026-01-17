@@ -284,3 +284,19 @@ ssh -i ~/.ssh/polymarket_vultr root@216.238.85.11 "command"
   - Skills that call external scripts (sentinel_monitor.sh) should include verify steps
   - Unknown subcommand handling improves user experience
 ---
+
+## Iteration 13 - US-013: Add auto-fix notification with undo option
+- Enhanced `send_action_confirmation()` function to accept optional reason and confidence parameters
+- Modified message format for `timeout_auto_fix` trigger to include:
+  - Reason (Claude's analysis summary)
+  - Confidence level (percentage)
+  - "Reply /halt to stop if needed" already present
+- Updated auto-fix call sites to pass reason and confidence
+- Updated log_action calls to include "timeout_auto_fix:" prefix for audit trail
+- Files changed: sentinel/sentinel.sh, PRD-sentinel.md
+- Learnings for future iterations:
+  - Bash function parameters with defaults: `local var="${N:-}"`
+  - Message formatting with conditional sections: check `-n "$var"` before adding
+  - Auto-fix notifications benefit from context (reason+confidence) so user can verify decision was sensible
+  - Undo option (/halt) is important for user control after automated actions
+---

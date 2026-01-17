@@ -13,6 +13,9 @@
 
 set -o pipefail
 
+# Enable error exit with trap for cleanup
+set -e
+
 # Get script directory for relative paths
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 CONFIG_FILE="$SCRIPT_DIR/sentinel_config.json"
@@ -26,11 +29,94 @@ LOCK_FILE="$STATE_DIR/sentinel.lock"
 RATE_LIMIT_FILE="$STATE_DIR/rate_limit.json"
 RECENT_FIXES_FILE="$STATE_DIR/recent_fixes.json"
 DIAGNOSE_PROMPT="$SCRIPT_DIR/sentinel_diagnose.md"
+ERROR_LOG_FILE="$STATE_DIR/error.log"
 TELEGRAM_TIMEOUT_SECONDS=900  # 15 minutes - loaded from config
 TELEGRAM_POLL_INTERVAL=10    # Poll every 10 seconds
 
 # Ensure directories exist
 mkdir -p "$STATE_DIR" "$HISTORY_DIR"
+
+# Cleanup function for trap
+cleanup() {
+    local exit_code=$?
+    if [[ $exit_code -ne 0 ]]; then
+        log_error "Script exiting with error code $exit_code"
+    fi
+    release_lock 2>/dev/null || true
+    exit $exit_code
+}
+
+# Set trap for cleanup on exit, error, interrupt
+trap cleanup EXIT ERR INT TERM
+
+# Log error with stack trace to error.log
+log_error() {
+    local msg="$1"
+    local timestamp
+    timestamp=$(date '+%Y-%m-%d %H:%M:%S')
+    {
+        echo "=========================================="
+        echo "[$timestamp] ERROR: $msg"
+        echo "Stack trace:"
+        local frame=0
+        while caller $frame 2>/dev/null; do
+            ((frame++))
+        done
+        echo "=========================================="
+    } >> "$ERROR_LOG_FILE"
+
+    # Also log to regular log/actions.log
+    log "ERROR" "$msg"
+}
+
+# Send critical error notification via Telegram (best effort)
+# Retries 3 times then gives up
+send_critical_error_notification() {
+    local error_msg="$1"
+    local max_retries=3
+    local retry_delay=2
+
+    # Escape for Python string
+    local escaped_msg
+    escaped_msg=$(echo "$error_msg" | sed 's/\\/\\\\/g; s/"/\\"/g')
+
+    local message="🔴 <b>SENTINEL CRITICAL ERROR</b>
+
+<code>$escaped_msg</code>
+
+Time: $(date -u '+%Y-%m-%d %H:%M UTC')
+
+⚠️ Sentinel orchestrator encountered a critical error"
+
+    local python_script="
+import sys
+sys.path.insert(0, '/opt/polymarket-autotrader')
+from bot.telegram_handler import TelegramBot
+
+bot = TelegramBot()
+if bot.enabled:
+    bot.send_message_sync('''$message''', parse_mode='HTML', silent=False)
+"
+
+    local retry=0
+    while [[ $retry -lt $max_retries ]]; do
+        ssh -i "$SSH_KEY" -o ConnectTimeout=5 -o BatchMode=yes \
+            "$VPS_HOST" "cd /opt/polymarket-autotrader && python3 -c \"$python_script\"" 2>/dev/null
+
+        if [[ $? -eq 0 ]]; then
+            return 0
+        fi
+
+        ((retry++))
+        if [[ $retry -lt $max_retries ]]; then
+            sleep $retry_delay
+            retry_delay=$((retry_delay * 2))
+        fi
+    done
+
+    log_error "Failed to send critical error notification after $max_retries retries"
+    return 1
+}
 
 # Parse arguments
 DRY_RUN=false
@@ -224,23 +310,45 @@ clear_fix_history() {
     log "INFO" "Cleared fix history for issue_type=$issue_type"
 }
 
-# Get VPS state via SSH
+# Get VPS state via SSH with retry logic
+# Handles SSH failures and malformed JSON gracefully
 get_vps_state() {
     local state_file
     local state_json
+    local max_retries=3
+    local retry_delay=2
 
     for state_file in $STATE_FILES; do
-        state_json=$(ssh -i "$SSH_KEY" -o ConnectTimeout="$SSH_TIMEOUT" -o BatchMode=yes \
-            "$VPS_HOST" "cat '$state_file' 2>/dev/null" 2>/dev/null)
+        local retry=0
+        while [[ $retry -lt $max_retries ]]; do
+            state_json=$(ssh -i "$SSH_KEY" -o ConnectTimeout="$SSH_TIMEOUT" -o BatchMode=yes \
+                -o ServerAliveInterval=5 -o ServerAliveCountMax=2 \
+                "$VPS_HOST" "cat '$state_file' 2>/dev/null" 2>/dev/null)
 
-        if [[ $? -eq 0 ]] && [[ -n "$state_json" ]]; then
-            if echo "$state_json" | jq . >/dev/null 2>&1; then
-                echo "$state_json"
-                return 0
+            local ssh_exit_code=$?
+
+            if [[ $ssh_exit_code -eq 0 ]] && [[ -n "$state_json" ]]; then
+                # Validate it's valid JSON
+                if echo "$state_json" | jq . >/dev/null 2>&1; then
+                    echo "$state_json"
+                    return 0
+                else
+                    # Malformed JSON - log and try next file
+                    log_error "Malformed JSON in state file: $state_file"
+                    break
+                fi
             fi
-        fi
+
+            # SSH failed, retry
+            ((retry++))
+            if [[ $retry -lt $max_retries ]]; then
+                log "WARN" "SSH attempt $retry/$max_retries failed for $state_file, retrying..."
+                sleep $retry_delay
+            fi
+        done
     done
 
+    log_error "Failed to get VPS state from any state file after retries"
     return 1
 }
 
@@ -300,12 +408,16 @@ get_onchain_balance() {
     echo "$balance_usd"
 }
 
-# Send Telegram notification via VPS
+# Send Telegram notification via VPS with retry logic
 # Uses the existing telegram_handler.py infrastructure
+# Retries up to 3 times with exponential backoff
 # Returns: 0 on success, 1 on failure
 send_telegram_notification() {
     local message="$1"
     local silent="${2:-false}"  # Optional: send without notification sound
+
+    local max_retries=3
+    local retry_delay=2
 
     # Escape the message for Python string (escape quotes and backslashes)
     local escaped_message
@@ -331,20 +443,30 @@ else:
     sys.exit(1)
 "
 
-    # Execute on VPS
-    local result
-    result=$(ssh -i "$SSH_KEY" -o ConnectTimeout="$SSH_TIMEOUT" -o BatchMode=yes \
-        "$VPS_HOST" "cd /opt/polymarket-autotrader && python3 -c \"$python_script\"" 2>&1)
+    local retry=0
+    while [[ $retry -lt $max_retries ]]; do
+        local result
+        result=$(ssh -i "$SSH_KEY" -o ConnectTimeout="$SSH_TIMEOUT" -o BatchMode=yes \
+            "$VPS_HOST" "cd /opt/polymarket-autotrader && python3 -c \"$python_script\"" 2>&1)
 
-    local exit_code=$?
+        local exit_code=$?
 
-    if [[ $exit_code -eq 0 ]]; then
-        log "INFO" "Telegram notification sent successfully"
-        return 0
-    else
-        log "WARN" "Failed to send Telegram notification: $result"
-        return 1
-    fi
+        if [[ $exit_code -eq 0 ]]; then
+            log "INFO" "Telegram notification sent successfully"
+            return 0
+        fi
+
+        ((retry++))
+        if [[ $retry -lt $max_retries ]]; then
+            log "WARN" "Telegram send attempt $retry/$max_retries failed: $result, retrying in ${retry_delay}s..."
+            sleep $retry_delay
+            retry_delay=$((retry_delay * 2))  # Exponential backoff
+        fi
+    done
+
+    # All retries failed
+    log_error "Failed to send Telegram notification after $max_retries retries: $result"
+    return 1
 }
 
 # Format and send halt alert via Telegram
@@ -780,13 +902,14 @@ gather_diagnostics() {
     echo -e "$diagnostics"
 }
 
-# Invoke Claude for diagnosis
+# Invoke Claude for diagnosis with error handling
+# On failure, escalates to user via Telegram
 invoke_claude_diagnosis() {
     local diagnostics="$1"
     local prompt_content
 
     if [[ ! -f "$DIAGNOSE_PROMPT" ]]; then
-        log "ERROR" "Diagnose prompt not found: $DIAGNOSE_PROMPT"
+        log_error "Diagnose prompt not found: $DIAGNOSE_PROMPT"
         return 1
     fi
 
@@ -807,10 +930,23 @@ Please analyze the above situation and provide your diagnosis in the JSON format
 
     # Invoke Claude Code with the prompt
     local claude_output
-    claude_output=$(echo "$full_prompt" | claude --dangerously-skip-permissions -p 2>/dev/null)
+    local claude_exit_code
+    claude_output=$(echo "$full_prompt" | claude --dangerously-skip-permissions -p 2>&1)
+    claude_exit_code=$?
 
-    if [[ $? -ne 0 ]]; then
-        log "ERROR" "Claude invocation failed"
+    if [[ $claude_exit_code -ne 0 ]]; then
+        log_error "Claude invocation failed with exit code $claude_exit_code: $claude_output"
+
+        # Try to notify user about Claude failure
+        send_critical_error_notification "Claude diagnosis failed (exit code: $claude_exit_code). Manual intervention required."
+
+        return 1
+    fi
+
+    # Check if output is empty
+    if [[ -z "$claude_output" ]]; then
+        log_error "Claude returned empty output"
+        send_critical_error_notification "Claude returned empty diagnosis. Manual intervention required."
         return 1
     fi
 
@@ -818,6 +954,7 @@ Please analyze the above situation and provide your diagnosis in the JSON format
 }
 
 # Parse JSON decision from Claude output
+# Handles malformed JSON gracefully with error logging
 parse_decision() {
     local claude_output="$1"
 
@@ -831,13 +968,14 @@ parse_decision() {
     fi
 
     if [[ -z "$json_block" ]]; then
-        log "ERROR" "Could not parse JSON decision from Claude output"
+        log_error "Could not parse JSON decision from Claude output. Output: ${claude_output:0:500}..."
         return 1
     fi
 
     # Validate JSON
-    if ! echo "$json_block" | jq . >/dev/null 2>&1; then
-        log "ERROR" "Invalid JSON in Claude decision"
+    local jq_error
+    if ! jq_error=$(echo "$json_block" | jq . 2>&1); then
+        log_error "Invalid JSON in Claude decision: $jq_error. JSON block: $json_block"
         return 1
     fi
 
@@ -1121,8 +1259,11 @@ get_pending_events() {
 main() {
     log "INFO" "Sentinel orchestrator starting"
 
-    # Load config
-    load_config
+    # Load config (critical - exit if fails)
+    if ! load_config; then
+        log_error "Failed to load configuration"
+        exit 1
+    fi
 
     # Check kill switch
     if ! check_kill_switch; then
@@ -1134,14 +1275,13 @@ main() {
         exit 1
     fi
 
-    # Ensure cleanup on exit
-    trap release_lock EXIT
+    # Note: cleanup trap is set at script start, handles release_lock
 
     # Get pending events
     local pending
     pending=$(get_pending_events)
     local count
-    count=$(echo "$pending" | jq 'length')
+    count=$(echo "$pending" | jq 'length' 2>/dev/null || echo "0")
 
     if [[ $count -eq 0 ]]; then
         log "INFO" "No pending events in queue"
@@ -1150,10 +1290,19 @@ main() {
 
     log "INFO" "Found $count pending event(s)"
 
-    # Process each event
-    echo "$pending" | jq -c '.[]' | while read -r event; do
-        process_event "$event"
+    # Process each event (disable set -e for this section to handle errors gracefully)
+    set +e
+    echo "$pending" | jq -c '.[]' 2>/dev/null | while read -r event; do
+        if [[ -n "$event" ]]; then
+            process_event "$event"
+            local process_result=$?
+            if [[ $process_result -ne 0 ]]; then
+                log "WARN" "Event processing returned non-zero: $process_result"
+                # Continue with next event rather than failing
+            fi
+        fi
     done
+    set -e
 
     log "INFO" "Sentinel orchestrator complete"
 }

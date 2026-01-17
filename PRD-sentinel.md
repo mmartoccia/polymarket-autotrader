@@ -263,14 +263,14 @@ Sentinel is an event-driven autonomous monitoring system that watches the tradin
 **Description:** As a developer, I need robust error handling so Sentinel doesn't crash or leave the system in a bad state.
 
 **Acceptance Criteria:**
-- [ ] sentinel_monitor.sh handles SSH connection failures gracefully (log and retry)
-- [ ] sentinel.sh handles Claude invocation failures (escalate to user)
-- [ ] Handle malformed JSON in state files (log error, skip processing)
-- [ ] Handle Telegram API failures (retry 3 times, then log and continue)
-- [ ] All errors logged to `state/error.log` with stack trace
-- [ ] Critical errors also sent to Telegram if possible
-- [ ] Add `set -e` with trap for cleanup on script exit
-- [ ] Test: Simulate SSH failure, verify graceful handling
+- [x] sentinel_monitor.sh handles SSH connection failures gracefully (log and retry)
+- [x] sentinel.sh handles Claude invocation failures (escalate to user)
+- [x] Handle malformed JSON in state files (log error, skip processing)
+- [x] Handle Telegram API failures (retry 3 times, then log and continue)
+- [x] All errors logged to `state/error.log` with stack trace
+- [x] Critical errors also sent to Telegram if possible
+- [x] Add `set -e` with trap for cleanup on script exit
+- [x] Test: Simulate SSH failure, verify graceful handling
 
 ---
 
