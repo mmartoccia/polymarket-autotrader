@@ -278,9 +278,10 @@ class RegimeAgent(BaseAgent):
         # Calculate returns
         try:
             returns = [(prices[i] - prices[i-1]) / prices[i-1]
-                       for i in range(1, len(prices))]
-        except TypeError as e:
-            # If prices contains non-numeric data, return unknown
+                       for i in range(1, len(prices))
+                       if prices[i-1] != 0]  # Skip zero prices to avoid division by zero
+        except (TypeError, ZeroDivisionError) as e:
+            # If prices contains non-numeric data or zero prices, return unknown
             return {
                 'trend': 'unknown',
                 'strength': 0,
