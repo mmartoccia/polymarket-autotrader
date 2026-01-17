@@ -105,10 +105,10 @@ TELEGRAM_ENABLED = os.getenv("TELEGRAM_NOTIFICATIONS_ENABLED", "false").lower() 
 
 # Magnitude tracking - measure HOW MUCH price moved, not just direction
 ENABLE_MAGNITUDE_TRACKING = True
-MIN_CUMULATIVE_MAGNITUDE = 0.008      # 0.8% total move required for signal
-MIN_PER_MINUTE_MAGNITUDE = 0.002      # 0.2% per minute to count as "strong" move
+MIN_CUMULATIVE_MAGNITUDE = 0.0003     # 0.03% total move required for signal (was 0.8% - too strict)
+MIN_PER_MINUTE_MAGNITUDE = 0.0001     # 0.01% per minute to count as "strong" move (was 0.2%)
 MAGNITUDE_ACCURACY_BOOST = 0.03       # Up to 3% accuracy boost for strong moves
-STRONG_MOVE_THRESHOLD = 0.015         # 1.5% = strong move (triggers boost)
+STRONG_MOVE_THRESHOLD = 0.0005        # 0.05% = strong move (triggers boost) (was 1.5%)
 
 # Multi-exchange confluence - require multiple exchanges to agree on direction
 ENABLE_MULTI_EXCHANGE = True

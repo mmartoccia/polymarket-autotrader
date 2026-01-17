@@ -138,3 +138,34 @@
   - Test verified: live BTC prices showed 3/3 exchanges agree Down with -4.83% change
   - epoch_start_prices is module-level dict, structure: {crypto: {epoch: {exchange: price}}}
 ---
+
+## Iteration 10 - US-GS-010: Add Shadow Comparison Logging
+- Added log_granular_comparison() function for shadow testing comparison
+- Set up separate logger "granular_signals" writing to granular_signals.log
+- Logger uses propagate=False to avoid duplicate logs to main log
+- Files changed: bot/intra_epoch_bot.py, PRD-granular-signals.md
+- Learnings for future iterations:
+  - Function is at line 963, in new "GRANULAR SIGNAL COMPARISON LOGGING" section
+  - granular_log is Optional[Logger] initialized at module level (line 946)
+  - Logger only created when ENABLE_GRANULAR_SHADOW_LOG is True
+  - Log format: "[GRANULAR] {crypto} epoch={epoch}: Pattern=... Magnitude=... Confluence=... -> Final=..."
+  - All percentages formatted with 1 decimal place for consistency
+  - Function handles all edge cases: no pattern, no confluence, no boost
+  - Returns early if logging disabled (no work done)
+---
+
+## Iteration 11 - US-GS-011: Update Startup Logs with Granular Settings
+- Added startup log section for granular signal settings in run_bot()
+- Shows magnitude tracking status and thresholds (min cumulative, per-minute, boost)
+- Shows multi-exchange status and agreement requirement (2/3 exchanges)
+- Shows shadow logging status (ENABLED/DISABLED)
+- Uses separator lines to match existing startup log style
+- Files changed: bot/intra_epoch_bot.py, PRD-granular-signals.md
+- Learnings for future iterations:
+  - Startup log section is at lines 1634-1651 in run_bot()
+  - Uses "-" * 40 separator to visually distinguish from main settings
+  - Conditional display: only shows granular section if either feature enabled
+  - Format percentages as *100 with decimal places: {VAL*100:.1f}% for 0.8%
+  - Matches PRD example exactly: "min cumulative 0.8%, min per-minute 0.2%, boost up to 3%"
+  - py_compile used for typecheck since mypy hangs on this file
+---
