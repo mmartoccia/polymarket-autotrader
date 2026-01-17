@@ -204,6 +204,77 @@ class TelegramBot:
 
         return self.send_message(message)
 
+    def notify_win(
+        self,
+        crypto: str,
+        direction: str,
+        profit: float,
+        balance: float,
+        win_rate: float,
+    ) -> bool:
+        """
+        Send notification when a trade wins.
+
+        Args:
+            crypto: Cryptocurrency symbol (BTC, ETH, SOL, XRP)
+            direction: Trade direction (Up or Down)
+            profit: Profit amount in USD
+            balance: Current balance after win
+            win_rate: Current win rate (0-100 or 0-1, auto-converted)
+
+        Returns:
+            True if notification was queued successfully
+        """
+        # Auto-convert decimal win rate to percentage
+        if win_rate <= 1:
+            win_rate = win_rate * 100
+
+        message = (
+            "\u2705 WIN\n"  # ✅
+            f"<b>{crypto} {direction}</b>\n"
+            f"Profit: +${profit:.2f}\n"
+            f"Balance: ${balance:.2f} | Win Rate: {win_rate:.0f}%"
+        )
+
+        return self.send_message(message)
+
+    def notify_loss(
+        self,
+        crypto: str,
+        direction: str,
+        loss: float,
+        balance: float,
+        win_rate: float,
+    ) -> bool:
+        """
+        Send notification when a trade loses.
+
+        Args:
+            crypto: Cryptocurrency symbol (BTC, ETH, SOL, XRP)
+            direction: Trade direction (Up or Down)
+            loss: Loss amount in USD (positive number, will be displayed as negative)
+            balance: Current balance after loss
+            win_rate: Current win rate (0-100 or 0-1, auto-converted)
+
+        Returns:
+            True if notification was queued successfully
+        """
+        # Auto-convert decimal win rate to percentage
+        if win_rate <= 1:
+            win_rate = win_rate * 100
+
+        # Ensure loss is displayed as negative
+        loss_display = abs(loss)
+
+        message = (
+            "\u274c LOSS\n"  # ❌
+            f"<b>{crypto} {direction}</b>\n"
+            f"Loss: -${loss_display:.2f}\n"
+            f"Balance: ${balance:.2f} | Win Rate: {win_rate:.0f}%"
+        )
+
+        return self.send_message(message)
+
 
 # Module-level singleton for convenience
 _bot_instance: Optional[TelegramBot] = None

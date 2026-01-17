@@ -108,23 +108,23 @@ telegram.start_polling()  # Called at bot startup
 **Description:** Notify when trades resolve as wins or losses.
 
 **Acceptance Criteria:**
-- [ ] Implement `notify_win(crypto, direction, profit, balance, win_rate)`
-- [ ] Implement `notify_loss(crypto, direction, loss, balance, win_rate)`
-- [ ] Win format:
+- [x] Implement `notify_win(crypto, direction, profit, balance, win_rate)`
+- [x] Implement `notify_loss(crypto, direction, loss, balance, win_rate)`
+- [x] Win format:
   ```
   ✅ WIN
   <b>BTC Down</b>
   Profit: +$3.22
   Balance: $62.45 | Win Rate: 65%
   ```
-- [ ] Loss format:
+- [x] Loss format:
   ```
   ❌ LOSS
   <b>ETH Up</b>
   Loss: -$5.00
   Balance: $57.45 | Win Rate: 62%
   ```
-- [ ] Call from `resolve_completed_positions()` after outcome determined
+- [x] Call from `resolve_completed_positions()` after outcome determined
 
 ---
 

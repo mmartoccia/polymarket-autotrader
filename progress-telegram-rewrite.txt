@@ -38,3 +38,17 @@
   - Variables available at new trade call: accuracy, magnitude_boost, agree_count
   - Variables available at averaging call: accuracy only (no fresh magnitude/confluence)
 ---
+
+## Iteration 3 - US-TG-003: Trade Outcome Notifications
+- Added `notify_win()` and `notify_loss()` methods to TelegramBot class
+- Both methods accept: crypto, direction, profit/loss, balance, win_rate
+- Auto-converts win_rate from decimal (0-1) to percentage (0-100)
+- notify_loss ensures loss is displayed as positive number with minus prefix
+- Updated `notify_result()` wrapper in intra_epoch_bot.py to use the new methods
+- Updated both call sites in resolve_completed_positions() to pass state.win_rate()
+- Files changed: bot/telegram_handler.py, bot/intra_epoch_bot.py
+- Learnings for future iterations:
+  - state.win_rate() returns decimal (0-1), methods auto-convert to percentage
+  - notify_result() wrapper now delegates to telegram_handler methods
+  - Loss amount passed as negative from caller but abs() applied in both wrapper and method for safety
+---

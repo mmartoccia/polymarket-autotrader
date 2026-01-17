@@ -197,16 +197,13 @@ def notify_trade(
     )
 
 
-def notify_result(crypto: str, direction: str, is_win: bool, profit: float, balance: float):
-    """Send trade result notification."""
-    emoji = "✅ WIN" if is_win else "❌ LOSS"
-    msg = (
-        f"{emoji}\n"
-        f"<b>{crypto} {direction}</b>\n"
-        f"P&L: ${profit:+.2f}\n"
-        f"Balance: ${balance:.2f}"
-    )
-    send_telegram(msg)
+def notify_result(crypto: str, direction: str, is_win: bool, profit: float, balance: float, win_rate: float = 0.0):
+    """Send trade result notification via telegram_handler."""
+    telegram = get_telegram_bot()
+    if is_win:
+        telegram.notify_win(crypto, direction, profit, balance, win_rate)
+    else:
+        telegram.notify_loss(crypto, direction, abs(profit), balance, win_rate)
 
 
 def notify_alert(message: str):
@@ -1716,7 +1713,7 @@ def resolve_completed_positions(state: BotState) -> None:
                 log.info(f"{'='*50}")
 
                 # Telegram notification
-                notify_result(crypto, direction, True, profit, state.current_balance)
+                notify_result(crypto, direction, True, profit, state.current_balance, state.win_rate())
 
                 # Update trade outcome in signals database
                 update_trade_outcome(crypto, pos_epoch, "WIN", profit)
@@ -1736,7 +1733,7 @@ def resolve_completed_positions(state: BotState) -> None:
                 log.info(f"{'='*50}")
 
                 # Telegram notification
-                notify_result(crypto, direction, False, -size, state.current_balance)
+                notify_result(crypto, direction, False, -size, state.current_balance, state.win_rate())
 
                 # Update trade outcome in signals database
                 update_trade_outcome(crypto, pos_epoch, "LOSS", -size)
