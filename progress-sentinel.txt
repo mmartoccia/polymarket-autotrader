@@ -300,3 +300,56 @@ ssh -i ~/.ssh/polymarket_vultr root@216.238.85.11 "command"
   - Auto-fix notifications benefit from context (reason+confidence) so user can verify decision was sensible
   - Undo option (/halt) is important for user control after automated actions
 ---
+
+## Iteration 14 - US-014: Add comprehensive error handling to sentinel scripts
+- Added `log_error()` function to both scripts with stack trace logging to `state/error.log`
+- Added `send_critical_error_notification()` function to both scripts for Telegram alerts
+- Updated `get_vps_state()` in both scripts:
+  - Added retry logic (3 retries with exponential backoff)
+  - Added SSH failure counter tracking (MAX_SSH_FAILURES=5)
+  - Detects and logs malformed JSON in state files
+  - Sends critical notification when too many consecutive SSH failures
+- Updated `send_telegram_notification()` and `send_alert_notification()`:
+  - Added 3 retry attempts with exponential backoff
+  - Logs errors after all retries fail
+- Updated `invoke_claude_diagnosis()`:
+  - Captures Claude exit code and output
+  - Sends critical notification on failure
+  - Escalates to user automatically
+- Updated `parse_decision()` to log malformed JSON details to error.log
+- Added `set -e` to sentinel.sh with trap for cleanup
+- Added `cleanup()` function with proper lock release
+- Updated main() to handle errors gracefully in event processing loop
+- Added heartbeat writing (`write_heartbeat()`) to monitor poll loop
+- Files changed: sentinel/sentinel_monitor.sh, sentinel/sentinel.sh, PRD-sentinel.md
+- Learnings for future iterations:
+  - Use `caller $frame` in bash to get stack trace for error logging
+  - SSH options `-o ServerAliveInterval=5 -o ServerAliveCountMax=2` help detect connection issues
+  - Pattern for retry with exponential backoff: `retry_delay=$((retry_delay * 2))`
+  - Use `set +e` temporarily when you want to handle errors gracefully rather than exit
+  - Trap cleanup function should handle case where lock doesn't exist: `release_lock 2>/dev/null || true`
+  - Global counters (SSH_FAILURE_COUNT) useful for tracking repeated failures across poll cycles
+  - Error log with stack trace helps debugging issues when running as daemon
+---
+
+## Iteration 15 - US-015: Add monitor health check and self-recovery
+- Added `health` subcommand to sentinel_monitor.sh
+- Implemented health check functions:
+  - `check_heartbeat()`: Verifies heartbeat is within last 2 minutes (HEARTBEAT_MAX_AGE_SECONDS=120)
+  - `check_pid_health()`: Verifies PID file exists and process is running
+  - `check_ssh_health()`: Counts SSH failures from error.log in last 10 minutes
+- Implemented self-recovery:
+  - `attempt_self_recovery()`: Stops old process (with force kill fallback), starts fresh, waits for heartbeat
+  - Waits up to 10 seconds for first heartbeat after restart to confirm success
+- Implemented `send_recovery_failure_notification()` for Telegram alerts on failed recovery
+- `cmd_health()` orchestrates: runs all checks, counts issues, triggers recovery if unhealthy
+- Updated usage header and main() case statement for new `health` command
+- Files changed: sentinel/sentinel_monitor.sh, PRD-sentinel.md
+- Learnings for future iterations:
+  - Mac uses `date -v-10M +%s` for relative time; Linux uses `date -d '10 minutes ago' +%s`
+  - Mac uses `date -j -f "%Y-%m-%d %H:%M:%S"` for parsing; Linux uses `date -d`
+  - Use `perl -e 'alarm(5); exec @ARGV'` as cross-platform timeout on Mac (no `timeout` command)
+  - Heartbeat pattern: write Unix timestamp, check age < MAX_AGE_SECONDS
+  - Self-recovery should clear heartbeat file to ensure fresh write after restart
+  - Wait for heartbeat with loop + sleep is better than fixed sleep (returns faster on success)
+---
