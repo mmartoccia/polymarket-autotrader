@@ -41,8 +41,10 @@ load_dotenv()
 # =============================================================================
 
 # Trading parameters
-MAX_ENTRY_PRICE = 0.35          # Only enter if price ≤ this
+EDGE_BUFFER = 0.05              # Require 5% edge over break-even (for fees + safety margin)
 MIN_PATTERN_ACCURACY = 0.735    # Only trade 73.5%+ patterns (includes all validated patterns)
+# Max entry = pattern_accuracy - EDGE_BUFFER
+# e.g., 74% pattern -> max entry $0.69, 80% pattern -> max entry $0.75
 TRADING_WINDOW_START = 180      # Start trading at minute 3 (180 seconds)
 TRADING_WINDOW_END = 600        # Stop trading at minute 10 (600 seconds)
 
@@ -661,10 +663,11 @@ def run_bot():
                     log.warning(f"{crypto}: No market prices available")
                     continue
 
-                # Check entry price
+                # Check entry price - must have edge over break-even
                 entry_price = prices[direction]['ask']
-                if entry_price > MAX_ENTRY_PRICE:
-                    log.info(f"{crypto}: {direction} signal but entry ${entry_price:.2f} > ${MAX_ENTRY_PRICE} (skip)")
+                max_entry = accuracy - EDGE_BUFFER  # e.g., 74% accuracy -> max $0.69 entry
+                if entry_price > max_entry:
+                    log.info(f"{crypto}: {direction} ({accuracy*100:.0f}%) but entry ${entry_price:.2f} > ${max_entry:.2f} max (no edge)")
                     continue
 
                 # Calculate position size
