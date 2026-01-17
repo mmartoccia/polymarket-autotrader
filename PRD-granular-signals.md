@@ -171,19 +171,19 @@ Both features are toggleable via configuration constants and will be shadow-test
 **Description:** As a developer, I need startup logs to show all new granular signal settings.
 
 **Acceptance Criteria:**
-- [ ] Add section in startup log for "Granular Signal Enhancement"
-- [ ] Show magnitude tracking status and thresholds
-- [ ] Show multi-exchange status and agreement requirement
-- [ ] Show shadow logging status
-- [ ] Format matches existing startup log style
-- [ ] Example output:
+- [x] Add section in startup log for "Granular Signal Enhancement"
+- [x] Show magnitude tracking status and thresholds
+- [x] Show multi-exchange status and agreement requirement
+- [x] Show shadow logging status
+- [x] Format matches existing startup log style
+- [x] Example output:
   ```
   Granular Signals: ENABLED
     - Magnitude: min cumulative 0.8%, min per-minute 0.2%, boost up to 3%
     - Multi-Exchange: 2/3 required (Binance, Kraken, Coinbase)
     - Shadow Logging: ENABLED
   ```
-- [ ] Typecheck passes
+- [x] Typecheck passes
 
 ---
 

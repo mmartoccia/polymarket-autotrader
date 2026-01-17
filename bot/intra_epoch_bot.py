@@ -1631,6 +1631,24 @@ def run_bot():
     else:
         log.info(f"Position Averaging: DISABLED")
     log.info(f"Telegram Alerts: {'ENABLED' if TELEGRAM_ENABLED else 'DISABLED'}")
+    # Granular Signal Enhancement settings
+    if ENABLE_MAGNITUDE_TRACKING or ENABLE_MULTI_EXCHANGE:
+        log.info("-" * 40)
+        log.info("Granular Signals: ENABLED")
+        if ENABLE_MAGNITUDE_TRACKING:
+            log.info(f"  - Magnitude: min cumulative {MIN_CUMULATIVE_MAGNITUDE*100:.1f}%, "
+                     f"min per-minute {MIN_PER_MINUTE_MAGNITUDE*100:.1f}%, "
+                     f"boost up to {MAGNITUDE_ACCURACY_BOOST*100:.0f}%")
+        else:
+            log.info(f"  - Magnitude: DISABLED")
+        if ENABLE_MULTI_EXCHANGE:
+            log.info(f"  - Multi-Exchange: {MIN_EXCHANGES_AGREE}/3 required (Binance, Kraken, Coinbase)")
+        else:
+            log.info(f"  - Multi-Exchange: DISABLED")
+        log.info(f"  - Shadow Logging: {'ENABLED' if ENABLE_GRANULAR_SHADOW_LOG else 'DISABLED'}")
+    else:
+        log.info("-" * 40)
+        log.info("Granular Signals: DISABLED")
     log.info("=" * 60)
 
     # Initialize state
