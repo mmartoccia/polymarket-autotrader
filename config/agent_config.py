@@ -38,6 +38,7 @@ AGENT_WEIGHTS = {
     'SocialSentimentAgent': 0.0,   # Crowd psychology analysis (NEW - Phase 1, disabled until API keys)
     'RiskAgent': 1.0,              # Risk management (veto)
     'GamblerAgent': 1.0,           # Probability gating (veto - blocks trades <60% win prob)
+    'StreakAgent': 1.0,            # Mean reversion after 3+ consecutive same direction (data-validated)
 }
 
 # =============================================================================
@@ -65,6 +66,7 @@ AGENT_ENABLED = {
     'SocialSentimentAgent': False,  # Disabled: No API keys configured
     'RiskAgent': True,  # ESSENTIAL: Position sizing and risk management
     'GamblerAgent': True,  # KEPT: Probability gating (60% threshold)
+    'StreakAgent': True,  # NEW: Mean reversion after 3+ consecutive (data-validated pattern)
 }
 
 def get_enabled_agents():
@@ -444,6 +446,12 @@ SHADOW_STRATEGIES = [
     # BUG FIX VALIDATION (Jan 16, 2026)
     # Shadow strategy with ALL 16 bug fixes applied for 24hr validation
     'fixed_bugs',           # All fixes (US-BF-001 to US-BF-015) - test before live deployment
+
+    # STREAK STRATEGIES (Jan 16, 2026) - Mean reversion after consecutive same-direction
+    # Based on pattern discovery: 59.1% DOWN prob after 3+ UPs, 56.6% UP prob after 5+ DOWNs
+    'streak_only',          # ONLY StreakAgent (isolate performance)
+    'streak_focused',       # StreakAgent 2.0x weight (strong influence)
+    'streak_gambler',       # StreakAgent + GamblerAgent veto
 ]
 
 # Shadow trading configuration

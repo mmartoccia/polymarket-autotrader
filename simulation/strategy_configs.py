@@ -53,7 +53,8 @@ class StrategyConfig:
         'OrderBookAgent': 0.8,
         'FundingRateAgent': 0.8,
         'OnChainAgent': 0.0,           # Disabled by default (requires API key)
-        'SocialSentimentAgent': 0.0    # Disabled by default (requires API keys)
+        'SocialSentimentAgent': 0.0,   # Disabled by default (requires API keys)
+        'StreakAgent': 1.0             # Mean reversion after consecutive same-direction (Jan 16)
     })
 
     # Features
@@ -913,6 +914,70 @@ STRATEGY_LIBRARY = {
 
         max_position_pct=0.15,
         max_same_direction=3
+    ),
+
+    # =============================================================================
+    # STREAK STRATEGIES (Jan 16, 2026) - Mean Reversion Pattern
+    # =============================================================================
+    # Based on pattern discovery: 59.1% DOWN prob after 3+ UPs, 56.6% UP prob after 5+ DOWNs
+    # Data-validated using 8,148 epochs over 21 days
+
+    'streak_only': StrategyConfig(
+        name='streak_only',
+        description='ONLY StreakAgent (isolate mean reversion performance)',
+        consensus_threshold=0.30,  # Lower threshold for single agent
+        min_confidence=0.30,
+        min_individual_confidence=0.25,
+        agent_weights={
+            'StreakAgent': 1.0,         # Only agent
+            'TechAgent': 0.0,           # Disabled
+            'SentimentAgent': 0.0,
+            'RegimeAgent': 0.0,
+            'CandlestickAgent': 0.0,
+            'OrderBookAgent': 0.0,
+            'FundingRateAgent': 0.0,
+            'OnChainAgent': 0.0,
+            'SocialSentimentAgent': 0.0
+        }
+    ),
+
+    'streak_focused': StrategyConfig(
+        name='streak_focused',
+        description='StreakAgent with 2x weight (strong influence)',
+        consensus_threshold=0.40,
+        min_confidence=0.40,
+        min_individual_confidence=0.30,
+        agent_weights={
+            'StreakAgent': 2.0,         # Double weight
+            'TechAgent': 0.0,
+            'SentimentAgent': 0.0,
+            'RegimeAgent': 0.8,         # Keep regime awareness
+            'CandlestickAgent': 0.0,
+            'OrderBookAgent': 0.8,
+            'FundingRateAgent': 0.5,
+            'OnChainAgent': 0.0,
+            'SocialSentimentAgent': 0.0
+        }
+    ),
+
+    'streak_gambler': StrategyConfig(
+        name='streak_gambler',
+        description='StreakAgent + GamblerAgent veto (mean reversion with probability gating)',
+        consensus_threshold=0.40,
+        min_confidence=0.40,
+        min_individual_confidence=0.30,
+        agent_weights={
+            'StreakAgent': 1.0,
+            'TechAgent': 0.0,
+            'SentimentAgent': 0.0,
+            'RegimeAgent': 0.8,
+            'CandlestickAgent': 0.0,
+            'OrderBookAgent': 0.8,
+            'FundingRateAgent': 0.5,
+            'OnChainAgent': 0.0,
+            'SocialSentimentAgent': 0.0
+            # GamblerAgent automatically added as veto
+        }
     )
 }
 
