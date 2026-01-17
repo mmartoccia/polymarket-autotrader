@@ -88,21 +88,21 @@ Sentinel is an event-driven autonomous monitoring system that watches the tradin
 **Description:** As a user, I want the main orchestrator script that processes halt events, invokes Claude for diagnosis, and executes the appropriate action.
 
 **Acceptance Criteria:**
-- [ ] Create `sentinel/sentinel.sh` that processes events from queue
-- [ ] Loads configuration from `sentinel_config.json`
-- [ ] For each pending event:
+- [x] Create `sentinel/sentinel.sh` that processes events from queue
+- [x] Loads configuration from `sentinel_config.json`
+- [x] For each pending event:
   - Gathers diagnostics via SSH (state file, recent logs, on-chain balance)
   - Invokes Claude Code with `--dangerously-skip-permissions` using diagnose prompt
   - Parses JSON decision from Claude's output
-- [ ] Implements safety checks before any action:
+- [x] Implements safety checks before any action:
   - Kill switch check
   - Balance floor check ($50)
   - Rate limit check (max 3/hour)
   - Consecutive fix check (max 2 for same issue type)
-- [ ] Logs all actions to `history/actions.log` with timestamp
-- [ ] Updates event status in queue after processing
-- [ ] Script is executable (chmod +x)
-- [ ] Test: `./sentinel.sh` runs without error when queue is empty
+- [x] Logs all actions to `history/actions.log` with timestamp
+- [x] Updates event status in queue after processing
+- [x] Script is executable (chmod +x)
+- [x] Test: `./sentinel.sh` runs without error when queue is empty
 
 ---
 
