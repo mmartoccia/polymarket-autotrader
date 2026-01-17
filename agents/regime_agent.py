@@ -309,7 +309,8 @@ class RegimeAgent(BaseAgent):
 
         # Trend strength (how consistent the direction is)
         positive_returns = sum(1 for r in returns if r > 0)
-        strength = abs(positive_returns / len(returns) - 0.5) * 2  # 0-1 scale
+        # Guard against division by zero (though should be caught above)
+        strength = abs(positive_returns / len(returns) - 0.5) * 2 if len(returns) > 0 else 0  # 0-1 scale
 
         # Volatility (std dev of returns)
         volatility = statistics.stdev(returns) if len(returns) > 1 else 0

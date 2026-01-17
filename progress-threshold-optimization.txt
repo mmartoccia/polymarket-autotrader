@@ -1,0 +1,24 @@
+# Threshold Optimization Progress Log
+
+## Learnings
+
+### Blocking Issues Must Be Fixed First
+- PRD was marked complete but work not done (all [x] were incorrect)
+- Bot was broken with RegimeAgent division by zero error preventing trading
+- Must fix critical bugs before proceeding with optimization work
+
+---
+
+## Iteration 1 - RegimeAgent Division by Zero Fix (BLOCKING BUG)
+- **What was implemented:** Fixed division by zero error in RegimeAgent line 312
+- **Files changed:**
+  - agents/regime_agent.py: Added guard `if len(returns) > 0 else 0` to strength calculation
+- **Learnings for future iterations:**
+  - The bot cannot collect data for analysis when it's broken - fix blocking bugs first
+  - PRD assumes working bot - validate system health before starting optimization
+  - RegimeAgent was crashing on edge case (empty returns list somehow bypassing early return)
+  - Tested edge cases: single price, identical prices, normal prices - all pass now
+- **Next step:** Verify bot is running and collecting data before proceeding with US-TO-001
+
+---
+
