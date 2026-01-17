@@ -288,6 +288,15 @@ class RegimeAgent(BaseAgent):
                 'mean_return': 0
             }
 
+        # Check if we have enough returns data
+        if len(returns) == 0:
+            return {
+                'trend': 'unknown',
+                'strength': 0,
+                'volatility': 0,
+                'mean_return': 0
+            }
+
         # Trend direction
         mean_return = statistics.mean(returns)
 
