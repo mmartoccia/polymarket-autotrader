@@ -113,20 +113,20 @@ Optimizer is an automated hourly performance review system that runs on the VPS 
 **Description:** As a developer, I need to send hourly reports and alerts via Telegram.
 
 **Acceptance Criteria:**
-- [ ] Create `optimizer/reporter.py`
-- [ ] Implement `send_hourly_report(analysis: dict, adjustments: list, silent: bool = True)`
-- [ ] Report format includes:
+- [x] Create `optimizer/reporter.py`
+- [x] Implement `send_hourly_report(analysis: dict, adjustments: list, silent: bool = True)`
+- [x] Report format includes:
   - Period (last hour)
   - Trades summary (count, W/L, win rate)
   - Balance change
   - Skip analysis (top 3 reasons with percentages)
   - Status (Healthy/Alert)
   - Adjustments made (if any)
-- [ ] Silent reports use `disable_notification=True` in Telegram API
-- [ ] Alert reports (issues detected) use notification sound
-- [ ] Uses existing `bot/telegram_handler.py` TelegramBot class
-- [ ] Handles Telegram API errors gracefully
-- [ ] Typecheck passes
+- [x] Silent reports use `disable_notification=True` in Telegram API
+- [x] Alert reports (issues detected) use notification sound
+- [x] Uses existing `bot/telegram_handler.py` TelegramBot class
+- [x] Handles Telegram API errors gracefully
+- [x] Typecheck passes
 
 ---
 
