@@ -51,6 +51,16 @@ BASE_PATH = Path(__file__).parent.parent
 INTRA_LOG = BASE_PATH / "intra_epoch_bot.log"
 GRANULAR_LOG = BASE_PATH / "granular_signals.log"
 
+# Decision thresholds (must match bot config)
+MIN_CUMULATIVE_MAGNITUDE = 0.0003  # 0.03% total move required
+MIN_EXCHANGES_AGREE = 2           # Require 2 of 3 exchanges to agree
+MIN_PATTERN_ACCURACY = 0.735      # 73.5% minimum pattern accuracy
+EDGE_BUFFER = 0.05                # Entry price must be accuracy - 5%
+
+# Track epoch start prices for confluence calculation
+_epoch_start_prices: Dict[str, Dict[str, float]] = {}
+_last_epoch_start: int = 0
+
 
 def strip_ansi(text: str) -> str:
     """Remove ANSI escape codes from string."""
@@ -199,6 +209,132 @@ def get_exchange_confluence(crypto: str, epoch_start_prices: Dict[str, float]) -
         'agreement': agreement,
         'total': len([d for d in directions.values() if d])
     }
+
+
+def get_decision_factors(crypto: str, data: Optional[dict], prices: Optional[Dict],
+                         confluence: Optional[Dict], pattern_dir: Optional[str],
+                         pattern_acc: float) -> Dict:
+    """
+    Analyze all decision factors and return a summary of why trade would/wouldn't happen.
+
+    Returns dict with:
+    - pattern: {passes: bool, reason: str}
+    - magnitude: {passes: bool, value: float, reason: str}
+    - confluence: {passes: bool, agreement: int, direction: str, reason: str}
+    - entry_price: {passes: bool, price: float, max_price: float, reason: str}
+    - overall: {would_trade: bool, block_reason: str or None}
+    """
+    factors = {
+        'pattern': {'passes': False, 'reason': 'No pattern'},
+        'magnitude': {'passes': False, 'value': 0.0, 'reason': 'No data'},
+        'confluence': {'passes': False, 'agreement': 0, 'direction': None, 'reason': 'No data'},
+        'entry_price': {'passes': False, 'price': 0.0, 'max_price': 0.0, 'reason': 'No prices'},
+        'overall': {'would_trade': False, 'block_reason': 'Waiting for data'}
+    }
+
+    # 1. Pattern check
+    if pattern_dir and pattern_acc >= MIN_PATTERN_ACCURACY:
+        factors['pattern'] = {
+            'passes': True,
+            'reason': f'{pattern_dir} @ {pattern_acc:.0%}'
+        }
+    elif pattern_dir:
+        factors['pattern'] = {
+            'passes': False,
+            'reason': f'{pattern_dir} @ {pattern_acc:.0%} < {MIN_PATTERN_ACCURACY:.0%}'
+        }
+    else:
+        factors['pattern'] = {
+            'passes': False,
+            'reason': 'No clear pattern'
+        }
+
+    # 2. Magnitude check
+    if data:
+        net_mag = data.get('net_magnitude', 0) / 100.0  # Convert from pct to decimal
+        mag_dir = data.get('magnitude_direction', 'Flat')
+        passes_mag = net_mag >= MIN_CUMULATIVE_MAGNITUDE
+
+        factors['magnitude'] = {
+            'passes': passes_mag,
+            'value': net_mag * 100,  # Back to pct for display
+            'reason': f'{net_mag*100:.3f}% {"≥" if passes_mag else "<"} {MIN_CUMULATIVE_MAGNITUDE*100:.2f}%'
+        }
+
+    # 3. Confluence check
+    if confluence:
+        conf_dir = confluence.get('consensus')
+        agreement = confluence.get('agreement', 0)
+        total = confluence.get('total', 0)
+
+        if conf_dir is None:
+            # No consensus = would block
+            factors['confluence'] = {
+                'passes': False,
+                'agreement': agreement,
+                'direction': None,
+                'reason': f'No consensus ({agreement}/{total} agree) - CHOPPY'
+            }
+        elif pattern_dir and conf_dir != pattern_dir:
+            # Mismatch = would block
+            factors['confluence'] = {
+                'passes': False,
+                'agreement': agreement,
+                'direction': conf_dir,
+                'reason': f'Mismatch: pattern={pattern_dir}, exchanges={conf_dir}'
+            }
+        else:
+            # Agreement
+            factors['confluence'] = {
+                'passes': True,
+                'agreement': agreement,
+                'direction': conf_dir,
+                'reason': f'{agreement}/{total} agree {conf_dir}'
+            }
+
+    # 4. Entry price check
+    if prices and pattern_dir:
+        entry_price = prices.get(pattern_dir, {}).get('ask', 0.99)
+        max_entry = pattern_acc - EDGE_BUFFER
+        passes_price = entry_price <= max_entry
+
+        factors['entry_price'] = {
+            'passes': passes_price,
+            'price': entry_price,
+            'max_price': max_entry,
+            'reason': f'${entry_price:.2f} {"≤" if passes_price else ">"} ${max_entry:.2f} max'
+        }
+
+    # 5. Overall decision
+    all_pass = (factors['pattern']['passes'] and
+                factors['magnitude']['passes'] and
+                factors['confluence']['passes'] and
+                factors['entry_price']['passes'])
+
+    if all_pass:
+        factors['overall'] = {
+            'would_trade': True,
+            'block_reason': None
+        }
+    else:
+        # Find first blocking reason
+        if not factors['pattern']['passes']:
+            block = f"Pattern: {factors['pattern']['reason']}"
+        elif not factors['magnitude']['passes']:
+            block = f"Magnitude: {factors['magnitude']['reason']}"
+        elif not factors['confluence']['passes']:
+            block = f"Confluence: {factors['confluence']['reason']}"
+        elif not factors['entry_price']['passes']:
+            block = f"Entry: {factors['entry_price']['reason']}"
+        else:
+            block = "Unknown"
+
+        factors['overall'] = {
+            'would_trade': False,
+            'block_reason': block
+        }
+
+    return factors
 
 
 def get_recent_shadow_trades(limit: int = 5) -> List[str]:
@@ -726,8 +862,84 @@ def render_dashboard(data: Dict[str, List[dict]], prices_data: Dict[str, Dict],
     print(f"  {DIM}Refreshing every 5s. Press Ctrl+C to exit.{RESET}")
 
 
+def render_decision_summary(decision_factors: Dict[str, Dict], time_in_epoch: int):
+    """Render a decision summary panel showing why each crypto would/wouldn't trade."""
+    W = 80
+
+    print()
+    print(f"  {YELLOW}┌{'─' * (W-4)}┐{RESET}")
+    print(f"  {YELLOW}│{RESET} {BOLD}DECISION FACTORS{RESET} (why the bot would/wouldn't trade){' ' * 24}{YELLOW}│{RESET}")
+    print(f"  {YELLOW}├{'─' * (W-4)}┤{RESET}")
+
+    # Header row
+    header = f"  {'Crypto':<6} {'Pattern':<12} {'Magnitude':<14} {'Confluence':<18} {'Entry':<12} {'Decision':<10}"
+    print(f"  {YELLOW}│{RESET}{DIM}{header[2:]:<{W-6}}{RESET}{YELLOW}│{RESET}")
+    print(f"  {YELLOW}├{'─' * (W-4)}┤{RESET}")
+
+    for crypto, factors in decision_factors.items():
+        # Pattern indicator
+        if factors['pattern']['passes']:
+            pattern_str = f"{GREEN}✓{RESET} {factors['pattern']['reason'][:9]}"
+        else:
+            pattern_str = f"{RED}✗{RESET} {factors['pattern']['reason'][:9]}"
+
+        # Magnitude indicator
+        if factors['magnitude']['passes']:
+            mag_str = f"{GREEN}✓{RESET} {factors['magnitude']['value']:.3f}%"
+        else:
+            mag_str = f"{RED}✗{RESET} {factors['magnitude']['value']:.3f}%"
+
+        # Confluence indicator
+        conf = factors['confluence']
+        if conf['passes']:
+            conf_str = f"{GREEN}✓{RESET} {conf['agreement']}/3 {conf['direction'] or '?'}"
+        elif conf['direction'] is None and conf['agreement'] > 0:
+            conf_str = f"{RED}✗{RESET} {conf['agreement']}/3 CHOPPY"
+        elif conf['direction']:
+            conf_str = f"{RED}✗{RESET} {conf['agreement']}/3 {conf['direction']}"
+        else:
+            conf_str = f"{DIM}· waiting{RESET}"
+
+        # Entry price indicator
+        if factors['entry_price']['passes']:
+            entry_str = f"{GREEN}✓{RESET} ${factors['entry_price']['price']:.2f}"
+        elif factors['entry_price']['price'] > 0:
+            entry_str = f"{RED}✗{RESET} ${factors['entry_price']['price']:.2f}"
+        else:
+            entry_str = f"{DIM}· n/a{RESET}"
+
+        # Overall decision
+        if factors['overall']['would_trade']:
+            decision_str = f"{GREEN}{BOLD}TRADE{RESET}"
+        else:
+            decision_str = f"{RED}BLOCK{RESET}"
+
+        # Build row - need to handle ANSI codes for padding
+        row = f"  {crypto:<6}"
+        print(f"  {YELLOW}│{RESET} {crypto:<6} {pad_right(pattern_str, 12)} {pad_right(mag_str, 14)} {pad_right(conf_str, 18)} {pad_right(entry_str, 12)} {pad_right(decision_str, 10)}{YELLOW}│{RESET}")
+
+    print(f"  {YELLOW}├{'─' * (W-4)}┤{RESET}")
+
+    # Show blocking reasons for blocked trades
+    blocked = [(c, f['overall']['block_reason']) for c, f in decision_factors.items()
+               if not f['overall']['would_trade'] and f['overall']['block_reason'] != 'Waiting for data']
+
+    if blocked:
+        print(f"  {YELLOW}│{RESET} {RED}Blocked:{RESET}{' ' * (W-14)}{YELLOW}│{RESET}")
+        for crypto, reason in blocked[:3]:  # Show up to 3
+            block_line = f"  {crypto}: {reason}"
+            print(f"  {YELLOW}│{RESET} {block_line:<{W-6}}{YELLOW}│{RESET}")
+    else:
+        note = "All checks shown above. Green ✓ = pass, Red ✗ = fail/block"
+        print(f"  {YELLOW}│{RESET} {DIM}{note:<{W-6}}{RESET}{YELLOW}│{RESET}")
+
+    print(f"  {YELLOW}└{'─' * (W-4)}┘{RESET}")
+
+
 def main():
     """Main dashboard loop."""
+    global _epoch_start_prices, _last_epoch_start
+
     print(f"\n{CYAN}Starting Intra-Epoch Momentum Dashboard...{RESET}")
     print(f"{DIM}Fetching initial data...{RESET}\n")
 
@@ -745,8 +957,18 @@ def main():
             # Re-check shadow mode periodically (in case bot was started/stopped)
             shadow_mode = is_shadow_mode_active()
 
+            # Record epoch start prices at beginning of new epoch
+            if epoch_start != _last_epoch_start:
+                _last_epoch_start = epoch_start
+                _epoch_start_prices = {}
+                for crypto in cryptos:
+                    prices = get_multi_exchange_prices(crypto)
+                    _epoch_start_prices[crypto] = {k: v for k, v in prices.items() if v is not None}
+
             data = {}
             prices_data = {}
+            confluence_data = {}
+            decision_factors = {}
 
             for crypto in cryptos:
                 # Fetch minute candles (now returns dict with minutes and price data)
@@ -759,7 +981,34 @@ def main():
                 if prices:
                     prices_data[crypto] = prices
 
+                # Get confluence (compare current exchange prices to epoch start)
+                if crypto in _epoch_start_prices:
+                    confluence = get_exchange_confluence(crypto, _epoch_start_prices[crypto])
+                    confluence_data[crypto] = confluence
+
+                # Analyze pattern to get direction and accuracy
+                if candle_data:
+                    minutes = candle_data.get('minutes', [])
+                    pattern_dir, pattern_acc, _ = analyze_pattern(minutes)
+                else:
+                    pattern_dir, pattern_acc = None, 0.5
+
+                # Calculate decision factors
+                factors = get_decision_factors(
+                    crypto,
+                    candle_data,
+                    prices,
+                    confluence_data.get(crypto),
+                    pattern_dir,
+                    pattern_acc
+                )
+                decision_factors[crypto] = factors
+
             render_dashboard(data, prices_data, epoch_start, time_in_epoch, shadow_mode)
+
+            # Add decision summary panel
+            render_decision_summary(decision_factors, time_in_epoch)
+
             time.sleep(5)
 
     except KeyboardInterrupt:
