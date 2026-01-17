@@ -168,3 +168,28 @@ ssh -i ~/.ssh/polymarket_vultr root@216.238.85.11 "command"
   - Actual execution is stubbed - US-008 will implement the real fix functions
   - Progress logging (every minute) helps user know the script is still running
 ---
+
+## Iteration 8 - US-008: Implement auto-fix execution functions
+- Implemented `execute_fix()` function in sentinel.sh (~180 lines)
+- Four fix actions supported:
+  - `reset_peak_balance`: Updates state files with peak_balance = current_balance, mode = "normal", clears halt_reason
+  - `resume_trading`: Updates state files with mode = "normal", clears halt_reason
+  - `reset_loss_streak`: Updates state files with consecutive_losses = 0, mode = "normal", clears halt_reason
+  - `restart_bot`: Runs `systemctl restart polymarket-bot`, verifies status is "active"
+- Each state file fix uses Python for atomic read-modify-write
+- All four state file fixes update both `intra_epoch_state.json` and `trading_state.json`
+- Function returns 0 on success with descriptive message, 1 on failure
+- Results are logged to history via log_action() with details
+- Updated three locations in process_event() to call execute_fix():
+  - User approved action flow
+  - Custom action flow
+  - Timeout auto-fix flow
+- Each flow now checks fix_exit_code and sends appropriate confirmation
+- Files changed: sentinel/sentinel.sh, PRD-sentinel.md
+- Learnings for future iterations:
+  - Use Python for complex JSON manipulation over jq (easier read-modify-write atomicity)
+  - SSH + python one-liner with triple-quoted f-strings handles multi-file updates well
+  - Always verify systemctl status after restart with short delay (sleep 2)
+  - Include both old and new values in status messages for audit trail
+  - Handle "none" and empty action strings gracefully (no-op with success)
+---

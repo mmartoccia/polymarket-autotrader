@@ -430,6 +430,187 @@ wait_for_telegram_response() {
     return 0
 }
 
+# Execute fix action on VPS
+# Actions: reset_peak_balance, resume_trading, reset_loss_streak, restart_bot
+# Returns: 0 on success, 1 on failure
+# Output: status message
+execute_fix() {
+    local action="$1"
+    local result_msg=""
+    local exit_code=0
+
+    log "INFO" "Executing fix action: $action"
+
+    case "$action" in
+        reset_peak_balance)
+            # Update state file: peak_balance = current_balance, mode = "normal"
+            local python_script="
+import json
+import sys
+
+state_files = ['/opt/polymarket-autotrader/state/intra_epoch_state.json', '/opt/polymarket-autotrader/state/trading_state.json']
+updated = False
+
+for state_file in state_files:
+    try:
+        with open(state_file, 'r') as f:
+            state = json.load(f)
+
+        current_balance = state.get('current_balance', state.get('balance', 0))
+        old_peak = state.get('peak_balance', 0)
+
+        state['peak_balance'] = current_balance
+        state['mode'] = 'normal'
+        if 'halt_reason' in state:
+            state['halt_reason'] = None
+
+        with open(state_file, 'w') as f:
+            json.dump(state, f, indent=2)
+
+        print(f'Updated {state_file}: peak_balance {old_peak} -> {current_balance}, mode = normal')
+        updated = True
+    except FileNotFoundError:
+        continue
+    except Exception as e:
+        print(f'Error updating {state_file}: {e}', file=sys.stderr)
+        continue
+
+if updated:
+    sys.exit(0)
+else:
+    print('No state files were updated', file=sys.stderr)
+    sys.exit(1)
+"
+            result_msg=$(ssh -i "$SSH_KEY" -o ConnectTimeout="$SSH_TIMEOUT" -o BatchMode=yes \
+                "$VPS_HOST" "cd /opt/polymarket-autotrader && python3 -c '$python_script'" 2>&1)
+            exit_code=$?
+            ;;
+
+        resume_trading)
+            # Update state file: mode = "normal", clear halt_reason
+            local python_script="
+import json
+import sys
+
+state_files = ['/opt/polymarket-autotrader/state/intra_epoch_state.json', '/opt/polymarket-autotrader/state/trading_state.json']
+updated = False
+
+for state_file in state_files:
+    try:
+        with open(state_file, 'r') as f:
+            state = json.load(f)
+
+        old_mode = state.get('mode', 'unknown')
+        old_reason = state.get('halt_reason', None)
+
+        state['mode'] = 'normal'
+        state['halt_reason'] = None
+
+        with open(state_file, 'w') as f:
+            json.dump(state, f, indent=2)
+
+        print(f'Updated {state_file}: mode {old_mode} -> normal, cleared halt_reason')
+        updated = True
+    except FileNotFoundError:
+        continue
+    except Exception as e:
+        print(f'Error updating {state_file}: {e}', file=sys.stderr)
+        continue
+
+if updated:
+    sys.exit(0)
+else:
+    print('No state files were updated', file=sys.stderr)
+    sys.exit(1)
+"
+            result_msg=$(ssh -i "$SSH_KEY" -o ConnectTimeout="$SSH_TIMEOUT" -o BatchMode=yes \
+                "$VPS_HOST" "cd /opt/polymarket-autotrader && python3 -c '$python_script'" 2>&1)
+            exit_code=$?
+            ;;
+
+        reset_loss_streak)
+            # Update state file: consecutive_losses = 0, mode = "normal"
+            local python_script="
+import json
+import sys
+
+state_files = ['/opt/polymarket-autotrader/state/intra_epoch_state.json', '/opt/polymarket-autotrader/state/trading_state.json']
+updated = False
+
+for state_file in state_files:
+    try:
+        with open(state_file, 'r') as f:
+            state = json.load(f)
+
+        old_losses = state.get('consecutive_losses', 0)
+        old_mode = state.get('mode', 'unknown')
+
+        state['consecutive_losses'] = 0
+        state['mode'] = 'normal'
+        if 'halt_reason' in state:
+            state['halt_reason'] = None
+
+        with open(state_file, 'w') as f:
+            json.dump(state, f, indent=2)
+
+        print(f'Updated {state_file}: consecutive_losses {old_losses} -> 0, mode {old_mode} -> normal')
+        updated = True
+    except FileNotFoundError:
+        continue
+    except Exception as e:
+        print(f'Error updating {state_file}: {e}', file=sys.stderr)
+        continue
+
+if updated:
+    sys.exit(0)
+else:
+    print('No state files were updated', file=sys.stderr)
+    sys.exit(1)
+"
+            result_msg=$(ssh -i "$SSH_KEY" -o ConnectTimeout="$SSH_TIMEOUT" -o BatchMode=yes \
+                "$VPS_HOST" "cd /opt/polymarket-autotrader && python3 -c '$python_script'" 2>&1)
+            exit_code=$?
+            ;;
+
+        restart_bot)
+            # Restart the systemd service
+            result_msg=$(ssh -i "$SSH_KEY" -o ConnectTimeout="$SSH_TIMEOUT" -o BatchMode=yes \
+                "$VPS_HOST" "systemctl restart polymarket-bot && sleep 2 && systemctl is-active polymarket-bot" 2>&1)
+            exit_code=$?
+
+            if [[ $exit_code -eq 0 ]] && [[ "$result_msg" == "active" ]]; then
+                result_msg="Bot service restarted successfully (status: active)"
+            elif [[ $exit_code -eq 0 ]]; then
+                result_msg="Bot service restarted (status: $result_msg)"
+            else
+                result_msg="Failed to restart bot service: $result_msg"
+            fi
+            ;;
+
+        none|"")
+            log "INFO" "No action to execute"
+            echo "No action required"
+            return 0
+            ;;
+
+        *)
+            log "ERROR" "Unknown action: $action"
+            echo "Unknown action: $action"
+            return 1
+            ;;
+    esac
+
+    if [[ $exit_code -eq 0 ]]; then
+        log "INFO" "Fix action succeeded: $result_msg"
+        echo "$result_msg"
+        return 0
+    else
+        log "ERROR" "Fix action failed: $result_msg"
+        echo "FAILED: $result_msg"
+        return 1
+    fi
+}
+
 # Send confirmation message after action
 send_action_confirmation() {
     local action="$1"
@@ -699,13 +880,22 @@ process_event() {
                 return 0
             fi
 
-            # Execute the approved action (stub for now, US-008 will implement)
+            # Execute the approved action
             log "INFO" "Executing approved action: $action"
-            # TODO: Actual execution in US-008
-            send_action_confirmation "$action" "Executed successfully" "user_approved"
-            update_event_status "$event_id" "completed" "$action"
-            log_action "$event_id" "execute" "$action" "User approved via Telegram"
-            increment_rate_limit
+            local fix_result
+            fix_result=$(execute_fix "$action")
+            local fix_exit_code=$?
+
+            if [[ $fix_exit_code -eq 0 ]]; then
+                send_action_confirmation "$action" "$fix_result" "user_approved"
+                update_event_status "$event_id" "completed" "$action"
+                log_action "$event_id" "execute" "$action" "User approved via Telegram - $fix_result"
+                increment_rate_limit
+            else
+                send_action_confirmation "$action" "$fix_result" "user_approved"
+                update_event_status "$event_id" "error" "execution_failed"
+                log_action "$event_id" "error" "execution_failed" "User approved but execution failed: $fix_result"
+            fi
             return 0
             ;;
 
@@ -726,11 +916,20 @@ process_event() {
             local allowed_actions="reset_peak_balance resume_trading reset_loss_streak restart_bot"
             if echo "$allowed_actions" | grep -qw "$custom_action"; then
                 log "INFO" "Custom action is valid: $custom_action"
-                # TODO: Actual execution in US-008
-                send_action_confirmation "$custom_action" "Executed successfully" "custom"
-                update_event_status "$event_id" "completed" "$custom_action"
-                log_action "$event_id" "execute" "$custom_action" "User requested custom action via Telegram"
-                increment_rate_limit
+                local fix_result
+                fix_result=$(execute_fix "$custom_action")
+                local fix_exit_code=$?
+
+                if [[ $fix_exit_code -eq 0 ]]; then
+                    send_action_confirmation "$custom_action" "$fix_result" "custom"
+                    update_event_status "$event_id" "completed" "$custom_action"
+                    log_action "$event_id" "execute" "$custom_action" "User requested custom action via Telegram - $fix_result"
+                    increment_rate_limit
+                else
+                    send_action_confirmation "$custom_action" "$fix_result" "custom"
+                    update_event_status "$event_id" "error" "execution_failed"
+                    log_action "$event_id" "error" "execution_failed" "Custom action failed: $fix_result"
+                fi
             else
                 log "WARN" "Invalid custom action: $custom_action"
                 send_action_confirmation "$custom_action" "FAILED - invalid action. Allowed: $allowed_actions" "custom"
@@ -773,11 +972,20 @@ Manual intervention required." "false"
 
             # Auto-fix on timeout
             log "INFO" "Auto-fix on timeout: $action (confidence: $confidence%)"
-            # TODO: Actual execution in US-008
-            send_action_confirmation "$action" "Executed automatically after ${TELEGRAM_TIMEOUT_SECONDS}s timeout" "timeout_auto_fix"
-            update_event_status "$event_id" "auto_fixed" "$action"
-            log_action "$event_id" "auto_fix" "$action" "Timeout auto-fix (confidence: $confidence%)"
-            increment_rate_limit
+            local fix_result
+            fix_result=$(execute_fix "$action")
+            local fix_exit_code=$?
+
+            if [[ $fix_exit_code -eq 0 ]]; then
+                send_action_confirmation "$action" "Executed automatically after ${TELEGRAM_TIMEOUT_SECONDS}s timeout - $fix_result" "timeout_auto_fix"
+                update_event_status "$event_id" "auto_fixed" "$action"
+                log_action "$event_id" "auto_fix" "$action" "Timeout auto-fix (confidence: $confidence%) - $fix_result"
+                increment_rate_limit
+            else
+                send_action_confirmation "$action" "Auto-fix FAILED: $fix_result" "timeout_auto_fix"
+                update_event_status "$event_id" "error" "auto_fix_failed"
+                log_action "$event_id" "error" "auto_fix_failed" "Timeout auto-fix failed: $fix_result"
+            fi
             return 0
             ;;
 

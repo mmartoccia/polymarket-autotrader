@@ -158,15 +158,15 @@ Sentinel is an event-driven autonomous monitoring system that watches the tradin
 **Description:** As a developer, I need functions that execute specific fix actions on the VPS so Sentinel can resolve issues.
 
 **Acceptance Criteria:**
-- [ ] Implement `execute_fix()` function in sentinel.sh that handles:
+- [x] Implement `execute_fix()` function in sentinel.sh that handles:
   - `reset_peak_balance`: SSH to VPS, update state file peak_balance = current_balance, set mode = "normal"
   - `resume_trading`: SSH to VPS, set mode = "normal", clear halt_reason
   - `reset_loss_streak`: SSH to VPS, set consecutive_losses = 0, set mode = "normal"
   - `restart_bot`: SSH to VPS, run `systemctl restart polymarket-bot`
-- [ ] Each fix updates state file atomically (read, modify, write)
-- [ ] Returns success/failure status
-- [ ] Logs fix attempt and result to history
-- [ ] Test: Manually call each fix type and verify VPS state changes
+- [x] Each fix updates state file atomically (read, modify, write)
+- [x] Returns success/failure status
+- [x] Logs fix attempt and result to history
+- [x] Test: Manually call each fix type and verify VPS state changes
 
 ---
 
