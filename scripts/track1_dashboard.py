@@ -97,7 +97,7 @@ class Track1Dashboard:
                 return {}
 
     def get_config_values(self) -> Dict:
-        """Get current config values from VPS."""
+        """Get current config values from VPS or locally."""
         if self.remote:
             # Use a here-doc approach to avoid quoting issues
             cmd = """'cd /opt/polymarket-autotrader && python3 << '"'"'PYEOF'"'"'
@@ -124,7 +124,21 @@ PYEOF'"""
                 return {}
             except json.JSONDecodeError:
                 return {}
-        return {}
+        else:
+            # Try to load config locally
+            try:
+                from config import agent_config as cfg
+                return {
+                    'consensus': cfg.CONSENSUS_THRESHOLD,
+                    'min_conf': cfg.MIN_CONFIDENCE,
+                    'max_entry': cfg.MAX_ENTRY,
+                    'early_max': cfg.EARLY_MAX_ENTRY,
+                    'late_max': cfg.LATE_MAX_ENTRY,
+                    'contrarian_max': cfg.SENTIMENT_CONTRARIAN_MAX_ENTRY,
+                    'mode': cfg.CURRENT_MODE
+                }
+            except ImportError:
+                return {}
 
     def parse_trades_since_deployment(self, log_content: str) -> List[Dict]:
         """Parse trades from log since deployment."""
