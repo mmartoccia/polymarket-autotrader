@@ -96,6 +96,32 @@ TELEGRAM_CHAT_ID = os.getenv("TELEGRAM_AUTHORIZED_USER_ID", "")
 TELEGRAM_ENABLED = os.getenv("TELEGRAM_NOTIFICATIONS_ENABLED", "false").lower() == "true"
 
 # =============================================================================
+# GRANULAR SIGNAL ENHANCEMENT CONFIGURATION
+# =============================================================================
+
+# Magnitude tracking - measure HOW MUCH price moved, not just direction
+ENABLE_MAGNITUDE_TRACKING = True
+MIN_CUMULATIVE_MAGNITUDE = 0.008      # 0.8% total move required for signal
+MIN_PER_MINUTE_MAGNITUDE = 0.002      # 0.2% per minute to count as "strong" move
+MAGNITUDE_ACCURACY_BOOST = 0.03       # Up to 3% accuracy boost for strong moves
+STRONG_MOVE_THRESHOLD = 0.015         # 1.5% = strong move (triggers boost)
+
+# Multi-exchange confluence - require multiple exchanges to agree on direction
+ENABLE_MULTI_EXCHANGE = True
+MIN_EXCHANGES_AGREE = 2               # Require 2 of 3 exchanges to agree
+
+# Exchange symbol mappings for multi-exchange price fetching
+EXCHANGE_SYMBOLS: Dict[str, Dict[str, str]] = {
+    'BTC': {'binance': 'BTCUSDT', 'kraken': 'XBTUSD', 'coinbase': 'BTC-USD'},
+    'ETH': {'binance': 'ETHUSDT', 'kraken': 'ETHUSD', 'coinbase': 'ETH-USD'},
+    'SOL': {'binance': 'SOLUSDT', 'kraken': 'SOLUSD', 'coinbase': 'SOL-USD'},
+    'XRP': {'binance': 'XRPUSDT', 'kraken': 'XRPUSD', 'coinbase': 'XRP-USD'},
+}
+
+# Shadow logging for comparing old vs new signal logic
+ENABLE_GRANULAR_SHADOW_LOG = True
+
+# =============================================================================
 # LOGGING
 # =============================================================================
 
