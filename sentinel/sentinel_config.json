@@ -1,0 +1,27 @@
+{
+  "polling": {
+    "interval_seconds": 30,
+    "ssh_timeout_seconds": 10
+  },
+  "rate_limits": {
+    "max_auto_fixes_per_hour": 3,
+    "consecutive_fix_limit": 2
+  },
+  "safety": {
+    "balance_floor": 50.0,
+    "min_confidence_for_auto_fix": 70
+  },
+  "escalation": {
+    "telegram_timeout_seconds": 900
+  },
+  "vps": {
+    "host": "root@216.238.85.11",
+    "ssh_key": "~/.ssh/polymarket_vultr",
+    "state_files": [
+      "/opt/polymarket-autotrader/state/intra_epoch_state.json",
+      "/opt/polymarket-autotrader/state/trading_state.json"
+    ],
+    "log_file": "/opt/polymarket-autotrader/bot.log"
+  },
+  "alerts": []
+}
