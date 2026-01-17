@@ -120,13 +120,13 @@ class OrderBookAgent(BaseAgent):
         orderbook = data.get('orderbook', {})
 
         if not orderbook:
-            # No orderbook data available
+            # No orderbook data available - abstain
             return Vote(
-                direction="Up",  # Default to Up when no data
-                confidence=0.35,  # Low confidence
-                quality=0.3,      # Poor signal quality
+                direction="Neutral",  # Abstain when no data (avoid bias)
+                confidence=0.0,       # Zero confidence = won't affect consensus
+                quality=0.0,          # No signal quality
                 agent_name=self.name,
-                reasoning="No orderbook data available",
+                reasoning="No orderbook data available - abstaining",
                 details={}
             )
 
@@ -382,8 +382,8 @@ class OrderBookAgent(BaseAgent):
             elif metrics.largest_ask_wall > metrics.largest_bid_wall * 1.5:
                 direction = "Down"  # Stronger ask resistance
             else:
-                # No clear signal - default to Up with low confidence
-                direction = "Up"
+                # No clear signal - abstain to avoid directional bias
+                direction = "Neutral"
 
         return direction
 
