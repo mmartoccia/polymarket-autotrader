@@ -97,15 +97,15 @@ Optimizer is an automated hourly performance review system that runs on the VPS 
 **Description:** As a developer, I need to safely apply parameter changes to config files.
 
 **Acceptance Criteria:**
-- [ ] Create `optimizer/executor.py`
-- [ ] Implement `apply_adjustment(param: str, old_value: float, new_value: float, config: dict) -> bool`
-- [ ] Reads target file (bot/intra_epoch_bot.py or config/agent_config.py based on config)
-- [ ] Creates backup before modification (.bak file)
-- [ ] Uses regex to find and replace parameter value
-- [ ] Logs change to `history/adjustments.log` with timestamp, param, old, new, reason
-- [ ] Updates `state/parameter_history.json` with change record
-- [ ] Returns True on success, False on failure
-- [ ] Typecheck passes
+- [x] Create `optimizer/executor.py`
+- [x] Implement `apply_adjustment(param: str, old_value: float, new_value: float, config: dict) -> bool`
+- [x] Reads target file (bot/intra_epoch_bot.py or config/agent_config.py based on config)
+- [x] Creates backup before modification (.bak file)
+- [x] Uses regex to find and replace parameter value
+- [x] Logs change to `history/adjustments.log` with timestamp, param, old, new, reason
+- [x] Updates `state/parameter_history.json` with change record
+- [x] Returns True on success, False on failure
+- [x] Typecheck passes
 
 ---
 
