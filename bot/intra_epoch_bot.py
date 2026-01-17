@@ -381,8 +381,13 @@ def calculate_position_size(balance: float, accuracy: float) -> float:
 
 
 def place_trade(client: ClobClient, crypto: str, direction: str,
-                token_id: str, price: float, size_usd: float) -> bool:
-    """Place a trade on Polymarket."""
+                token_id: str, price: float, size_usd: float) -> Tuple[bool, float]:
+    """
+    Place a trade on Polymarket and verify it fills.
+
+    Returns:
+        (success, filled_size_usd) - True only if order filled, with actual filled amount
+    """
     try:
         # Calculate shares
         shares = size_usd / price
@@ -399,16 +404,74 @@ def place_trade(client: ClobClient, crypto: str, direction: str,
         signed_order = client.create_order(order_args)
         response = client.post_order(signed_order, OrderType.GTC)
 
-        if response and response.get("success"):
-            log.info(f"ORDER PLACED: {crypto} {direction} - ${size_usd:.2f} @ ${price:.2f}")
-            return True
+        if not response or not response.get("success"):
+            log.error(f"Order placement failed: {response}")
+            return (False, 0.0)
+
+        order_id = response.get("orderID")
+        if not order_id:
+            log.error(f"No order ID in response: {response}")
+            return (False, 0.0)
+
+        log.info(f"Order submitted: {order_id}")
+
+        # Wait briefly for order to fill (check multiple times)
+        filled_shares = 0.0
+        for attempt in range(5):  # Check 5 times over ~2.5 seconds
+            time.sleep(0.5)
+
+            try:
+                order_status = client.get_order(order_id)
+                if order_status:
+                    filled_shares = float(order_status.get("size_matched", 0))
+                    original_size = float(order_status.get("original_size", shares))
+                    fill_pct = (filled_shares / original_size * 100) if original_size > 0 else 0
+
+                    if filled_shares > 0:
+                        log.info(f"Order fill check {attempt+1}: {filled_shares:.1f}/{original_size:.1f} shares ({fill_pct:.0f}%)")
+
+                    # If fully filled, we're done
+                    if fill_pct >= 99:
+                        break
+            except Exception as e:
+                log.warning(f"Error checking order status: {e}")
+
+        # Calculate filled USD value
+        filled_usd = filled_shares * price
+
+        # Determine if order was sufficiently filled (at least 50%)
+        min_fill_pct = 0.50
+        if filled_shares >= shares * min_fill_pct:
+            log.info(f"ORDER FILLED: {crypto} {direction} - ${filled_usd:.2f} @ ${price:.2f} ({filled_shares:.1f} shares)")
+
+            # Cancel any remaining unfilled portion
+            if filled_shares < shares * 0.99:
+                try:
+                    client.cancel(order_id)
+                    log.info(f"Cancelled unfilled remainder of order {order_id}")
+                except Exception as e:
+                    log.warning(f"Could not cancel remainder: {e}")
+
+            return (True, filled_usd)
         else:
-            log.error(f"Order failed: {response}")
-            return False
+            # Order didn't fill enough - cancel it
+            log.warning(f"Order not filled (got {filled_shares:.1f}/{shares:.1f} shares). Cancelling...")
+            try:
+                client.cancel(order_id)
+                log.info(f"Cancelled unfilled order {order_id}")
+            except Exception as e:
+                log.warning(f"Could not cancel order: {e}")
+
+            # If we got partial fill, still return that amount
+            if filled_shares > 0:
+                log.info(f"Partial fill kept: ${filled_usd:.2f}")
+                return (True, filled_usd)
+
+            return (False, 0.0)
 
     except Exception as e:
         log.error(f"Failed to place trade: {e}")
-        return False
+        return (False, 0.0)
 
 # =============================================================================
 # MAIN BOT LOOP
@@ -700,16 +763,16 @@ def run_bot():
                 log.info(f"  Position Size: ${size:.2f}")
                 log.info(f"{'='*50}")
 
-                # Place trade
+                # Place trade and verify fill
                 token_id = prices[direction]['token_id']
-                success = place_trade(client, crypto, direction, token_id, entry_price, size)
+                success, filled_size = place_trade(client, crypto, direction, token_id, entry_price, size)
 
-                if success:
-                    # Record position
+                if success and filled_size > 0:
+                    # Record position with ACTUAL filled size (not requested size)
                     state.positions[crypto] = {
                         'direction': direction,
                         'entry_price': entry_price,
-                        'size': size,
+                        'size': filled_size,  # Use actual filled amount
                         'epoch': epoch_start,
                         'accuracy': accuracy
                     }
@@ -717,7 +780,9 @@ def run_bot():
                     state.total_trades += 1
                     state.save()
 
-                    log.info(f"Trade recorded. Total positions: {len(state.positions)}")
+                    log.info(f"Position recorded: ${filled_size:.2f}. Total positions: {len(state.positions)}")
+                else:
+                    log.warning(f"{crypto}: Order did not fill - no position recorded")
 
             # Log scan summary
             mins_in = time_in_epoch // 60
