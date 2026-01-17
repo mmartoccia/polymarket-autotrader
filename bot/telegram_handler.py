@@ -17,6 +17,7 @@ Usage:
 import logging
 import os
 import threading
+from datetime import datetime, timedelta, timezone
 from typing import Optional
 
 import requests
@@ -516,6 +517,77 @@ class TelegramBot:
 
         command = text.split()[0].lower()
         self._handle_command(command)
+
+    def get_recent_commands(self, since_minutes: int = 5) -> list[str]:
+        """
+        Poll Telegram for recent command responses from authorized user.
+
+        This method is used by Sentinel to detect user approvals/denials
+        in response to halt notifications.
+
+        Args:
+            since_minutes: Only return commands from the last N minutes (default: 5)
+
+        Returns:
+            List of command strings (e.g., ["/approve", "/deny reason"])
+            Returns empty list on any error.
+        """
+        if not self.enabled:
+            return []
+
+        try:
+            # Use offset=-10 to get last 10 updates (without modifying our normal offset)
+            url = f"https://api.telegram.org/bot{self.token}/getUpdates"
+            params = {"offset": -10, "timeout": 1}
+            resp = requests.get(url, params=params, timeout=5)
+
+            if resp.status_code != 200:
+                log.warning(f"Telegram getUpdates failed: HTTP {resp.status_code}")
+                return []
+
+            data = resp.json()
+            if not data.get("ok"):
+                log.warning("Telegram getUpdates returned not ok")
+                return []
+
+            # Calculate cutoff time
+            cutoff = datetime.now(timezone.utc) - timedelta(minutes=since_minutes)
+
+            commands: list[str] = []
+
+            for update in data.get("result", []):
+                message = update.get("message", {})
+                if not message:
+                    continue
+
+                # Check authorization
+                user_id = message.get("from", {}).get("id")
+                if not self.is_authorized(user_id):
+                    continue
+
+                # Check if message is within time window
+                message_date = message.get("date")
+                if message_date:
+                    message_time = datetime.fromtimestamp(message_date, tz=timezone.utc)
+                    if message_time < cutoff:
+                        continue
+
+                # Check if it's a command
+                text = message.get("text", "")
+                if text.startswith("/"):
+                    commands.append(text)
+
+            return commands
+
+        except requests.Timeout:
+            log.warning("Telegram getUpdates timed out")
+            return []
+        except requests.RequestException as e:
+            log.warning(f"Telegram getUpdates request failed: {e}")
+            return []
+        except Exception as e:
+            log.warning(f"Telegram getUpdates unexpected error: {e}")
+            return []
 
     def _handle_command(self, command: str) -> None:
         """Handle a Telegram command."""

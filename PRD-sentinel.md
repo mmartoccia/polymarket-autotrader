@@ -128,13 +128,13 @@ Sentinel is an event-driven autonomous monitoring system that watches the tradin
 **Description:** As a developer, I need a method to poll Telegram for recent command responses so Sentinel can detect user approvals/denials.
 
 **Acceptance Criteria:**
-- [ ] Add `get_recent_commands(self, since_minutes: int = 5) -> list[str]` method to TelegramBot class
-- [ ] Method calls Telegram getUpdates API with offset=-10
-- [ ] Filters to commands (start with /) from authorized chat_id within time window
-- [ ] Returns list of command strings (e.g., ["/approve", "/deny reason"])
-- [ ] Handles API errors gracefully (returns empty list)
-- [ ] Add required imports: `datetime`, `timedelta`
-- [ ] Typecheck passes
+- [x] Add `get_recent_commands(self, since_minutes: int = 5) -> list[str]` method to TelegramBot class
+- [x] Method calls Telegram getUpdates API with offset=-10
+- [x] Filters to commands (start with /) from authorized chat_id within time window
+- [x] Returns list of command strings (e.g., ["/approve", "/deny reason"])
+- [x] Handles API errors gracefully (returns empty list)
+- [x] Add required imports: `datetime`, `timedelta`
+- [x] Typecheck passes
 
 ---
 
