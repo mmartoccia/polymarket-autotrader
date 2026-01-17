@@ -21,6 +21,7 @@ import time
 import json
 import logging
 import requests
+from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple, Union
@@ -638,6 +639,157 @@ def calculate_magnitude_boost(candles: List[Dict[str, Union[str, float]]], direc
     boost = boost_ratio * MAGNITUDE_ACCURACY_BOOST
 
     return boost
+
+
+# =============================================================================
+# MULTI-EXCHANGE PRICE FETCHING
+# =============================================================================
+
+def get_binance_price(symbol: str) -> Optional[float]:
+    """
+    Fetch current price from Binance.
+
+    Args:
+        symbol: Binance trading pair symbol (e.g., 'BTCUSDT', 'ETHUSDT')
+
+    Returns:
+        Current price as float, or None if fetch failed
+
+    Example:
+        >>> get_binance_price('BTCUSDT')
+        104523.50
+    """
+    try:
+        resp = requests.get(
+            f"https://api.binance.com/api/v3/ticker/price?symbol={symbol}",
+            timeout=2
+        )
+        if resp.status_code == 200:
+            return float(resp.json()["price"])
+        return None
+    except Exception:
+        return None
+
+
+def get_kraken_price(symbol: str) -> Optional[float]:
+    """
+    Fetch current price from Kraken.
+
+    Args:
+        symbol: Kraken trading pair symbol (e.g., 'XBTUSD', 'ETHUSD')
+
+    Returns:
+        Current price as float, or None if fetch failed
+
+    Note:
+        Kraken returns data nested in a 'result' dict with the pair name as key.
+        The price is in the 'c' field (last trade closed) as [price, lot_volume].
+
+    Example:
+        >>> get_kraken_price('XBTUSD')
+        104521.00
+    """
+    try:
+        resp = requests.get(
+            f"https://api.kraken.com/0/public/Ticker?pair={symbol}",
+            timeout=2
+        )
+        if resp.status_code != 200:
+            return None
+
+        data = resp.json()
+        if data.get("error"):
+            return None
+
+        # Kraken returns result nested under the pair key
+        for key, val in data.get("result", {}).items():
+            # 'c' is the last trade closed price: [price, lot_volume]
+            return float(val["c"][0])
+
+        return None
+    except Exception:
+        return None
+
+
+def get_coinbase_price(symbol: str) -> Optional[float]:
+    """
+    Fetch current price from Coinbase.
+
+    Args:
+        symbol: Coinbase trading pair symbol (e.g., 'BTC-USD', 'ETH-USD')
+
+    Returns:
+        Current price as float, or None if fetch failed
+
+    Example:
+        >>> get_coinbase_price('BTC-USD')
+        104525.00
+    """
+    try:
+        resp = requests.get(
+            f"https://api.coinbase.com/v2/prices/{symbol}/spot",
+            timeout=2
+        )
+        if resp.status_code == 200:
+            return float(resp.json()["data"]["amount"])
+        return None
+    except Exception:
+        return None
+
+
+def fetch_multi_exchange_prices(crypto: str) -> Dict[str, float]:
+    """
+    Fetch prices from Binance, Kraken, and Coinbase in parallel.
+
+    Uses ThreadPoolExecutor to fetch from all exchanges concurrently with
+    a 2-second timeout per exchange. Returns whatever prices were successfully
+    fetched (may be partial if some exchanges failed).
+
+    Args:
+        crypto: Cryptocurrency symbol (e.g., 'BTC', 'ETH', 'SOL', 'XRP')
+
+    Returns:
+        Dict mapping exchange name to price, e.g.:
+        {"binance": 104523.50, "kraken": 104521.00, "coinbase": 104525.00}
+
+        May be partial or empty if exchanges fail:
+        {"binance": 104523.50}  # If only Binance responded
+        {}  # If all exchanges failed
+
+    Example:
+        >>> fetch_multi_exchange_prices('BTC')
+        {'binance': 104523.50, 'kraken': 104521.00, 'coinbase': 104525.00}
+
+        >>> fetch_multi_exchange_prices('ETH')
+        {'binance': 3850.25, 'coinbase': 3849.50}  # Kraken timed out
+    """
+    # Get exchange symbols for this crypto
+    symbols = EXCHANGE_SYMBOLS.get(crypto, {})
+    if not symbols:
+        return {}
+
+    # Fetch from all exchanges in parallel using ThreadPoolExecutor
+    prices: Dict[str, float] = {}
+
+    with ThreadPoolExecutor(max_workers=3) as executor:
+        # Submit all fetch tasks
+        futures = {
+            "binance": executor.submit(get_binance_price, symbols.get("binance", "")),
+            "kraken": executor.submit(get_kraken_price, symbols.get("kraken", "")),
+            "coinbase": executor.submit(get_coinbase_price, symbols.get("coinbase", "")),
+        }
+
+        # Collect results with timeout
+        for exchange, future in futures.items():
+            try:
+                price = future.result(timeout=2)
+                if price is not None:
+                    prices[exchange] = price
+            except Exception:
+                # Timeout or other error - skip this exchange
+                pass
+
+    return prices
 
 
 def fetch_polymarket_prices(crypto: str, epoch_start: int) -> Optional[Dict]:

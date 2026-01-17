@@ -1,0 +1,86 @@
+# Progress: Granular Signal Enhancement
+
+## Iteration 1 - US-GS-001: Add Configuration Constants
+- Implemented all 9 configuration constants for granular signals
+- Files changed: bot/intra_epoch_bot.py, PRD-granular-signals.md
+- Learnings for future iterations:
+  - Constants are at lines 98-122 in a dedicated section after Telegram config
+  - EXCHANGE_SYMBOLS uses Dict[str, Dict[str, str]] type hint
+  - Binance uses 'XXXUSDT', Kraken uses 'XXXUSD', Coinbase uses 'XXX-USD'
+  - All constants can be imported directly for testing
+---
+
+## Iteration 2 - US-GS-002: Enhance Minute Candle Fetching with Magnitude Data
+- Modified fetch_minute_candles() to return list of dicts instead of strings
+- Each dict contains: {"direction": "Up"/"Down", "change_pct": float, "volume": float}
+- Added get_directions_from_candles() helper for backward compatibility
+- Updated main loop to use candles + get_directions_from_candles() pattern
+- Files changed: bot/intra_epoch_bot.py, PRD-granular-signals.md
+- Learnings for future iterations:
+  - fetch_minute_candles() is at line 391, returns Optional[List[Dict[str, Union[str, float]]]]
+  - get_directions_from_candles() is at line 442, extracts ['Up', 'Down', ...] from candle dicts
+  - Main loop at line 1115 now uses: candles = fetch_minute_candles(), minutes = get_directions_from_candles(candles)
+  - Binance kline format: [open_time, open, high, low, close, volume, ...] (index 5 is volume)
+  - change_pct calculation: (close - open) / open * 100
+  - Added Union to typing imports for mixed-type dicts
+---
+
+## Iteration 3 - US-GS-003: Add Cumulative Magnitude Check Function
+- Added check_cumulative_magnitude(candles, direction) -> Tuple[bool, float]
+- Sums magnitude of candles matching the pattern direction
+- Returns (passes_threshold, total_magnitude)
+- Respects ENABLE_MAGNITUDE_TRACKING config (returns True, 0.0 if disabled)
+- Files changed: bot/intra_epoch_bot.py, PRD-granular-signals.md
+- Learnings for future iterations:
+  - Function is at line 462, right after get_directions_from_candles()
+  - change_pct is in percent (e.g., -0.25 for -0.25%), convert to decimal by dividing by 100
+  - MIN_CUMULATIVE_MAGNITUDE = 0.008 (0.8% total move required)
+  - Only candles matching direction are counted, opposite direction ignored
+  - Empty list returns (False, 0.0) since 0.0 < threshold
+---
+
+## Iteration 4 - US-GS-004: Add Per-Minute Magnitude Check Function
+- Added check_per_minute_magnitude(candles, direction) -> Tuple[int, int]
+- Returns (strong_count, weak_count) for candles matching direction
+- Strong = magnitude >= MIN_PER_MINUTE_MAGNITUDE (0.002 = 0.2%)
+- If ENABLE_MAGNITUDE_TRACKING is False, all moves counted as strong
+- Files changed: bot/intra_epoch_bot.py, PRD-granular-signals.md
+- Learnings for future iterations:
+  - Function is at line 513, right after check_cumulative_magnitude()
+  - Same change_pct conversion pattern: abs(change_pct) / 100.0
+  - MIN_PER_MINUTE_MAGNITUDE = 0.002 (0.2% per minute for "strong")
+  - Can be used for "4 of 5 STRONG moves" filtering in pattern analysis
+  - Empty list returns (0, 0) - both counts zero
+---
+
+## Iteration 5 - US-GS-005: Add Magnitude-Weighted Accuracy Boost Function
+- Added calculate_magnitude_boost(candles, direction) -> float
+- Returns accuracy boost from 0.0 to MAGNITUDE_ACCURACY_BOOST (0.03)
+- Linear scaling: boost = (excess / threshold) * max_boost, capped at 1.0
+- No boost if total magnitude <= STRONG_MOVE_THRESHOLD (0.015 = 1.5%)
+- Returns 0.0 if ENABLE_MAGNITUDE_TRACKING is False
+- Files changed: bot/intra_epoch_bot.py, PRD-granular-signals.md
+- Learnings for future iterations:
+  - Function is at line 570, right after check_per_minute_magnitude()
+  - Same magnitude calculation pattern as previous functions
+  - Boost formula: excess / STRONG_MOVE_THRESHOLD gives ratio 0.0-1.0
+  - At exactly threshold, returns 0.0 (only boost when ABOVE threshold)
+  - Example: 2.0% move gives 0.01 boost (33% of max), 3.0%+ gives full 0.03
+  - mypy hangs on this file - use py_compile and unit tests for verification
+---
+
+## Iteration 6 - US-GS-006: Add Multi-Exchange Price Fetcher
+- Added 4 new functions for multi-exchange price fetching
+- get_binance_price(), get_kraken_price(), get_coinbase_price() - individual exchange fetchers
+- fetch_multi_exchange_prices() - parallel fetcher using ThreadPoolExecutor
+- Files changed: bot/intra_epoch_bot.py, PRD-granular-signals.md
+- Learnings for future iterations:
+  - Functions added at lines 648-792, after calculate_magnitude_boost() and before fetch_polymarket_prices()
+  - Added ThreadPoolExecutor import from concurrent.futures (line 24)
+  - Kraken API returns nested data: result[pair_name]['c'][0] for last trade price
+  - Coinbase API returns data['amount'] under data key
+  - ThreadPoolExecutor with max_workers=3 and 2s timeout per future.result()
+  - Returns partial dict if some exchanges fail (graceful degradation)
+  - Returns empty dict {} for invalid crypto symbols
+  - EXCHANGE_SYMBOLS config at lines 114-119 maps crypto to exchange-specific symbols
+---

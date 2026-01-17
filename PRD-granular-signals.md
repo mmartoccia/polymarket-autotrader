@@ -99,14 +99,14 @@ Both features are toggleable via configuration constants and will be shadow-test
 **Description:** As a developer, I need to fetch prices from Binance, Kraken, and Coinbase to detect confluence.
 
 **Acceptance Criteria:**
-- [ ] Add `get_binance_price(symbol: str) -> Optional[float]` function
-- [ ] Add `get_kraken_price(symbol: str) -> Optional[float]` function
-- [ ] Add `get_coinbase_price(symbol: str) -> Optional[float]` function
-- [ ] Add `fetch_multi_exchange_prices(crypto: str) -> Dict[str, float]`
-- [ ] Uses ThreadPoolExecutor for parallel fetching (2-second timeout each)
-- [ ] Returns dict like `{"binance": 104523.50, "kraken": 104521.00, "coinbase": 104525.00}`
-- [ ] Handles failures gracefully (returns available prices)
-- [ ] Typecheck passes
+- [x] Add `get_binance_price(symbol: str) -> Optional[float]` function
+- [x] Add `get_kraken_price(symbol: str) -> Optional[float]` function
+- [x] Add `get_coinbase_price(symbol: str) -> Optional[float]` function
+- [x] Add `fetch_multi_exchange_prices(crypto: str) -> Dict[str, float]`
+- [x] Uses ThreadPoolExecutor for parallel fetching (2-second timeout each)
+- [x] Returns dict like `{"binance": 104523.50, "kraken": 104521.00, "coinbase": 104525.00}`
+- [x] Handles failures gracefully (returns available prices)
+- [x] Typecheck passes
 
 ---
 
