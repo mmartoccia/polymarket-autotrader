@@ -294,8 +294,8 @@ Sentinel is an event-driven autonomous monitoring system that watches the tradin
 **Description:** As a developer, I need an integration test script to verify Sentinel works end-to-end before relying on it in production.
 
 **Acceptance Criteria:**
-- [ ] Create `sentinel/test_sentinel.sh` script
-- [ ] Tests include:
+- [x] Create `sentinel/test_sentinel.sh` script
+- [x] Tests include:
   - Directory structure exists
   - Config file is valid JSON
   - Monitor starts and stops correctly
@@ -304,10 +304,10 @@ Sentinel is an event-driven autonomous monitoring system that watches the tradin
   - Can invoke Claude Code
   - Event queue operations work
   - History logging works
-- [ ] Each test outputs PASS/FAIL with description
-- [ ] Final summary shows total passed/failed
-- [ ] Script is executable (chmod +x)
-- [ ] Test: Run `./sentinel/test_sentinel.sh` and verify all pass
+- [x] Each test outputs PASS/FAIL with description
+- [x] Final summary shows total passed/failed
+- [x] Script is executable (chmod +x)
+- [x] Test: Run `./sentinel/test_sentinel.sh` and verify all pass
 
 ---
 
