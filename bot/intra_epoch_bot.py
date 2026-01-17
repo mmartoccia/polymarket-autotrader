@@ -1921,8 +1921,10 @@ def run_bot():
                             scan_results.append(f"{crypto}:{direction}(conf_mismatch)")
                             continue
                     else:
-                        # No consensus - log but allow trade (confluence is informational)
-                        log.info(f"No confluence: only {agree_count}/3 exchanges agree ({avg_change:+.2f}%)")
+                        # No consensus = choppy market, BLOCK the trade
+                        log.info(f"SKIP: No confluence - only {agree_count}/3 exchanges agree ({avg_change:+.2f}%) - market too choppy")
+                        scan_results.append(f"{crypto}:{direction}(no_conf)")
+                        continue
 
                 scan_results.append(f"{crypto}:{direction}({accuracy*100:.0f}%)")
 
