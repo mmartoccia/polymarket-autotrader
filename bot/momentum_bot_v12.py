@@ -2235,6 +2235,49 @@ def run_bot():
 
     while True:
         try:
+            # SHADOW TRADING: Always broadcast market data (even when halted)
+            # This ensures shadow strategies continue learning regardless of live bot status
+            if orchestrator:
+                try:
+                    current_epoch = price_feed.get_current_epoch()
+                    time_in_epoch = int(time.time()) - current_epoch
+
+                    for crypto in CRYPTOS:
+                        markets = get_all_markets(crypto)
+                        if not markets:
+                            continue
+
+                        # Use first available market for shadow trading
+                        market = markets[0]
+                        prices = get_market_prices(market.get("tokens", []))
+                        if "Up" not in prices or "Down" not in prices:
+                            continue
+
+                        rsi_value = rsi_calc.get_rsi(crypto)
+                        balance = get_usdc_balance()
+
+                        market_data = {
+                            'prices': {
+                                'btc': price_feed.current_prices.get('btc', 0),
+                                'eth': price_feed.current_prices.get('eth', 0),
+                                'sol': price_feed.current_prices.get('sol', 0),
+                                'xrp': price_feed.current_prices.get('xrp', 0)
+                            },
+                            'orderbook': {
+                                'yes': {'price': prices['Up']['ask']},
+                                'no': {'price': prices['Down']['ask']}
+                            },
+                            'positions': guardian.open_positions,
+                            'balance': balance,
+                            'time_in_epoch': time_in_epoch,
+                            'rsi': rsi_value,
+                            'regime': tf_tracker.get_market_conditions(crypto).trend_score if tf_tracker else 0.0,
+                            'mode': state.mode
+                        }
+                        orchestrator.on_market_data(crypto, current_epoch, market_data)
+                except Exception as e:
+                    log.error(f"Shadow trading broadcast failed: {e}")
+
             # 1. GUARDIAN CHECKS
             halt, reason = guardian.check_kill_switch()
             if halt:
@@ -2526,30 +2569,8 @@ def run_bot():
                         # Fallback to env var only if config not available
                         use_ml_bot = os.getenv('USE_ML_BOT', 'false').lower() == 'true'
 
-                    # SHADOW TRADING: Broadcast market data to ALL shadow strategies (runs in both ML and agent modes)
-                    if orchestrator:
-                        try:
-                            market_data = {
-                                'prices': {
-                                    'btc': price_feed.current_prices.get('btc', 0),
-                                    'eth': price_feed.current_prices.get('eth', 0),
-                                    'sol': price_feed.current_prices.get('sol', 0),
-                                    'xrp': price_feed.current_prices.get('xrp', 0)
-                                },
-                                'orderbook': {
-                                    'yes': {'price': prices['Up']['ask']},
-                                    'no': {'price': prices['Down']['ask']}
-                                },
-                                'positions': guardian.open_positions,
-                                'balance': state.current_balance,
-                                'time_in_epoch': time_in_epoch,
-                                'rsi': rsi_value,
-                                'regime': tf_tracker.get_market_conditions(crypto).trend_score if tf_tracker else 0.0,
-                                'mode': state.mode
-                            }
-                            orchestrator.on_market_data(crypto, current_epoch, market_data)
-                        except Exception as e:
-                            log.error(f"Shadow trading broadcast failed: {e}")
+                    # NOTE: Shadow trading broadcast moved to top of main loop
+                    # This ensures it runs even when bot is halted
 
                     if use_ml_bot and ML_BOT_AVAILABLE:
                         # =================================================================
