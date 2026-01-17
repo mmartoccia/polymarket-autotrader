@@ -134,19 +134,19 @@ Optimizer is an automated hourly performance review system that runs on the VPS 
 **Description:** As a developer, I need the main script that ties everything together, run by cron.
 
 **Acceptance Criteria:**
-- [ ] Create `optimizer/optimizer.py` as main entry point
-- [ ] Loads config from `optimizer_config.json`
-- [ ] Collects data for last 1-2 hours using data_collector
-- [ ] Runs analysis using analyzer
-- [ ] Applies tuning rules using tuning_rules
-- [ ] Executes adjustments using executor (if any)
-- [ ] Sends Telegram report using reporter
-- [ ] Saves review results to `state/last_review.json`
-- [ ] Implements `--dry-run` flag to test without applying changes
-- [ ] Implements rate limiting (max 1 adjustment per parameter per hour)
-- [ ] Handles errors gracefully with logging
-- [ ] Typecheck passes
-- [ ] Test: `python3 optimizer/optimizer.py --dry-run` runs without error
+- [x] Create `optimizer/optimizer.py` as main entry point
+- [x] Loads config from `optimizer_config.json`
+- [x] Collects data for last 1-2 hours using data_collector
+- [x] Runs analysis using analyzer
+- [x] Applies tuning rules using tuning_rules
+- [x] Executes adjustments using executor (if any)
+- [x] Sends Telegram report using reporter
+- [x] Saves review results to `state/last_review.json`
+- [x] Implements `--dry-run` flag to test without applying changes
+- [x] Implements rate limiting (max 1 adjustment per parameter per hour)
+- [x] Handles errors gracefully with logging
+- [x] Typecheck passes
+- [x] Test: `python3 optimizer/optimizer.py --dry-run` runs without error
 
 ---
 
