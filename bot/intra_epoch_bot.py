@@ -912,17 +912,32 @@ def run_bot():
         )
 
     last_epoch = 0
+    last_redeem_check = 0
 
     try:
         while True:
-            # Check if halted
+            # Get current epoch
+            epoch_start, time_in_epoch = get_current_epoch()
+
+            # Always check for redemptions every epoch (even when halted)
+            if epoch_start != last_redeem_check and redeemer.enabled:
+                last_redeem_check = epoch_start
+                redeemed, value = redeemer.check_and_redeem()
+                if redeemed > 0:
+                    time.sleep(2)  # Wait for chain to settle
+                    balance = get_wallet_balance()
+                    if balance > 0:
+                        state.current_balance = balance
+                        if balance > state.peak_balance:
+                            state.peak_balance = balance
+                        state.save()
+                        log.info(f"Balance updated after redemption: ${balance:.2f}")
+
+            # Check if halted (but still allow redemptions above)
             if state.halted:
                 log.warning(f"Bot is HALTED: {state.halt_reason}")
                 time.sleep(60)
                 continue
-
-            # Get current epoch
-            epoch_start, time_in_epoch = get_current_epoch()
 
             # New epoch - resolve positions and reset tracking
             if epoch_start != last_epoch:
@@ -932,19 +947,6 @@ def run_bot():
 
                 # Resolve any completed positions from last epoch
                 resolve_completed_positions(state)
-
-                # Auto-redeem any winning positions
-                if redeemer.enabled:
-                    redeemed, value = redeemer.check_and_redeem()
-                    if redeemed > 0:
-                        # Update balance after redemption
-                        time.sleep(2)  # Wait for chain to settle
-                        balance = get_wallet_balance()
-                        if balance > 0:
-                            state.current_balance = balance
-                            if balance > state.peak_balance:
-                                state.peak_balance = balance
-                            state.save()
 
                 # Update balance at epoch start
                 balance = get_wallet_balance()
