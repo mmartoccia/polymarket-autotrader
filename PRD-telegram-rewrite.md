@@ -154,15 +154,15 @@ telegram.start_polling()  # Called at bot startup
 **Description:** Notify when positions are redeemed.
 
 **Acceptance Criteria:**
-- [ ] Implement `notify_redemption(count, total_value)`
-- [ ] Format:
+- [x] Implement `notify_redemption(count, total_value)`
+- [x] Format:
   ```
   💰 REDEEMED
   Positions: 3
   Value: $12.45
   ```
-- [ ] Only notify if count > 0 and value > $1
-- [ ] Call from AutoRedeemer after successful redemption
+- [x] Only notify if count > 0 and value > $1
+- [x] Call from AutoRedeemer after successful redemption
 
 ---
 
@@ -171,8 +171,8 @@ telegram.start_polling()  # Called at bot startup
 **Description:** Notify when bot starts with current state.
 
 **Acceptance Criteria:**
-- [ ] Implement `notify_startup(balance, peak, trades, wins, losses)`
-- [ ] Format:
+- [x] Implement `notify_startup(balance, peak, trades, wins, losses)`
+- [x] Format:
   ```
   🤖 BOT STARTED
   Balance: $58.65
@@ -180,7 +180,7 @@ telegram.start_polling()  # Called at bot startup
   Record: 15W/8L (65.2%)
   Trading window: minutes 3-10
   ```
-- [ ] Call from `run_bot()` after initialization
+- [x] Call from `run_bot()` after initialization
 - [ ] Include granular signals status if enabled
 
 ---
@@ -190,13 +190,13 @@ telegram.start_polling()  # Called at bot startup
 **Description:** Background polling for Telegram commands.
 
 **Acceptance Criteria:**
-- [ ] Implement `start_polling()` method that runs in daemon thread
-- [ ] Poll `getUpdates` API every 2 seconds
-- [ ] Track `update_id` offset to avoid processing same message twice
-- [ ] Parse commands starting with `/`
-- [ ] Ignore messages from unauthorized users (log warning)
-- [ ] Graceful shutdown on bot exit
-- [ ] Commands processed: `/balance`, `/positions`, `/status`, `/stats`, `/halt`, `/resume`, `/help`
+- [x] Implement `start_polling()` method that runs in daemon thread
+- [x] Poll `getUpdates` API every 2 seconds
+- [x] Track `update_id` offset to avoid processing same message twice
+- [x] Parse commands starting with `/`
+- [x] Ignore messages from unauthorized users (log warning)
+- [x] Graceful shutdown on bot exit
+- [x] Commands processed: `/balance`, `/positions`, `/status`, `/stats`, `/halt`, `/resume`, `/help`
 
 ---
 
@@ -205,16 +205,16 @@ telegram.start_polling()  # Called at bot startup
 **Description:** Commands to check current balance and open positions.
 
 **Acceptance Criteria:**
-- [ ] Implement `/balance` command handler
-- [ ] `/balance` response:
+- [x] Implement `/balance` command handler
+- [x] `/balance` response:
   ```
   💰 BALANCE
   Current: $58.65
   Peak: $72.00 | Drawdown: 18.5%
   Daily P&L: +$4.20
   ```
-- [ ] Implement `/positions` command handler
-- [ ] `/positions` response (with positions):
+- [x] Implement `/positions` command handler
+- [x] `/positions` response (with positions):
   ```
   📊 POSITIONS (2 open)
 
@@ -224,8 +224,8 @@ telegram.start_polling()  # Called at bot startup
   ETH Up @ $0.32
   Size: $5.00 | Epoch: 14:30
   ```
-- [ ] `/positions` response (no positions): "No open positions"
-- [ ] Read state from `state/intra_epoch_state.json`
+- [x] `/positions` response (no positions): "No open positions"
+- [x] Read state from `state/intra_epoch_state.json`
 
 ---
 
@@ -234,8 +234,8 @@ telegram.start_polling()  # Called at bot startup
 **Description:** Commands to check bot status and trading statistics.
 
 **Acceptance Criteria:**
-- [ ] Implement `/status` command handler
-- [ ] `/status` response:
+- [x] Implement `/status` command handler
+- [x] `/status` response:
   ```
   🤖 STATUS
   Mode: Trading (not halted)
@@ -244,8 +244,8 @@ telegram.start_polling()  # Called at bot startup
   Trading Window: OPEN (min 3-10)
   Positions: 2 open
   ```
-- [ ] Implement `/stats` command handler
-- [ ] `/stats` response:
+- [x] Implement `/stats` command handler
+- [x] `/stats` response:
   ```
   📈 STATISTICS
   Total Trades: 31
@@ -253,7 +253,7 @@ telegram.start_polling()  # Called at bot startup
   Win Rate: 65.2%
   Best: +$4.50 | Worst: -$5.00
   ```
-- [ ] Implement `/help` command with list of available commands
+- [x] Implement `/help` command with list of available commands
 
 ---
 
@@ -262,15 +262,15 @@ telegram.start_polling()  # Called at bot startup
 **Description:** Commands to halt and resume trading.
 
 **Acceptance Criteria:**
-- [ ] Implement `/halt` command handler
-- [ ] `/halt` sets `state.halted = True` and `state.halt_reason = "Manual halt via Telegram"`
-- [ ] Response: "🛑 Trading HALTED. Use /resume to restart."
-- [ ] Implement `/resume` command handler
-- [ ] `/resume` checks drawdown - if > 30%, refuse with message
-- [ ] `/resume` sets `state.halted = False` and clears halt_reason
-- [ ] Response: "✅ Trading RESUMED. Balance: $XX.XX"
-- [ ] State changes saved immediately via `state.save()`
-- [ ] Use file locking (`fcntl`) when writing state to prevent corruption
+- [x] Implement `/halt` command handler
+- [x] `/halt` sets `state.halted = True` and `state.halt_reason = "Manual halt via Telegram"`
+- [x] Response: "🛑 Trading HALTED. Use /resume to restart."
+- [x] Implement `/resume` command handler
+- [x] `/resume` checks drawdown - if > 30%, refuse with message
+- [x] `/resume` sets `state.halted = False` and clears halt_reason
+- [x] Response: "✅ Trading RESUMED. Balance: $XX.XX"
+- [x] State changes saved immediately via `state.save()`
+- [x] Use file locking (`fcntl`) when writing state to prevent corruption
 
 ---
 

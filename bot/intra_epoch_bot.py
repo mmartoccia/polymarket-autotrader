@@ -330,7 +330,8 @@ class AutoRedeemer:
 
         if redeemed > 0:
             log.info(f"Redeemed {redeemed} positions for ${total_value:.2f}")
-            send_telegram(f"💰 Redeemed {redeemed} positions for ${total_value:.2f}")
+            from telegram_handler import get_telegram_bot
+            get_telegram_bot().notify_redemption(redeemed, total_value)
 
         return redeemed, total_value
 
@@ -1934,13 +1935,19 @@ def run_bot():
 
     log.info("Starting main loop...")
 
+    # Initialize Telegram with command polling
+    from telegram_handler import get_telegram_bot
+    telegram = get_telegram_bot()
+    telegram.start_polling()
+
     # Send startup notification
-    if TELEGRAM_ENABLED:
-        send_telegram(
-            f"🤖 <b>Intra-Epoch Bot Started</b>\n"
-            f"Balance: ${state.current_balance:.2f}\n"
-            f"Trades: {state.total_trades} ({state.total_wins}W/{state.total_losses}L)"
-        )
+    telegram.notify_startup(
+        balance=state.current_balance,
+        peak=state.peak_balance,
+        trades=state.total_trades,
+        wins=state.total_wins,
+        losses=state.total_losses,
+    )
 
     last_epoch = 0
     last_redeem_check = 0

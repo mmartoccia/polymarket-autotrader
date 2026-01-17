@@ -72,3 +72,107 @@
   - Level-based emoji mapping: info=ℹ️, warning=⚠️, critical=🚨
   - Drawdown halt passes effective_balance (cash + redeemable), daily loss halt passes just cash
 ---
+
+## Iteration 5 - US-TG-005: Redemption Notifications
+- Added `notify_redemption()` method to TelegramBot class
+- Method accepts: count (number of positions), total_value (USD value)
+- Only notifies if count > 0 and total_value >= $1.00 (filters noise)
+- Message format: 💰 REDEEMED with positions count and value
+- Files changed: bot/telegram_handler.py
+- Learnings:
+  - Threshold filtering prevents spam from tiny redemptions
+  - Integration with AutoRedeemer pending (needs call site added)
+---
+
+## Iteration 6 - US-TG-006: Startup Notification
+- Added `notify_startup()` method to TelegramBot class
+- Method accepts: balance, peak, trades, wins, losses
+- Auto-calculates drawdown percentage from balance/peak
+- Auto-calculates win rate from wins/losses
+- Message format: 🤖 BOT STARTED with balance, drawdown, record, trading window
+- Files changed: bot/telegram_handler.py
+- Learnings:
+  - All calculations done internally (caller just passes raw values)
+  - Trading window hardcoded as "minutes 3-10" (matches bot config)
+---
+
+## Iteration 7 - US-TG-007: Command Polling Loop
+- Added `start_polling()` and `stop_polling()` methods
+- Polling runs in daemon background thread (non-blocking)
+- Polls getUpdates API every 2 seconds
+- Tracks update_offset to avoid processing same message twice
+- Graceful shutdown via stop_polling()
+- Files changed: bot/telegram_handler.py
+- Learnings:
+  - Daemon thread ensures polling stops when main process exits
+  - 2-second polling interval balances responsiveness vs API rate
+---
+
+## Iteration 8 - US-TG-008: Query Commands - Balance and Positions
+- Added `/balance` command handler (_cmd_balance)
+  - Shows current balance, peak, drawdown percentage, daily P&L
+- Added `/positions` command handler (_cmd_positions)
+  - Lists all open positions with crypto, direction, entry price, size, epoch time
+  - Shows "No open positions" if empty
+- State read from intra_epoch_state.json (checks both VPS and local paths)
+- Files changed: bot/telegram_handler.py
+- Learnings:
+  - Multiple path support handles both VPS and local development
+  - Epoch timestamp converted to readable time format
+---
+
+## Iteration 9 - US-TG-009: Query Commands - Status and Stats
+- Added `/status` command handler (_cmd_status)
+  - Shows mode (Trading/HALTED), current epoch, time in epoch, trading window status, position count
+  - Trading window shows OPEN, opens in X min, or CLOSED based on epoch minute
+- Added `/stats` command handler (_cmd_stats)
+  - Shows total trades, wins, losses, win rate
+- Added `/help` command handler (_cmd_help)
+  - Lists all available commands with descriptions
+- Files changed: bot/telegram_handler.py
+- Learnings:
+  - Epoch calculations use 15-minute (900 second) intervals
+  - Trading window logic: minutes 3-10 = open
+---
+
+## Iteration 10 - US-TG-010: Control Commands - Halt and Resume
+- Added `/halt` command handler (_cmd_halt)
+  - Sets state.halted = True, halt_reason = "Manual halt via Telegram"
+  - Prevents double-halt if already halted
+- Added `/resume` command handler (_cmd_resume)
+  - Checks drawdown before allowing resume (>30% blocked)
+  - Sets state.halted = False, clears halt_reason
+- Added `_get_state()` helper to read state file
+- Added `_set_halt()` helper with fcntl file locking for atomic writes
+- Files changed: bot/telegram_handler.py
+- Learnings:
+  - File locking (fcntl.LOCK_EX) prevents race conditions with main bot
+  - Drawdown check on resume matches bot's 30% threshold
+  - Clear error messages guide user on what to do if resume blocked
+---
+
+## Summary
+
+**Completed User Stories:**
+- [x] US-TG-001: Core Telegram Handler Module
+- [x] US-TG-002: Trade Entry Notifications
+- [x] US-TG-003: Trade Outcome Notifications
+- [x] US-TG-004: Halt and Alert Notifications
+- [x] US-TG-005: Redemption Notifications
+- [x] US-TG-006: Startup Notification
+- [x] US-TG-007: Command Polling Loop
+- [x] US-TG-008: Query Commands - Balance and Positions
+- [x] US-TG-009: Query Commands - Status and Stats
+- [x] US-TG-010: Control Commands - Halt and Resume
+- [ ] US-TG-011: Signal Skip Summaries (optional, deferred)
+
+**Files Created/Modified:**
+- bot/telegram_handler.py (new, ~770 lines)
+- bot/intra_epoch_bot.py (modified notification wrappers and call sites)
+
+**Remaining Integration Tasks:**
+1. Call `telegram.start_polling()` at bot startup
+2. Call `telegram.notify_startup()` after initialization
+3. Call `telegram.notify_redemption()` in AutoRedeemer after successful redemption
+4. Deploy to VPS and test all commands
+5. Archive old telegram_bot/ module
