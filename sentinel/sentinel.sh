@@ -24,6 +24,7 @@ ACTIONS_LOG="$HISTORY_DIR/actions.log"
 KILL_SWITCH_FILE="$STATE_DIR/KILL_SWITCH"
 LOCK_FILE="$STATE_DIR/sentinel.lock"
 RATE_LIMIT_FILE="$STATE_DIR/rate_limit.json"
+RECENT_FIXES_FILE="$STATE_DIR/recent_fixes.json"
 DIAGNOSE_PROMPT="$SCRIPT_DIR/sentinel_diagnose.md"
 TELEGRAM_TIMEOUT_SECONDS=900  # 15 minutes - loaded from config
 TELEGRAM_POLL_INTERVAL=10    # Poll every 10 seconds
@@ -145,6 +146,82 @@ increment_rate_limit() {
 
     count=$((count + 1))
     echo "{\"hour\": \"$current_hour\", \"count\": $count}" > "$RATE_LIMIT_FILE"
+}
+
+# Track a fix in recent_fixes.json for loop detection
+# Args: issue_type (e.g., "drawdown_exceeded", "loss_streak")
+track_fix() {
+    local issue_type="$1"
+    local timestamp
+    timestamp=$(date +%s)  # Unix timestamp for easy comparison
+
+    # Initialize file if doesn't exist
+    if [[ ! -f "$RECENT_FIXES_FILE" ]]; then
+        echo "[]" > "$RECENT_FIXES_FILE"
+    fi
+
+    # Read current fixes
+    local fixes
+    fixes=$(cat "$RECENT_FIXES_FILE")
+
+    # Add new fix entry
+    fixes=$(echo "$fixes" | jq --arg type "$issue_type" --argjson ts "$timestamp" \
+        '. + [{"issue_type": $type, "timestamp": $ts}]')
+
+    # Clean up old entries (older than 30 minutes)
+    local cutoff=$((timestamp - 1800))  # 30 minutes = 1800 seconds
+    fixes=$(echo "$fixes" | jq --argjson cutoff "$cutoff" \
+        '[.[] | select(.timestamp > $cutoff)]')
+
+    echo "$fixes" > "$RECENT_FIXES_FILE"
+    log "INFO" "Tracked fix for issue_type=$issue_type"
+}
+
+# Check if we're in a fix loop (2+ fixes for same issue type in 30 min)
+# Returns: 0 if loop detected (should escalate), 1 if OK to proceed
+check_fix_loop() {
+    local issue_type="$1"
+
+    if [[ ! -f "$RECENT_FIXES_FILE" ]]; then
+        return 1  # No history, OK to proceed
+    fi
+
+    local current_timestamp
+    current_timestamp=$(date +%s)
+    local cutoff=$((current_timestamp - 1800))  # 30 minutes ago
+
+    # Count fixes for this issue type in the last 30 minutes
+    local count
+    count=$(jq --arg type "$issue_type" --argjson cutoff "$cutoff" \
+        '[.[] | select(.issue_type == $type and .timestamp > $cutoff)] | length' \
+        "$RECENT_FIXES_FILE")
+
+    if [[ $count -ge $CONSECUTIVE_FIX_LIMIT ]]; then
+        log "WARN" "Fix loop detected: $count fixes for '$issue_type' in last 30 min (limit: $CONSECUTIVE_FIX_LIMIT)"
+        return 0  # Loop detected
+    fi
+
+    return 1  # OK to proceed
+}
+
+# Clear fix history for a specific issue type (called on manual approve/deny)
+# This prevents false loop detection after user intervention
+clear_fix_history() {
+    local issue_type="$1"
+
+    if [[ ! -f "$RECENT_FIXES_FILE" ]]; then
+        return 0
+    fi
+
+    local fixes
+    fixes=$(cat "$RECENT_FIXES_FILE")
+
+    # Remove all entries for this issue type
+    fixes=$(echo "$fixes" | jq --arg type "$issue_type" \
+        '[.[] | select(.issue_type != $type)]')
+
+    echo "$fixes" > "$RECENT_FIXES_FILE"
+    log "INFO" "Cleared fix history for issue_type=$issue_type"
 }
 
 # Get VPS state via SSH
@@ -891,6 +968,7 @@ process_event() {
                 update_event_status "$event_id" "completed" "$action"
                 log_action "$event_id" "execute" "$action" "User approved via Telegram - $fix_result"
                 increment_rate_limit
+                clear_fix_history "$halt_reason"  # Clear loop tracking on manual intervention
             else
                 send_action_confirmation "$action" "$fix_result" "user_approved"
                 update_event_status "$event_id" "error" "execution_failed"
@@ -904,6 +982,7 @@ process_event() {
             send_action_confirmation "$action" "Denied by user - bot remains halted" "user_denied"
             update_event_status "$event_id" "denied" "user_denied"
             log_action "$event_id" "deny" "user_denied" "User denied via Telegram"
+            clear_fix_history "$halt_reason"  # Clear loop tracking on manual intervention
             return 0
             ;;
 
@@ -925,6 +1004,7 @@ process_event() {
                     update_event_status "$event_id" "completed" "$custom_action"
                     log_action "$event_id" "execute" "$custom_action" "User requested custom action via Telegram - $fix_result"
                     increment_rate_limit
+                    clear_fix_history "$halt_reason"  # Clear loop tracking on manual intervention
                 else
                     send_action_confirmation "$custom_action" "$fix_result" "custom"
                     update_event_status "$event_id" "error" "execution_failed"
@@ -970,6 +1050,22 @@ Manual intervention required." "false"
                 return 0
             fi
 
+            # Check for fix loop (same issue fixed multiple times recently)
+            if check_fix_loop "$halt_reason"; then
+                log "WARN" "Fix loop detected for '$halt_reason' - escalating instead of auto-fix"
+                send_telegram_notification "🔄 <b>FIX LOOP DETECTED</b>
+
+The same issue (<code>$halt_reason</code>) has been auto-fixed $CONSECUTIVE_FIX_LIMIT+ times in the last 30 minutes.
+
+Sentinel is <b>escalating</b> to prevent repeated fixes.
+Bot remains <b>HALTED</b>.
+
+⚠️ Manual intervention required to break the loop." "false"
+                update_event_status "$event_id" "escalated" "fix_loop_detected"
+                log_action "$event_id" "escalate" "fix_loop" "Fix loop detected for '$halt_reason' - manual intervention needed"
+                return 0
+            fi
+
             # Auto-fix on timeout
             log "INFO" "Auto-fix on timeout: $action (confidence: $confidence%)"
             local fix_result
@@ -981,6 +1077,7 @@ Manual intervention required." "false"
                 update_event_status "$event_id" "auto_fixed" "$action"
                 log_action "$event_id" "auto_fix" "$action" "Timeout auto-fix (confidence: $confidence%) - $fix_result"
                 increment_rate_limit
+                track_fix "$halt_reason"  # Track fix for loop detection
             else
                 send_action_confirmation "$action" "Auto-fix FAILED: $fix_result" "timeout_auto_fix"
                 update_event_status "$event_id" "error" "auto_fix_failed"

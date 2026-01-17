@@ -174,12 +174,12 @@ Sentinel is an event-driven autonomous monitoring system that watches the tradin
 **Description:** As a user, I want Sentinel to detect when it's stuck in a fix loop so it escalates instead of repeatedly auto-fixing.
 
 **Acceptance Criteria:**
-- [ ] Track recent fixes in `state/recent_fixes.json` with timestamp and issue_type
-- [ ] Before auto-fixing, check if same issue_type was fixed in last 30 minutes
-- [ ] If 2+ fixes for same issue in 30 min window, escalate instead of auto-fix
-- [ ] Escalation message indicates loop detected and manual intervention needed
-- [ ] Clear fix history for issue_type when user manually approves/denies
-- [ ] Test: Simulate 2 consecutive halts with same reason, verify escalation
+- [x] Track recent fixes in `state/recent_fixes.json` with timestamp and issue_type
+- [x] Before auto-fixing, check if same issue_type was fixed in last 30 minutes
+- [x] If 2+ fixes for same issue in 30 min window, escalate instead of auto-fix
+- [x] Escalation message indicates loop detected and manual intervention needed
+- [x] Clear fix history for issue_type when user manually approves/denies
+- [x] Test: Simulate 2 consecutive halts with same reason, verify escalation
 
 ---
 
