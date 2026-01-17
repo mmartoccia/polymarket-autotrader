@@ -47,13 +47,13 @@ Optimizer is an automated hourly performance review system that runs on the VPS 
 **Description:** As a developer, I need functions to collect trading data from logs, database, and state files.
 
 **Acceptance Criteria:**
-- [ ] Create `optimizer/data_collector.py`
-- [ ] Implement `collect_trades(hours: int) -> list[dict]` - get trades from SQLite `analysis/epoch_history.db`
-- [ ] Implement `collect_skips(hours: int) -> list[dict]` - get skip decisions from SQLite signals table
-- [ ] Implement `collect_vetoes(hours: int) -> list[str]` - parse VETO lines from `bot.log`
-- [ ] Implement `get_current_state() -> dict` - read `state/intra_epoch_state.json`
-- [ ] Handle missing files/tables gracefully (return empty results)
-- [ ] Typecheck passes
+- [x] Create `optimizer/data_collector.py`
+- [x] Implement `collect_trades(hours: int) -> list[dict]` - get trades from SQLite `simulation/trade_journal.db`
+- [x] Implement `collect_skips(hours: int) -> list[dict]` - get skip decisions from SQLite decisions table
+- [x] Implement `collect_vetoes(hours: int) -> list[str]` - parse VETO lines from `bot.log`
+- [x] Implement `get_current_state() -> dict` - read `state/intra_epoch_state.json`
+- [x] Handle missing files/tables gracefully (return empty results)
+- [x] Typecheck passes
 
 ---
 
