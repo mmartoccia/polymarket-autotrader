@@ -1,0 +1,52 @@
+{
+  "review_interval_hours": 1,
+  "lookback_hours": 2,
+  "alert_thresholds": {
+    "no_trades_hours": 2,
+    "min_win_rate": 0.50,
+    "min_trades_for_win_rate": 10,
+    "max_skip_rate": 0.90
+  },
+  "tunable_parameters": {
+    "MAX_ENTRY_PRICE_CAP": {
+      "file": "bot/intra_epoch_bot.py",
+      "current": 0.50,
+      "min": 0.35,
+      "max": 0.65,
+      "step": 0.05
+    },
+    "MIN_PATTERN_ACCURACY": {
+      "file": "bot/intra_epoch_bot.py",
+      "current": 0.735,
+      "min": 0.65,
+      "max": 0.80,
+      "step": 0.01
+    },
+    "CONSENSUS_THRESHOLD": {
+      "file": "config/agent_config.py",
+      "current": 0.40,
+      "min": 0.30,
+      "max": 0.55,
+      "step": 0.05
+    },
+    "MIN_CONFIDENCE": {
+      "file": "config/agent_config.py",
+      "current": 0.50,
+      "min": 0.35,
+      "max": 0.65,
+      "step": 0.05
+    },
+    "EDGE_BUFFER": {
+      "file": "bot/intra_epoch_bot.py",
+      "current": 0.05,
+      "min": 0.02,
+      "max": 0.10,
+      "step": 0.01
+    }
+  },
+  "protected_parameters": [
+    "RISK_MAX_DRAWDOWN",
+    "RISK_DAILY_LOSS_LIMIT",
+    "RISK_POSITION_TIERS"
+  ]
+}

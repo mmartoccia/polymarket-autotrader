@@ -11,6 +11,9 @@ state/*.json
 # Sentinel state files (runtime data, not config)
 sentinel/state/
 
+# Optimizer state files (runtime data, not config)
+optimizer/state/
+
 # Logs
 *.log
 logs/

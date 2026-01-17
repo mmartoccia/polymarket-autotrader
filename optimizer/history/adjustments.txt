@@ -1,0 +1,4 @@
+# Optimizer Adjustment History
+# Format: TIMESTAMP | PARAMETER | OLD_VALUE | NEW_VALUE | REASON
+# ============================================================
+
