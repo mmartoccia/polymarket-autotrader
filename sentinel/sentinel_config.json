@@ -23,5 +23,30 @@
     ],
     "log_file": "/opt/polymarket-autotrader/bot.log"
   },
-  "alerts": []
+  "alerts": [
+    {
+      "name": "low_balance",
+      "condition": "balance < 75",
+      "severity": "warning",
+      "cooldown_minutes": 60
+    },
+    {
+      "name": "critical_balance",
+      "condition": "balance < 30",
+      "severity": "critical",
+      "cooldown_minutes": 30
+    },
+    {
+      "name": "high_drawdown",
+      "condition": "drawdown_pct > 25",
+      "severity": "warning",
+      "cooldown_minutes": 60
+    },
+    {
+      "name": "losing_streak",
+      "condition": "consecutive_losses >= 3",
+      "severity": "warning",
+      "cooldown_minutes": 30
+    }
+  ]
 }

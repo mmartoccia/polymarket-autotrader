@@ -187,20 +187,20 @@ Sentinel is an event-driven autonomous monitoring system that watches the tradin
 **Description:** As a user, I want to configure custom alerts (not just halts) so I'm notified of important conditions like low balance or dropping win rate.
 
 **Acceptance Criteria:**
-- [ ] Add `alerts` array to sentinel_config.json with rule structure:
+- [x] Add `alerts` array to sentinel_config.json with rule structure:
   - name: string (e.g., "low_balance")
   - condition: string (e.g., "balance < 75")
   - severity: "info" | "warning" | "critical"
   - cooldown_minutes: number (prevent spam)
-- [ ] sentinel_monitor.sh evaluates alert rules on each poll
-- [ ] Triggered alerts send Telegram notification with severity-appropriate emoji
-- [ ] Track last trigger time per alert in `state/alert_cooldowns.json`
-- [ ] Add default alerts:
+- [x] sentinel_monitor.sh evaluates alert rules on each poll
+- [x] Triggered alerts send Telegram notification with severity-appropriate emoji
+- [x] Track last trigger time per alert in `state/alert_cooldowns.json`
+- [x] Add default alerts:
   - low_balance: balance < 75 (warning)
   - critical_balance: balance < 30 (critical)
   - high_drawdown: drawdown > 25% (warning)
   - losing_streak: consecutive_losses >= 3 (warning)
-- [ ] Test: Set balance threshold high, verify alert triggers
+- [x] Test: Set balance threshold high, verify alert triggers
 
 ---
 

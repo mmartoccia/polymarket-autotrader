@@ -21,6 +21,7 @@ LOG_FILE="$STATE_DIR/monitor.log"
 LAST_STATE_FILE="$STATE_DIR/last_state.json"
 KILL_SWITCH_FILE="$STATE_DIR/KILL_SWITCH"
 QUEUE_FILE="$EVENTS_DIR/queue.json"
+ALERT_COOLDOWNS_FILE="$STATE_DIR/alert_cooldowns.json"
 
 # Ensure state directory exists
 mkdir -p "$STATE_DIR"
@@ -144,6 +145,192 @@ add_halt_event() {
     log "INFO" "Halt event added to queue: $event_id (reason: $halt_reason, balance: $balance)"
 }
 
+# Initialize alert cooldowns file if needed
+init_alert_cooldowns() {
+    if [[ ! -f "$ALERT_COOLDOWNS_FILE" ]]; then
+        echo "{}" > "$ALERT_COOLDOWNS_FILE"
+    fi
+}
+
+# Check if an alert is in cooldown
+# Returns: 0 if in cooldown (should skip), 1 if not in cooldown (can trigger)
+check_alert_cooldown() {
+    local alert_name="$1"
+    local cooldown_minutes="$2"
+
+    init_alert_cooldowns
+
+    local last_trigger
+    last_trigger=$(jq -r --arg name "$alert_name" '.[$name] // 0' "$ALERT_COOLDOWNS_FILE")
+
+    local current_time
+    current_time=$(date +%s)
+    local cooldown_seconds=$((cooldown_minutes * 60))
+    local cutoff=$((current_time - cooldown_seconds))
+
+    if [[ $last_trigger -gt $cutoff ]]; then
+        return 0  # In cooldown, skip
+    fi
+
+    return 1  # Not in cooldown, can trigger
+}
+
+# Update alert cooldown timestamp
+update_alert_cooldown() {
+    local alert_name="$1"
+
+    init_alert_cooldowns
+
+    local current_time
+    current_time=$(date +%s)
+
+    local cooldowns
+    cooldowns=$(cat "$ALERT_COOLDOWNS_FILE")
+    cooldowns=$(echo "$cooldowns" | jq --arg name "$alert_name" --argjson ts "$current_time" '.[$name] = $ts')
+    echo "$cooldowns" > "$ALERT_COOLDOWNS_FILE"
+}
+
+# Evaluate a single alert condition against state values
+# Args: condition string, state JSON
+# Returns: 0 if condition is true (alert should trigger), 1 if false
+evaluate_condition() {
+    local condition="$1"
+    local state="$2"
+
+    # Extract values from state
+    local balance
+    local drawdown_pct
+    local consecutive_losses
+
+    balance=$(echo "$state" | jq -r '.current_balance // .balance // 0')
+    drawdown_pct=$(echo "$state" | jq -r '.drawdown_pct // 0')
+    consecutive_losses=$(echo "$state" | jq -r '.consecutive_losses // 0')
+
+    # Create a bc-compatible expression by substituting variable names
+    local expr="$condition"
+    expr=$(echo "$expr" | sed "s/balance/$balance/g")
+    expr=$(echo "$expr" | sed "s/drawdown_pct/$drawdown_pct/g")
+    expr=$(echo "$expr" | sed "s/consecutive_losses/$consecutive_losses/g")
+
+    # Evaluate with bc (returns 1 for true, 0 for false)
+    local result
+    result=$(echo "$expr" | bc -l 2>/dev/null)
+
+    if [[ "$result" == "1" ]]; then
+        return 0  # Condition true
+    fi
+    return 1  # Condition false
+}
+
+# Get emoji for alert severity
+get_severity_emoji() {
+    local severity="$1"
+    case "$severity" in
+        info)     echo "ℹ️" ;;
+        warning)  echo "⚠️" ;;
+        critical) echo "🚨" ;;
+        *)        echo "📢" ;;
+    esac
+}
+
+# Send alert via Telegram (using VPS telegram_handler.py)
+send_alert_notification() {
+    local alert_name="$1"
+    local severity="$2"
+    local condition="$3"
+    local state="$4"
+
+    local emoji
+    emoji=$(get_severity_emoji "$severity")
+
+    local balance
+    local drawdown_pct
+    local consecutive_losses
+
+    balance=$(echo "$state" | jq -r '.current_balance // .balance // 0')
+    drawdown_pct=$(echo "$state" | jq -r '.drawdown_pct // 0')
+    consecutive_losses=$(echo "$state" | jq -r '.consecutive_losses // 0')
+
+    local timestamp
+    timestamp=$(date -u +"%Y-%m-%d %H:%M UTC")
+
+    # Build message
+    local message="$emoji <b>SENTINEL ALERT: ${alert_name}</b>
+
+<b>Severity:</b> $(echo "$severity" | tr '[:lower:]' '[:upper:]')
+<b>Condition:</b> <code>$condition</code>
+<b>Time:</b> $timestamp
+
+<b>Current State:</b>
+• Balance: \$$balance
+• Drawdown: ${drawdown_pct}%
+• Consecutive Losses: $consecutive_losses"
+
+    # Escape for Python string
+    local escaped_message
+    escaped_message=$(echo "$message" | sed 's/\\/\\\\/g; s/"/\\"/g')
+
+    # Send via SSH to VPS telegram_handler
+    local python_script="
+import sys
+sys.path.insert(0, '/opt/polymarket-autotrader')
+from bot.telegram_handler import TelegramBot
+
+bot = TelegramBot()
+if not bot.enabled:
+    sys.exit(1)
+
+result = bot.send_message_sync('''$escaped_message''', parse_mode='HTML', silent=False)
+sys.exit(0 if result else 1)
+"
+
+    ssh -i "$SSH_KEY" -o ConnectTimeout="$SSH_TIMEOUT" -o BatchMode=yes \
+        "$VPS_HOST" "cd /opt/polymarket-autotrader && python3 -c \"$python_script\"" 2>/dev/null
+
+    return $?
+}
+
+# Evaluate all alert rules against current state
+evaluate_alerts() {
+    local state="$1"
+
+    # Get alerts array from config
+    local alerts
+    alerts=$(jq -c '.alerts // []' "$CONFIG_FILE")
+
+    # Iterate through each alert rule
+    echo "$alerts" | jq -c '.[]' 2>/dev/null | while read -r alert; do
+        local name
+        local condition
+        local severity
+        local cooldown_minutes
+
+        name=$(echo "$alert" | jq -r '.name')
+        condition=$(echo "$alert" | jq -r '.condition')
+        severity=$(echo "$alert" | jq -r '.severity // "info"')
+        cooldown_minutes=$(echo "$alert" | jq -r '.cooldown_minutes // 60')
+
+        # Check if condition is met
+        if evaluate_condition "$condition" "$state"; then
+            # Check cooldown
+            if check_alert_cooldown "$name" "$cooldown_minutes"; then
+                log "DEBUG" "Alert '$name' in cooldown, skipping"
+                continue
+            fi
+
+            log "WARN" "Alert triggered: $name (condition: $condition)"
+
+            # Send notification
+            if send_alert_notification "$name" "$severity" "$condition" "$state"; then
+                log "INFO" "Alert notification sent for: $name"
+                update_alert_cooldown "$name"
+            else
+                log "ERROR" "Failed to send alert notification for: $name"
+            fi
+        fi
+    done
+}
+
 # Main polling loop
 poll_loop() {
     log "INFO" "Monitor started with PID $$"
@@ -171,6 +358,9 @@ poll_loop() {
             log "WARN" "Halt transition detected!"
             add_halt_event "$state"
         fi
+
+        # Evaluate alert rules
+        evaluate_alerts "$state"
 
         log "DEBUG" "Poll complete, mode=$(echo "$state" | jq -r '.mode // "unknown"')"
 
