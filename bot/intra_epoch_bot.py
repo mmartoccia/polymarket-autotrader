@@ -52,6 +52,12 @@ EDGE_BUFFER = 0.05              # Require 5% edge over break-even (for fees + sa
 MIN_PATTERN_ACCURACY = 0.735    # Only trade 73.5%+ patterns (includes all validated patterns)
 # Max entry = pattern_accuracy - EDGE_BUFFER
 # e.g., 74% pattern -> max entry $0.69, 80% pattern -> max entry $0.75
+
+# Hard cap on entry price (Jan 17, 2026 backtest adjustment)
+# Backtest of 9 trades showed all 3 losses were at entries $0.55-$0.72
+# High entries have unfavorable risk/reward: risk $0.60 to win $0.40
+# Cap at $0.50 to improve risk/reward ratio
+MAX_ENTRY_PRICE_CAP = 0.50
 TRADING_WINDOW_START = 180      # Start trading at minute 3 (180 seconds)
 TRADING_WINDOW_END = 600        # Stop trading at minute 10 (600 seconds)
 
@@ -1874,7 +1880,7 @@ def run_bot():
     else:
         log.info("INTRA-EPOCH MOMENTUM BOT STARTING")
     log.info("=" * 60)
-    log.info(f"Edge Buffer: {EDGE_BUFFER:.0%} (max entry = accuracy - {EDGE_BUFFER:.0%})")
+    log.info(f"Edge Buffer: {EDGE_BUFFER:.0%} (max entry = accuracy - {EDGE_BUFFER:.0%}, cap ${MAX_ENTRY_PRICE_CAP:.2f})")
     log.info(f"Min Pattern Accuracy: {MIN_PATTERN_ACCURACY:.0%}")
     log.info(f"Trading Window: minutes 3-10")
     log.info(f"Position Size: ${BASE_POSITION_USD}-${MAX_POSITION_USD}")
@@ -2254,6 +2260,7 @@ def run_bot():
 
                 # Check entry price - must have edge over break-even
                 max_entry = accuracy - EDGE_BUFFER  # e.g., 74% accuracy -> max $0.69 entry
+                max_entry = min(max_entry, MAX_ENTRY_PRICE_CAP)  # Apply hard cap
                 if entry_price > max_entry:
                     log.info(f"{crypto}: {direction} ({accuracy*100:.0f}%) but entry ${entry_price:.2f} > ${max_entry:.2f} max (no edge)")
                     # Log to database

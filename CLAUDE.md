@@ -912,7 +912,15 @@ ssh root@216.238.85.11 "cd /opt/polymarket-autotrader && ./scripts/deploy.sh"
 
 ## Version History
 
-- **Contrarian Re-enabled** (Jan 16, 2026 15:19 UTC) - Current production
+- **Entry Price Cap $0.50** (Jan 17, 2026 18:30 UTC) - Current production
+  - Added MAX_ENTRY_PRICE_CAP = $0.50 to intra_epoch_bot.py
+  - Backtest of 9 trades showed all 3 losses were at high entries ($0.55-$0.72)
+  - High entries have unfavorable risk/reward: risk $0.60 to win $0.40
+  - With cap at $0.50: risk $0.50 to win $0.50 (1:1 at worst)
+  - Expected: Fewer trades but better risk-adjusted returns
+  - See "Jan 17, 2026: Entry Price Cap Adjustment" in Known Issues for full analysis
+
+- **Contrarian Re-enabled** (Jan 16, 2026 15:19 UTC)
   - Re-enabled ENABLE_CONTRARIAN_TRADES after market analysis showed choppy regime
   - SentimentAgent now active (90% confidence votes observed)
   - Rationale: Agents showing conflicting signals, neutral funding rates, no clear trend
@@ -1068,6 +1076,55 @@ MIN_VIABLE_THRESHOLD = 0.10  # Hardcoded - ignored CONSENSUS_THRESHOLD config!
 - Entry quality: TBD (expect more 0.60+ probability entries)
 
 **Status:** Implemented Jan 14, 2026 15:35 UTC, awaiting deployment
+
+### Jan 17, 2026: Entry Price Cap Adjustment
+
+**Issue:** High entry prices causing unfavorable risk/reward despite good win rate
+- 9 trades on Jan 17: 6 wins, 3 losses (66.7% win rate)
+- All 3 losses at entries $0.55-$0.72: -$9.60 each
+- Wins averaged only +$4.89 due to high entries
+- Net result: Only +$0.58 profit despite 67% win rate
+
+**Analysis (Backtest by Entry Price Threshold):**
+```
+Threshold | Trades | Win Rate | Total PnL
+----------|--------|----------|----------
+≤$0.45    |   1    |  100%    | +$5.96
+≤$0.50    |   1    |  100%    | +$5.96
+≤$0.55    |   2    |   50%    | -$3.63
+≤$0.60    |   5    |   60%    | -$0.51
+≤$0.65    |   6    |   67%    | +$2.07
+All       |   9    |   67%    | +$0.58
+```
+
+**Root Cause:** Risk/reward asymmetry at high entries
+- At $0.60 entry: Risk $0.60 to win $0.40 (1.5:1 unfavorable)
+- At $0.30 entry: Risk $0.30 to win $0.70 (0.43:1 favorable)
+- High entries punish losses more than they reward wins
+
+**Fix Applied:** Added MAX_ENTRY_PRICE_CAP = $0.50 in intra_epoch_bot.py
+```python
+# Line 60: Hard cap on entry price
+MAX_ENTRY_PRICE_CAP = 0.50
+
+# Line 2263: Applied in trading logic
+max_entry = accuracy - EDGE_BUFFER
+max_entry = min(max_entry, MAX_ENTRY_PRICE_CAP)  # Apply hard cap
+```
+
+**Expected Impact:**
+- Fewer trades (may drop to 1-3/day from 5-10/day)
+- Better risk/reward on each trade
+- Higher net PnL despite fewer trades
+- All 3 losses from Jan 17 would have been avoided
+
+**Monitoring Checklist:**
+- [ ] Trades per day (expect 1-3)
+- [ ] Entry prices (should all be ≤$0.50)
+- [ ] Win rate (should remain 60%+)
+- [ ] Net PnL per day (target +$5-10/day)
+
+**Status:** Implemented Jan 17, 2026 18:30 UTC
 
 ---
 
