@@ -157,13 +157,13 @@ Both features are toggleable via configuration constants and will be shadow-test
 **Description:** As a developer, I need to log comparison between old and new signal logic for analysis.
 
 **Acceptance Criteria:**
-- [ ] Add `log_granular_comparison()` function
-- [ ] Logs: pattern direction, old accuracy, new accuracy (with boost), magnitude, confluence
-- [ ] Format: `[GRANULAR] BTC: Pattern=Down(74%) Magnitude=-1.8%(+3%) Confluence=2/3 -> Final=77%`
-- [ ] Only logs when `ENABLE_GRANULAR_SHADOW_LOG = True`
-- [ ] Log to separate file `granular_signals.log` for easy analysis
-- [ ] Include timestamp and epoch info
-- [ ] Typecheck passes
+- [x] Add `log_granular_comparison()` function
+- [x] Logs: pattern direction, old accuracy, new accuracy (with boost), magnitude, confluence
+- [x] Format: `[GRANULAR] BTC: Pattern=Down(74%) Magnitude=-1.8%(+3%) Confluence=2/3 -> Final=77%`
+- [x] Only logs when `ENABLE_GRANULAR_SHADOW_LOG = True`
+- [x] Log to separate file `granular_signals.log` for easy analysis
+- [x] Include timestamp and epoch info
+- [x] Typecheck passes
 
 ---
 

@@ -938,6 +938,104 @@ def get_exchange_confluence(
         return (None, 0, 0.0)
 
 
+# =============================================================================
+# GRANULAR SIGNAL COMPARISON LOGGING
+# =============================================================================
+
+# Set up a separate logger for granular signals comparison (shadow testing)
+granular_log: Optional[logging.Logger] = None
+if ENABLE_GRANULAR_SHADOW_LOG:
+    granular_log = logging.getLogger("granular_signals")
+    granular_log.setLevel(logging.INFO)
+    # Don't propagate to root logger (avoid duplicate logs)
+    granular_log.propagate = False
+    # Add file handler for granular_signals.log
+    granular_handler = logging.FileHandler(
+        Path(__file__).parent.parent / "granular_signals.log"
+    )
+    granular_handler.setFormatter(logging.Formatter(
+        '%(asctime)s | %(message)s',
+        datefmt='%Y-%m-%d %H:%M:%S'
+    ))
+    granular_log.addHandler(granular_handler)
+
+
+def log_granular_comparison(
+    crypto: str,
+    epoch: int,
+    pattern_direction: Optional[str],
+    old_accuracy: float,
+    new_accuracy: float,
+    magnitude_pct: float,
+    magnitude_boost: float,
+    confluence_direction: Optional[str],
+    confluence_count: int,
+    confluence_change: float
+) -> None:
+    """
+    Log comparison between old and new granular signal logic for analysis.
+
+    Logs to granular_signals.log when ENABLE_GRANULAR_SHADOW_LOG is True.
+    Used during shadow testing to compare signal quality before enabling
+    new features in live trading.
+
+    Args:
+        crypto: Cryptocurrency symbol (e.g., 'BTC', 'ETH')
+        epoch: Current epoch timestamp
+        pattern_direction: Direction from pattern analysis ('Up', 'Down', or None)
+        old_accuracy: Original pattern accuracy without boosts (0.0-1.0)
+        new_accuracy: New accuracy with magnitude boost applied (0.0-1.0)
+        magnitude_pct: Total price magnitude for pattern direction (e.g., 1.8 for 1.8%)
+        magnitude_boost: Accuracy boost from magnitude (e.g., 0.01 for 1%)
+        confluence_direction: Direction from exchange confluence ('Up', 'Down', or None)
+        confluence_count: Number of exchanges agreeing (0-3)
+        confluence_change: Average change percent across agreeing exchanges
+
+    Format:
+        [GRANULAR] BTC: Pattern=Down(74%) Magnitude=-1.8%(+3%) Confluence=2/3 -> Final=77%
+
+    Example:
+        >>> log_granular_comparison(
+        ...     crypto='BTC', epoch=1705000000,
+        ...     pattern_direction='Down', old_accuracy=0.74, new_accuracy=0.77,
+        ...     magnitude_pct=1.8, magnitude_boost=0.03,
+        ...     confluence_direction='Down', confluence_count=2,
+        ...     confluence_change=-2.5
+        ... )
+        # Logs: [GRANULAR] BTC: Pattern=Down(74.0%) Magnitude=1.8%(+3.0%) Confluence=2/3 Down(-2.5%) -> Final=77.0%
+    """
+    if not ENABLE_GRANULAR_SHADOW_LOG or granular_log is None:
+        return
+
+    # Format pattern info
+    if pattern_direction:
+        pattern_str = f"Pattern={pattern_direction}({old_accuracy*100:.1f}%)"
+    else:
+        pattern_str = "Pattern=None"
+
+    # Format magnitude info
+    if magnitude_boost > 0:
+        magnitude_str = f"Magnitude={magnitude_pct:.1f}%(+{magnitude_boost*100:.1f}%)"
+    else:
+        magnitude_str = f"Magnitude={magnitude_pct:.1f}%(+0%)"
+
+    # Format confluence info
+    if confluence_direction:
+        confluence_str = f"Confluence={confluence_count}/3 {confluence_direction}({confluence_change:+.1f}%)"
+    elif confluence_count > 0:
+        confluence_str = f"Confluence={confluence_count}/3 NoConsensus({confluence_change:+.1f}%)"
+    else:
+        confluence_str = "Confluence=0/3"
+
+    # Format final accuracy
+    final_str = f"Final={new_accuracy*100:.1f}%"
+
+    # Log the comparison
+    granular_log.info(
+        f"[GRANULAR] {crypto} epoch={epoch}: {pattern_str} {magnitude_str} {confluence_str} -> {final_str}"
+    )
+
+
 def fetch_polymarket_prices(crypto: str, epoch_start: int) -> Optional[Dict]:
     """Fetch current Polymarket prices for Up/Down markets."""
     try:
