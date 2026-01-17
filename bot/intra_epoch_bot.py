@@ -43,6 +43,9 @@ load_dotenv()
 # CONFIGURATION
 # =============================================================================
 
+# Shadow mode - log signals but don't place real trades (for testing alongside live bot)
+SHADOW_MODE = os.getenv("INTRA_SHADOW_MODE", "false").lower() == "true" or "--shadow" in sys.argv
+
 # Trading parameters
 EDGE_BUFFER = 0.05              # Require 5% edge over break-even (for fees + safety margin)
 MIN_PATTERN_ACCURACY = 0.735    # Only trade 73.5%+ patterns (includes all validated patterns)
@@ -1355,6 +1358,12 @@ def place_trade(client: ClobClient, crypto: str, direction: str,
         # Calculate shares
         shares = size_usd / price
 
+        # Shadow mode - log but don't execute
+        if SHADOW_MODE:
+            log.info(f"🔮 SHADOW ORDER: {crypto} {direction} @ ${price:.2f}, ${size_usd:.2f} ({shares:.1f} shares)")
+            log.info(f"   [Shadow mode - no real trade placed]")
+            return (True, size_usd)  # Simulate successful fill
+
         log.info(f"Placing order: {crypto} {direction} @ ${price:.2f}, ${size_usd:.2f} ({shares:.1f} shares)")
 
         order_args = OrderArgs(
@@ -1617,7 +1626,11 @@ def check_risk_limits(state: BotState) -> bool:
 def run_bot():
     """Main bot loop."""
     log.info("=" * 60)
-    log.info("INTRA-EPOCH MOMENTUM BOT STARTING")
+    if SHADOW_MODE:
+        log.info("🔮 INTRA-EPOCH MOMENTUM BOT - SHADOW MODE 🔮")
+        log.info("   (No real trades - observation only)")
+    else:
+        log.info("INTRA-EPOCH MOMENTUM BOT STARTING")
     log.info("=" * 60)
     log.info(f"Edge Buffer: {EDGE_BUFFER:.0%} (max entry = accuracy - {EDGE_BUFFER:.0%})")
     log.info(f"Min Pattern Accuracy: {MIN_PATTERN_ACCURACY:.0%}")
