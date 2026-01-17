@@ -58,6 +58,8 @@ MIN_BET_USD = 1.10              # Polymarket minimum
 # Position averaging (buying more when price improves)
 ENABLE_POSITION_AVERAGING = True
 PRICE_IMPROVE_THRESHOLD = 0.10  # Only add if price is 10%+ cheaper
+MAX_PRICE_DROP_FOR_AVERAGING = 0.25  # STOP averaging if price dropped >25% (signal is likely wrong)
+AVERAGING_SIZE_MULTIPLIER = 0.5  # Only add 50% of normal position (reduce downside risk)
 MAX_ADDS_PER_POSITION = 2       # Max times we can add to a position
 MAX_TOTAL_POSITION_USD = 25.0   # Max total position size after adding
 
@@ -612,6 +614,11 @@ def check_averaging_opportunity(
     if improvement < PRICE_IMPROVE_THRESHOLD:
         return (False, f"Price improvement {improvement:.1%} < {PRICE_IMPROVE_THRESHOLD:.0%} threshold")
 
+    # NEW: Stop averaging if price dropped too much - this signals the trade is likely wrong
+    # In binary markets, price drop = market saying our direction is LESS likely
+    if improvement > MAX_PRICE_DROP_FOR_AVERAGING:
+        return (False, f"Price dropped {improvement:.1%} > {MAX_PRICE_DROP_FOR_AVERAGING:.0%} - signal may be wrong, not averaging")
+
     # All checks passed
     return (True, f"Price improved {improvement:.1%} (${entry_price:.2f} -> ${current_price:.2f})")
 
@@ -897,7 +904,10 @@ def run_bot():
     log.info(f"Trading Window: minutes 3-10")
     log.info(f"Position Size: ${BASE_POSITION_USD}-${MAX_POSITION_USD}")
     if ENABLE_POSITION_AVERAGING:
-        log.info(f"Position Averaging: ENABLED (>{PRICE_IMPROVE_THRESHOLD:.0%} improvement, max {MAX_ADDS_PER_POSITION} adds)")
+        log.info(f"Position Averaging: ENABLED")
+        log.info(f"  - Trigger: {PRICE_IMPROVE_THRESHOLD:.0%}-{MAX_PRICE_DROP_FOR_AVERAGING:.0%} price improvement")
+        log.info(f"  - Add Size: {AVERAGING_SIZE_MULTIPLIER:.0%} of normal (reduced risk)")
+        log.info(f"  - Max Adds: {MAX_ADDS_PER_POSITION}")
     else:
         log.info(f"Position Averaging: DISABLED")
     log.info(f"Telegram Alerts: {'ENABLED' if TELEGRAM_ENABLED else 'DISABLED'}")
@@ -1075,9 +1085,12 @@ def run_bot():
                     # Averaging opportunity found!
                     scan_results.append(f"{crypto}:{direction}+ADD")
 
-                    # Calculate additional position size
+                    # Calculate additional position size (reduced to limit downside risk)
                     existing_size = existing_pos['size']
-                    add_size = calculate_position_size(state.current_balance, accuracy, existing_size)
+                    base_add_size = calculate_position_size(state.current_balance, accuracy, existing_size)
+                    # Apply averaging multiplier - only add 50% of normal to reduce exposure on potential losing trades
+                    add_size = base_add_size * AVERAGING_SIZE_MULTIPLIER
+                    add_size = max(MIN_BET_USD, round(add_size, 2))  # Ensure minimum bet
 
                     if add_size < MIN_BET_USD:
                         log.info(f"{crypto}: Add size ${add_size:.2f} below minimum")
@@ -1091,7 +1104,7 @@ def run_bot():
                     log.info(f"  Original Entry: ${existing_pos['entry_price']:.2f}")
                     log.info(f"  New Entry: ${entry_price:.2f}")
                     log.info(f"  Existing Size: ${existing_size:.2f}")
-                    log.info(f"  Adding: ${add_size:.2f}")
+                    log.info(f"  Adding: ${add_size:.2f} (50% of ${base_add_size:.2f})")
                     log.info(f"{'='*50}")
 
                     # Place averaging trade
