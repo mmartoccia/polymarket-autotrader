@@ -168,15 +168,15 @@ Optimizer is an automated hourly performance review system that runs on the VPS 
 **Description:** As a user, I want a Claude Code skill to check optimizer status and history.
 
 **Acceptance Criteria:**
-- [ ] Create `.claude/commands/optimizer-status.md` skill file
-- [ ] Default behavior: Show last review results and current parameter values
-- [ ] Support subcommands:
+- [x] Create `.claude/commands/optimizer-status.md` skill file
+- [x] Default behavior: Show last review results and current parameter values
+- [x] Support subcommands:
   - `history`: Show last 20 adjustments from adjustments.log
   - `bounds`: Display current tuning bounds from config
   - `run`: Manually trigger optimizer (dry-run by default)
   - `run --apply`: Manually trigger with changes applied
-- [ ] Include current parameter values for all tunable params
-- [ ] Typecheck passes (N/A - markdown file)
+- [x] Include current parameter values for all tunable params
+- [x] Typecheck passes (N/A - markdown file)
 
 ---
 
