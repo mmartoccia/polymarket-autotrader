@@ -11,8 +11,10 @@ import os
 import sys
 import time
 import re
+import json
 import requests
 from datetime import datetime, timezone
+from pathlib import Path
 from typing import Dict, List, Optional, Tuple
 
 # ANSI color codes
@@ -24,6 +26,7 @@ GREEN = "\033[92m"
 YELLOW = "\033[93m"
 CYAN = "\033[96m"
 WHITE = "\033[97m"
+GOLD = "\033[38;5;220m"  # Gold/amber color for active trades
 
 
 def strip_ansi(text: str) -> str:
@@ -46,6 +49,19 @@ def pad_right(text: str, width: int) -> str:
 def clear_screen():
     """Clear terminal screen."""
     os.system('cls' if os.name == 'nt' else 'clear')
+
+
+def load_active_positions() -> Dict[str, dict]:
+    """Load active positions from state file."""
+    state_file = Path(__file__).parent.parent / "state" / "intra_epoch_state.json"
+    try:
+        if state_file.exists():
+            with open(state_file, 'r') as f:
+                state = json.load(f)
+                return state.get('positions', {})
+    except Exception:
+        pass
+    return {}
 
 
 def get_current_epoch() -> Tuple[int, int]:
@@ -210,7 +226,8 @@ def analyze_pattern(minutes: List[dict]) -> Tuple[Optional[str], float, str]:
 
 
 def render_crypto_panel(crypto: str, data: Optional[dict], time_in_epoch: int,
-                        prices: Optional[Dict] = None) -> List[str]:
+                        prices: Optional[Dict] = None,
+                        active_position: Optional[dict] = None) -> List[str]:
     """Render a single crypto panel with prices and price-based winning/losing."""
     W = 38  # Panel inner width (excluding borders)
     lines = []
@@ -233,42 +250,53 @@ def render_crypto_panel(crypto: str, data: Optional[dict], time_in_epoch: int,
     completed = [m for m in minutes if not m.get('incomplete', False)]
     current = [m for m in minutes if m.get('incomplete', False)]
 
-    # Header
-    if direction == 'Up':
-        header = f"{GREEN}{BOLD}{crypto}{RESET}"
-    elif direction == 'Down':
-        header = f"{RED}{BOLD}{crypto}{RESET}"
+    # Header with gold star if active position
+    has_position = active_position is not None
+    if has_position:
+        star_prefix = f"{GOLD}{BOLD}★{RESET} "
+        visible_name_len = len(crypto) + 2  # star + space + crypto
     else:
-        header = f"{CYAN}{BOLD}{crypto}{RESET}"
+        star_prefix = ""
+        visible_name_len = len(crypto)
+
+    if direction == 'Up':
+        crypto_colored = f"{GREEN}{BOLD}{crypto}{RESET}"
+    elif direction == 'Down':
+        crypto_colored = f"{RED}{BOLD}{crypto}{RESET}"
+    else:
+        crypto_colored = f"{CYAN}{BOLD}{crypto}{RESET}"
+
+    header = f"{star_prefix}{crypto_colored}"
 
     lines.append(f"┌{'─' * W}┐")
     # Center the header
-    header_pad = (W - len(crypto)) // 2
-    lines.append(f"│{' ' * header_pad}{header}{' ' * (W - header_pad - len(crypto))}│")
+    header_pad = (W - visible_name_len) // 2
+    lines.append(f"│{' ' * header_pad}{header}{' ' * (W - header_pad - visible_name_len)}│")
     lines.append(f"├{'─' * W}┤")
 
-    # Build minute row
+    # Build minute row with fixed-width columns
     def make_row(start: int, end: int, label: str) -> str:
+        # Each arrow slot is 3 chars wide for alignment
         symbols = []
         for i in range(start, end):
             if i < len(completed):
                 if completed[i]['direction'] == 'Up':
-                    symbols.append(f"{GREEN}▲{RESET}")
+                    symbols.append(f" {GREEN}▲{RESET} ")
                 else:
-                    symbols.append(f"{RED}▼{RESET}")
+                    symbols.append(f" {RED}▼{RESET} ")
             elif i == len(completed) and current:
                 if current[0]['direction'] == 'Up':
                     symbols.append(f"{DIM}[{GREEN}▲{RESET}{DIM}]{RESET}")
                 else:
                     symbols.append(f"{DIM}[{RED}▼{RESET}{DIM}]{RESET}")
             else:
-                symbols.append(f"{DIM}·{RESET}")
+                symbols.append(f" {DIM}·{RESET} ")
 
-        row_content = f"{label}  " + "  ".join(symbols)
+        row_content = f"{label}" + "".join(symbols)
         return row_content
 
-    row1 = make_row(0, 5, "Min 1-5: ")
-    row2 = make_row(5, 10, "Min 6-10:")
+    row1 = make_row(0, 5, "Min 1-5:  ")
+    row2 = make_row(5, 10, "Min 6-10: ")
     row3 = make_row(10, 15, "Min 11-15:")
 
     lines.append(f"│ {pad_right(row1, W-2)} │")
@@ -362,6 +390,9 @@ def render_dashboard(data: Dict[str, List[dict]], prices_data: Dict[str, Dict],
     """Render the full dashboard with prices."""
     clear_screen()
 
+    # Load active positions
+    active_positions = load_active_positions()
+
     epoch_time = datetime.fromtimestamp(epoch_start, tz=timezone.utc)
     epoch_end = datetime.fromtimestamp(epoch_start + 900, tz=timezone.utc)
     minutes_elapsed = time_in_epoch // 60
@@ -401,9 +432,10 @@ def render_dashboard(data: Dict[str, List[dict]], prices_data: Dict[str, Dict],
     print(f"{CYAN}╚{'═' * (W-2)}╝{RESET}")
     print()
 
-    # Render panels with prices
+    # Render panels with prices and active positions
     cryptos = ['BTC', 'ETH', 'SOL', 'XRP']
-    panels = [render_crypto_panel(c, data.get(c), time_in_epoch, prices_data.get(c))
+    panels = [render_crypto_panel(c, data.get(c), time_in_epoch, prices_data.get(c),
+                                  active_positions.get(c))
               for c in cryptos]
 
     # Print top row (BTC, ETH)
@@ -417,7 +449,7 @@ def render_dashboard(data: Dict[str, List[dict]], prices_data: Dict[str, Dict],
 
     # Legend
     print()
-    print(f"  {DIM}Legend: {GREEN}▲{RESET}{DIM}=Up  {RED}▼{RESET}{DIM}=Down  ·=Pending  [▲]=Current{RESET}")
+    print(f"  {DIM}Legend: {GREEN}▲{RESET}{DIM}=Up  {RED}▼{RESET}{DIM}=Down  ·=Pending  [▲]=Current  {GOLD}★{RESET}{DIM}=Active Trade{RESET}")
     print(f"  {DIM}Patterns: 4+/5 same = 74-80%  |  All 3 same = 74-78%  |  3/5 same = ~65%{RESET}")
     print(f"  {DIM}Value: ★ ≤$0.25 | ● ≤$0.35 | ○ ≤$0.50 | ✗ >$0.50{RESET}")
     print()
