@@ -53,6 +53,12 @@ BASE_POSITION_USD = 5.0         # Base position size
 MAX_POSITION_USD = 15.0         # Maximum position size
 MIN_BET_USD = 1.10              # Polymarket minimum
 
+# Position averaging (buying more when price improves)
+ENABLE_POSITION_AVERAGING = True
+PRICE_IMPROVE_THRESHOLD = 0.10  # Only add if price is 10%+ cheaper
+MAX_ADDS_PER_POSITION = 2       # Max times we can add to a position
+MAX_TOTAL_POSITION_USD = 25.0   # Max total position size after adding
+
 # Risk management
 MAX_POSITIONS = 4               # Max concurrent positions (1 per crypto)
 MAX_DAILY_LOSS_USD = 30.0       # Stop trading if daily loss exceeds this
@@ -357,7 +363,7 @@ def get_wallet_balance() -> float:
         return 0.0
 
 
-def calculate_position_size(balance: float, accuracy: float) -> float:
+def calculate_position_size(balance: float, accuracy: float, existing_size: float = 0.0) -> float:
     """Calculate position size based on balance and signal accuracy."""
     # Base size scales with balance
     if balance < 50:
@@ -377,7 +383,52 @@ def calculate_position_size(balance: float, accuracy: float) -> float:
     # Enforce limits
     size = max(MIN_BET_USD, min(MAX_POSITION_USD, size))
 
+    # If averaging, make sure we don't exceed max total position
+    if existing_size > 0:
+        max_add = MAX_TOTAL_POSITION_USD - existing_size
+        size = min(size, max_add)
+
     return round(size, 2)
+
+
+def check_averaging_opportunity(
+    crypto: str,
+    position: dict,
+    current_price: float,
+    pattern_direction: str
+) -> Tuple[bool, str]:
+    """
+    Check if we should add to an existing position.
+
+    Returns:
+        (should_add, reason)
+    """
+    if not ENABLE_POSITION_AVERAGING:
+        return (False, "Averaging disabled")
+
+    # Must be same direction as existing position
+    if pattern_direction != position['direction']:
+        return (False, f"Pattern {pattern_direction} != position {position['direction']}")
+
+    # Check if we've already maxed out adds
+    adds = position.get('adds', 0)
+    if adds >= MAX_ADDS_PER_POSITION:
+        return (False, f"Max adds reached ({adds}/{MAX_ADDS_PER_POSITION})")
+
+    # Check if we're already at max position size
+    current_size = position['size']
+    if current_size >= MAX_TOTAL_POSITION_USD:
+        return (False, f"Max position size reached (${current_size:.2f})")
+
+    # Check if price has improved enough
+    entry_price = position['entry_price']
+    improvement = (entry_price - current_price) / entry_price
+
+    if improvement < PRICE_IMPROVE_THRESHOLD:
+        return (False, f"Price improvement {improvement:.1%} < {PRICE_IMPROVE_THRESHOLD:.0%} threshold")
+
+    # All checks passed
+    return (True, f"Price improved {improvement:.1%} (${entry_price:.2f} -> ${current_price:.2f})")
 
 
 def place_trade(client: ClobClient, crypto: str, direction: str,
@@ -619,6 +670,10 @@ def run_bot():
     log.info(f"Min Pattern Accuracy: {MIN_PATTERN_ACCURACY:.0%}")
     log.info(f"Trading Window: minutes 3-10")
     log.info(f"Position Size: ${BASE_POSITION_USD}-${MAX_POSITION_USD}")
+    if ENABLE_POSITION_AVERAGING:
+        log.info(f"Position Averaging: ENABLED (>{PRICE_IMPROVE_THRESHOLD:.0%} improvement, max {MAX_ADDS_PER_POSITION} adds)")
+    else:
+        log.info(f"Position Averaging: DISABLED")
     log.info("=" * 60)
 
     # Initialize state
@@ -701,18 +756,17 @@ def run_bot():
             scan_results = []  # Track what happened with each crypto
 
             for crypto in CRYPTOS:
-                # Skip if already traded this epoch
-                if state.last_epoch_traded.get(crypto) == epoch_start:
+                # Skip if already traded this epoch (but allow averaging same epoch)
+                already_traded_this_epoch = state.last_epoch_traded.get(crypto) == epoch_start
+                has_existing_position = crypto in state.positions
+
+                # If we traded this epoch but don't have a position, something went wrong
+                if already_traded_this_epoch and not has_existing_position:
                     scan_results.append(f"{crypto}:traded")
                     continue
 
-                # Skip if already have position in this crypto
-                if crypto in state.positions:
-                    scan_results.append(f"{crypto}:holding")
-                    continue
-
-                # Check position limit
-                if len(state.positions) >= MAX_POSITIONS:
+                # Check position limit (only for new positions)
+                if not has_existing_position and len(state.positions) >= MAX_POSITIONS:
                     scan_results.append(f"{crypto}:max_pos")
                     continue
 
@@ -732,16 +786,87 @@ def run_bot():
                     scan_results.append(f"{crypto}:{ups}↑{downs}↓(weak)")
                     continue
 
-                scan_results.append(f"{crypto}:{direction}({accuracy*100:.0f}%)")
-
                 # Fetch Polymarket prices
                 prices = fetch_polymarket_prices(crypto, epoch_start)
                 if not prices:
-                    log.warning(f"{crypto}: No market prices available")
+                    scan_results.append(f"{crypto}:{direction}(no_prices)")
                     continue
 
-                # Check entry price - must have edge over break-even
                 entry_price = prices[direction]['ask']
+
+                # Check if this is an averaging opportunity
+                if has_existing_position:
+                    existing_pos = state.positions[crypto]
+                    should_add, avg_reason = check_averaging_opportunity(
+                        crypto, existing_pos, entry_price, direction
+                    )
+
+                    if not should_add:
+                        scan_results.append(f"{crypto}:holding")
+                        log.debug(f"{crypto}: No averaging - {avg_reason}")
+                        continue
+
+                    # Averaging opportunity found!
+                    scan_results.append(f"{crypto}:{direction}+ADD")
+
+                    # Calculate additional position size
+                    existing_size = existing_pos['size']
+                    add_size = calculate_position_size(state.current_balance, accuracy, existing_size)
+
+                    if add_size < MIN_BET_USD:
+                        log.info(f"{crypto}: Add size ${add_size:.2f} below minimum")
+                        continue
+
+                    # Log the averaging signal
+                    log.info(f"")
+                    log.info(f"{'='*50}")
+                    log.info(f"AVERAGING: {crypto} {direction}")
+                    log.info(f"  {avg_reason}")
+                    log.info(f"  Original Entry: ${existing_pos['entry_price']:.2f}")
+                    log.info(f"  New Entry: ${entry_price:.2f}")
+                    log.info(f"  Existing Size: ${existing_size:.2f}")
+                    log.info(f"  Adding: ${add_size:.2f}")
+                    log.info(f"{'='*50}")
+
+                    # Place averaging trade
+                    token_id = prices[direction]['token_id']
+                    success, filled_size = place_trade(client, crypto, direction, token_id, entry_price, add_size)
+
+                    if success and filled_size > 0:
+                        # Calculate new weighted average entry price
+                        old_cost = existing_size  # USD spent originally
+                        new_cost = filled_size    # USD spent now
+                        total_cost = old_cost + new_cost
+
+                        old_shares = existing_size / existing_pos['entry_price']
+                        new_shares = filled_size / entry_price
+                        total_shares = old_shares + new_shares
+
+                        avg_entry = total_cost / total_shares
+
+                        # Update position
+                        state.positions[crypto] = {
+                            'direction': direction,
+                            'entry_price': avg_entry,  # Weighted average
+                            'size': total_cost,        # Total USD invested
+                            'epoch': existing_pos['epoch'],  # Keep original epoch
+                            'accuracy': accuracy,
+                            'adds': existing_pos.get('adds', 0) + 1
+                        }
+                        state.last_epoch_traded[crypto] = epoch_start
+                        state.total_trades += 1
+                        state.save()
+
+                        log.info(f"Position AVERAGED: ${total_cost:.2f} @ ${avg_entry:.2f} (was ${existing_pos['entry_price']:.2f})")
+                    else:
+                        log.warning(f"{crypto}: Averaging order did not fill")
+
+                    continue
+
+                # New position logic (no existing position)
+                scan_results.append(f"{crypto}:{direction}({accuracy*100:.0f}%)")
+
+                # Check entry price - must have edge over break-even
                 max_entry = accuracy - EDGE_BUFFER  # e.g., 74% accuracy -> max $0.69 entry
                 if entry_price > max_entry:
                     log.info(f"{crypto}: {direction} ({accuracy*100:.0f}%) but entry ${entry_price:.2f} > ${max_entry:.2f} max (no edge)")
@@ -774,7 +899,8 @@ def run_bot():
                         'entry_price': entry_price,
                         'size': filled_size,  # Use actual filled amount
                         'epoch': epoch_start,
-                        'accuracy': accuracy
+                        'accuracy': accuracy,
+                        'adds': 0  # Track averaging adds
                     }
                     state.last_epoch_traded[crypto] = epoch_start
                     state.total_trades += 1
