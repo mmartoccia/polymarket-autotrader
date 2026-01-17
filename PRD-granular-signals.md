@@ -143,13 +143,13 @@ Both features are toggleable via configuration constants and will be shadow-test
 **Description:** As a developer, I need to check exchange confluence before placing trades.
 
 **Acceptance Criteria:**
-- [ ] In main loop, call `fetch_multi_exchange_prices()` at start of each scan
-- [ ] Call `record_epoch_start_prices()` when new epoch detected
-- [ ] Before placing trade, call `get_exchange_confluence()`
-- [ ] If `ENABLE_MULTI_EXCHANGE` and confluence direction != pattern direction, skip trade
-- [ ] If confluence agrees, log confirmation (e.g., "Confluence: 3/3 exchanges agree DOWN")
-- [ ] If confluence disagrees, log skip reason (e.g., "SKIP: Pattern=Down but only 1/3 exchanges agree")
-- [ ] Typecheck passes
+- [x] In main loop, call `fetch_multi_exchange_prices()` at start of each scan
+- [x] Call `record_epoch_start_prices()` when new epoch detected
+- [x] Before placing trade, call `get_exchange_confluence()`
+- [x] If `ENABLE_MULTI_EXCHANGE` and confluence direction != pattern direction, skip trade
+- [x] If confluence agrees, log confirmation (e.g., "Confluence: 3/3 exchanges agree DOWN")
+- [x] If confluence disagrees, log skip reason (e.g., "SKIP: Pattern=Down but only 1/3 exchanges agree")
+- [x] Typecheck passes
 
 ---
 

@@ -378,6 +378,13 @@
   - Typecheck passed for all files
 ---
 
+# Progress Log - Granular Signal Enhancement (PRD-granular-signals.md)
+
+## Learnings
+(Patterns discovered during implementation)
+
+---
+
 ## Iteration 17 - US-BF-017: Add multi-epoch trend detection
 - Lowered TECH_CONFLUENCE_THRESHOLD from 0.003 to 0.002 (0.30% → 0.20%)
 - Lowered REGIME_TREND_THRESHOLD from 0.001 to 0.0005 (0.10% → 0.05%)

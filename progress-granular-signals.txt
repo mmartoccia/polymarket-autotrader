@@ -121,3 +121,20 @@
   - Main loop at line ~1684 now passes candles: analyze_pattern(minutes, candles)
   - Test cases cover: backward compat, weak rejection, strong boost, moderate no-boost, no pattern
 ---
+
+## Iteration 9 - US-GS-009: Integrate Confluence as Entry Filter
+- Integrated multi-exchange confluence detection into the main trading loop
+- At new epoch detection (line 1640): fetch_multi_exchange_prices() for all CRYPTOS
+- At new epoch detection (line 1642): record_epoch_start_prices() stores baseline
+- Before placing new trade (line 1786): get_exchange_confluence() checks agreement
+- Files changed: bot/intra_epoch_bot.py, PRD-granular-signals.md
+- Learnings for future iterations:
+  - New epoch detection block is around line 1617, after resolve_completed_positions()
+  - Confluence check goes in "New position logic" section, BEFORE scan_results.append()
+  - When confluence_dir matches pattern direction: log confirmation and proceed
+  - When confluence_dir != pattern direction: log SKIP and continue to next crypto
+  - When confluence_dir is None (no consensus): log warning but allow trade to proceed
+  - scan_results updated with "(conf_mismatch)" suffix when trade skipped due to confluence
+  - Test verified: live BTC prices showed 3/3 exchanges agree Down with -4.83% change
+  - epoch_start_prices is module-level dict, structure: {crypto: {epoch: {exchange: price}}}
+---

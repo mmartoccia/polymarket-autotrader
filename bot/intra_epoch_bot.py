@@ -1631,6 +1631,14 @@ def run_bot():
                         state.peak_balance = balance
                     state.save()
 
+                # Record epoch start prices for confluence detection (multi-exchange)
+                if ENABLE_MULTI_EXCHANGE:
+                    for crypto in CRYPTOS:
+                        prices = fetch_multi_exchange_prices(crypto)
+                        if prices:
+                            record_epoch_start_prices(crypto, epoch_start, prices)
+                            log.debug(f"{crypto}: Recorded epoch start prices from {len(prices)} exchanges")
+
             # Only trade during window
             if time_in_epoch < TRADING_WINDOW_START:
                 mins_left = (TRADING_WINDOW_START - time_in_epoch) // 60
@@ -1772,6 +1780,21 @@ def run_bot():
                     continue
 
                 # New position logic (no existing position)
+
+                # Check exchange confluence before placing trade
+                if ENABLE_MULTI_EXCHANGE:
+                    confluence_dir, agree_count, avg_change = get_exchange_confluence(crypto, epoch_start)
+                    if confluence_dir is not None:
+                        if confluence_dir == direction:
+                            log.info(f"Confluence: {agree_count}/3 exchanges agree {direction} ({avg_change:+.2f}%)")
+                        else:
+                            log.info(f"SKIP: Pattern={direction} but confluence={confluence_dir} ({agree_count}/3 exchanges, {avg_change:+.2f}%)")
+                            scan_results.append(f"{crypto}:{direction}(conf_mismatch)")
+                            continue
+                    else:
+                        # No consensus - log but allow trade (confluence is informational)
+                        log.info(f"No confluence: only {agree_count}/3 exchanges agree ({avg_change:+.2f}%)")
+
                 scan_results.append(f"{crypto}:{direction}({accuracy*100:.0f}%)")
 
                 # Check entry price - must have edge over break-even
