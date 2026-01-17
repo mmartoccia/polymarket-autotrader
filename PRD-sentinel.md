@@ -208,19 +208,19 @@ Sentinel is an event-driven autonomous monitoring system that watches the tradin
 **Description:** As a user, I want a `/auto-manage` skill so I can manually interact with Sentinel from Claude Code.
 
 **Acceptance Criteria:**
-- [ ] Create `.claude/commands/auto-manage.md` skill file
-- [ ] Default behavior (no args): Run manual diagnostic
+- [x] Create `.claude/commands/auto-manage.md` skill file
+- [x] Default behavior (no args): Run manual diagnostic
   - SSH to VPS, gather current state
   - Invoke Claude analysis
   - Report findings without taking action
-- [ ] Support subcommands:
+- [x] Support subcommands:
   - `status`: Show monitor status, last poll, pending events
   - `start`: Start the monitor daemon
   - `stop`: Stop the monitor daemon
   - `history`: Show last 20 actions from actions.log
   - `config`: Display current configuration
-- [ ] Include safety information (kill switch location, rate limits)
-- [ ] Typecheck passes (N/A - markdown file)
+- [x] Include safety information (kill switch location, rate limits)
+- [x] Typecheck passes (N/A - markdown file)
 
 ---
 
