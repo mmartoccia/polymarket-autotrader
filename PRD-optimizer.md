@@ -154,13 +154,13 @@ Optimizer is an automated hourly performance review system that runs on the VPS 
 **Description:** As a user, I need hourly execution via cron on the VPS.
 
 **Acceptance Criteria:**
-- [ ] Create `optimizer/install_cron.sh` script that:
+- [x] Create `optimizer/install_cron.sh` script that:
   - Adds cron entry: `0 * * * * cd /opt/polymarket-autotrader && /opt/polymarket-autotrader/venv/bin/python3 optimizer/optimizer.py >> optimizer/cron.log 2>&1`
   - Sets proper permissions
-- [ ] Create `optimizer/uninstall_cron.sh` to remove the cron entry
-- [ ] Document cron setup in script comments
-- [ ] Test: Verify cron job appears in `crontab -l` after install
-- [ ] Test: Wait for next hour and verify optimizer ran (check cron.log)
+- [x] Create `optimizer/uninstall_cron.sh` to remove the cron entry
+- [x] Document cron setup in script comments
+- [x] Test: Verify cron job appears in `crontab -l` after install
+- [x] Test: Wait for next hour and verify optimizer ran (check cron.log)
 
 ---
 
