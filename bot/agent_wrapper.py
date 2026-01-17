@@ -15,6 +15,7 @@ from agents.time_pattern_agent import TimePatternAgent
 from agents.gambler_agent import GamblerAgent
 from agents.voting.orderbook_agent import OrderBookAgent
 from agents.voting.funding_rate_agent import FundingRateAgent
+from agents.voting.streak_agent import StreakAgent
 from coordinator import DecisionEngine
 from config import agent_config
 from config.agent_config import get_enabled_agents
@@ -185,6 +186,15 @@ class AgentSystemWrapper:
         else:
             self.funding_rate_agent = None
 
+        # Add StreakAgent if configured and enabled (mean reversion after consecutive same-direction)
+        if ('StreakAgent' in agent_weights and agent_weights['StreakAgent'] > 0
+            and 'StreakAgent' in enabled_agents):
+            self.streak_agent = StreakAgent()
+            agents.append(self.streak_agent)
+            agent_names.append("Streak")
+        else:
+            self.streak_agent = None
+
         # Build summary
         agent_count = f"{len(agents)} VOTING AGENTS"
         agent_list = ", ".join(agent_names) if agent_names else "None"
@@ -211,7 +221,7 @@ class AgentSystemWrapper:
         log.info(f"  Min Confidence: {min_confidence}")
         log.info(f"  Adaptive Weights: {adaptive_weights}")
         log.info(f"  Enabled Agents: {full_summary}")
-        log.info(f"  Disabled Agents: {', '.join([a for a in ['TechAgent', 'SentimentAgent', 'RegimeAgent', 'CandlestickAgent', 'TimePatternAgent', 'OrderBookAgent', 'FundingRateAgent', 'RiskAgent', 'GamblerAgent', 'OnChainAgent', 'SocialSentimentAgent'] if a not in enabled_agents]) or 'None'}")
+        log.info(f"  Disabled Agents: {', '.join([a for a in ['TechAgent', 'SentimentAgent', 'RegimeAgent', 'CandlestickAgent', 'TimePatternAgent', 'OrderBookAgent', 'FundingRateAgent', 'StreakAgent', 'RiskAgent', 'GamblerAgent', 'OnChainAgent', 'SocialSentimentAgent'] if a not in enabled_agents]) or 'None'}")
         log.info("=" * 60)
 
     def make_decision(self,
