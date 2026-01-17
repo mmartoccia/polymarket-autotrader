@@ -2073,6 +2073,8 @@ def calculate_timing_bonus(time_in_epoch: int) -> float:
 
 def run_bot():
     """Main bot loop with v12.1 Future Window enhancements."""
+    from config import agent_config  # Import for config values
+
     log.info("=" * 60)
     log.info("MOMENTUM BOT v12.1 - FUTURE WINDOW ENHANCED + AGENT SYSTEM")
     log.info("=" * 60)
