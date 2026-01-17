@@ -1,0 +1,66 @@
+# Progress Log - Sentinel
+
+## Learnings
+(Patterns discovered during implementation)
+
+## Key Files Reference
+- Config: `sentinel/sentinel_config.json`
+- Monitor: `sentinel/sentinel_monitor.sh`
+- Orchestrator: `sentinel/sentinel.sh`
+- Claude Prompt: `sentinel/sentinel_diagnose.md`
+- Telegram Handler: `bot/telegram_handler.py`
+- Skill: `.claude/commands/auto-manage.md`
+
+## VPS Access Pattern
+```bash
+ssh -i ~/.ssh/polymarket_vultr root@216.238.85.11 "command"
+```
+
+## State File Locations (VPS)
+- Primary: /opt/polymarket-autotrader/state/intra_epoch_state.json
+- Fallback: /opt/polymarket-autotrader/state/trading_state.json
+
+---
+
+## Iteration 1 - US-001: Create Sentinel directory structure and configuration
+- Created sentinel/ directory with events/, history/, state/ subdirectories
+- Created sentinel_config.json with all required settings
+- Initialized events/queue.json as empty array []
+- Created empty history/actions.log
+- Added state/.gitkeep for gitignored runtime state
+- Updated .gitignore to exclude sentinel/state/
+- Files changed: .gitignore, sentinel/sentinel_config.json, sentinel/events/queue.json, sentinel/history/actions.log, sentinel/state/.gitkeep
+- Learnings for future iterations:
+  - Config file structure is flat with nested objects for each concern (polling, safety, vps, etc.)
+  - Empty files need to be created explicitly (.gitkeep, actions.log)
+  - JSON validation with `python3 -m json.tool` is useful for verification
+---
+
+## Iteration 2 - US-002: Create sentinel_monitor.sh polling daemon
+- Created sentinel/sentinel_monitor.sh with start/stop/status commands
+- Implements polling loop that SSHs to VPS and reads state files
+- Detects halt transitions (mode changed TO "halted") and adds events to queue
+- Supports kill switch file to pause processing
+- Logs to state/monitor.log with timestamps
+- Files changed: sentinel/sentinel_monitor.sh, PRD-sentinel.md
+- Learnings for future iterations:
+  - Use `jq` for JSON parsing in bash, available on Mac by default
+  - SSH command uses `-o ConnectTimeout` and `-o BatchMode=yes` for non-interactive operation
+  - The `stat` command differs between Mac and Linux (use `stat -f` on Mac)
+  - PID file management pattern: write PID to file on start, check with `kill -0` for existence, remove on stop
+  - Events queue is JSON array in events/queue.json, append with jq
+---
+
+## Iteration 3 - US-003: Create sentinel_diagnose.md Claude prompt template
+- Created sentinel/sentinel_diagnose.md with comprehensive diagnostic prompt
+- Includes all required sections: Context, Decision Types, Available Actions, Decision Criteria, Output Format
+- Has 4 detailed examples covering: stale peak balance (auto-fix), low balance (escalate), manual halt (escalate), loss streak recovery (auto-fix)
+- Clear rules: balance < $50 = escalate, manual halt = escalate, confidence < 70% = escalate
+- JSON output format includes decision, action, reason, confidence, and analysis object
+- Files changed: sentinel/sentinel_diagnose.md, PRD-sentinel.md
+- Learnings for future iterations:
+  - Prompt template serves as the "brain" of Sentinel - Claude uses this to make decisions
+  - Examples are critical for consistent behavior - include both auto-fix and escalate cases
+  - The analysis object in output helps with debugging and audit trail
+  - Always include "when in doubt, escalate" guidance to err on side of safety
+---

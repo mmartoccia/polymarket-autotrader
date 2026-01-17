@@ -70,17 +70,17 @@ Sentinel is an event-driven autonomous monitoring system that watches the tradin
 **Description:** As a developer, I need a well-structured prompt template that guides Claude's diagnostic analysis so decisions are consistent and well-reasoned.
 
 **Acceptance Criteria:**
-- [ ] Create `sentinel/sentinel_diagnose.md` with sections:
+- [x] Create `sentinel/sentinel_diagnose.md` with sections:
   - Context: Role as Sentinel monitoring system
   - Decision Types: `auto_fix` vs `escalate`
   - Available Actions: `reset_peak_balance`, `resume_trading`, `reset_loss_streak`, `restart_bot`
   - Decision Criteria: When to auto-fix vs escalate (with specific conditions)
   - Output Format: JSON block with decision, action, reason, confidence, analysis
-- [ ] Include rule: Always escalate if balance < $50
-- [ ] Include rule: Always escalate manual halts
-- [ ] Include rule: Escalate if confidence < 70%
-- [ ] Include examples of good diagnostic reasoning
-- [ ] Typecheck passes (N/A - markdown file)
+- [x] Include rule: Always escalate if balance < $50
+- [x] Include rule: Always escalate manual halts
+- [x] Include rule: Escalate if confidence < 70%
+- [x] Include examples of good diagnostic reasoning
+- [x] Typecheck passes (N/A - markdown file)
 
 ---
 
