@@ -64,3 +64,55 @@ ssh -i ~/.ssh/polymarket_vultr root@216.238.85.11 "command"
   - The analysis object in output helps with debugging and audit trail
   - Always include "when in doubt, escalate" guidance to err on side of safety
 ---
+
+## Iteration 4 - US-004: Create sentinel.sh main orchestrator
+- Created sentinel/sentinel.sh with ~380 lines of bash code
+- Core functions implemented:
+  - `load_config()` - Reads all settings from sentinel_config.json
+  - `get_vps_state()` - SSH to VPS and read state file (with fallback)
+  - `get_recent_logs()` - SSH to VPS and tail bot log
+  - `get_onchain_balance()` - Query Polygon RPC for USDC balance
+  - `gather_diagnostics()` - Combines event info, VPS state, on-chain balance, recent logs
+  - `invoke_claude_diagnosis()` - Runs `claude --dangerously-skip-permissions -p` with prompt
+  - `parse_decision()` - Extracts JSON block from Claude output
+  - `process_event()` - Main event processing logic with safety checks
+  - `check_kill_switch()`, `check_rate_limit()` - Safety guardrails
+  - `acquire_lock()`, `release_lock()` - Prevent concurrent execution
+- Supports --dry-run flag for testing without executing actions
+- Lock file mechanism ensures only one sentinel.sh runs at a time
+- Rate limiting stored in state/rate_limit.json (resets hourly)
+- Files changed: sentinel/sentinel.sh, PRD-sentinel.md
+- Learnings for future iterations:
+  - Use `jq -c` to output JSON on single line for piping to while loops
+  - Bash here-doc trick: `$(echo "$prompt" | claude ...)` works better than echo piping
+  - Lock file pattern: check if PID still running with `kill -0 $pid 2>/dev/null`
+  - Parse JSON from Claude output by looking for ```json...``` blocks first
+  - Balance floor check should happen BEFORE Claude invocation to save time/cost
+  - Actual fix execution (US-008) is stubbed - currently just logs "approved" status
+---
+
+## Iteration 5 - US-005: Implement Telegram notification for halt events
+- Added two new functions to sentinel/sentinel.sh:
+  - `send_telegram_notification()` - Generic function to send Telegram messages via VPS
+  - `send_halt_alert()` - Formats and sends the halt alert with all required info
+- Message format includes:
+  - 🚨 SENTINEL ALERT header
+  - Halt reason and timestamp
+  - Financial status (balance, peak, drawdown %)
+  - Claude's analysis summary
+  - Recommended action with confidence
+  - Response options (/approve, /deny, /custom)
+  - Timeout warning (15 min by default)
+- Uses existing `bot/telegram_handler.py` via SSH to VPS
+- `send_message_sync()` called for synchronous delivery confirmation
+- Telegram notification sent in `process_event()` after Claude diagnosis, before action
+- Dry-run mode skips Telegram notifications
+- Files changed: sentinel/sentinel.sh, PRD-sentinel.md
+- Learnings for future iterations:
+  - SSH + Python one-liner pattern works well: `ssh VPS "python3 -c \"...\""`
+  - Message escaping is critical: escape backslashes and quotes for Python strings
+  - `bot.send_message_sync()` returns True/False for success/failure
+  - HTML parse_mode with <b>, <code> tags provides good formatting
+  - Triple quotes in bash heredocs need careful escaping
+  - Telegram is already enabled on VPS with token and chat_id configured
+---

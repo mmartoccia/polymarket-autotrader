@@ -25,6 +25,7 @@ KILL_SWITCH_FILE="$STATE_DIR/KILL_SWITCH"
 LOCK_FILE="$STATE_DIR/sentinel.lock"
 RATE_LIMIT_FILE="$STATE_DIR/rate_limit.json"
 DIAGNOSE_PROMPT="$SCRIPT_DIR/sentinel_diagnose.md"
+TELEGRAM_TIMEOUT_SECONDS=900  # 15 minutes - loaded from config
 
 # Ensure directories exist
 mkdir -p "$STATE_DIR" "$HISTORY_DIR"
@@ -52,6 +53,7 @@ load_config() {
     STATE_FILES=$(jq -r '.vps.state_files | join(" ")' "$CONFIG_FILE")
     VPS_LOG_FILE=$(jq -r '.vps.log_file' "$CONFIG_FILE")
     SSH_TIMEOUT=$(jq -r '.polling.ssh_timeout_seconds // 10' "$CONFIG_FILE")
+    TELEGRAM_TIMEOUT_SECONDS=$(jq -r '.escalation.telegram_timeout_seconds // 900' "$CONFIG_FILE")
 }
 
 # Log action to history
@@ -218,6 +220,112 @@ get_onchain_balance() {
     balance_usd=$(echo "scale=2; $balance_wei / 1000000" | bc 2>/dev/null || echo "0")
 
     echo "$balance_usd"
+}
+
+# Send Telegram notification via VPS
+# Uses the existing telegram_handler.py infrastructure
+# Returns: 0 on success, 1 on failure
+send_telegram_notification() {
+    local message="$1"
+    local silent="${2:-false}"  # Optional: send without notification sound
+
+    # Escape the message for Python string (escape quotes and backslashes)
+    local escaped_message
+    escaped_message=$(echo "$message" | sed 's/\\/\\\\/g; s/"/\\"/g')
+
+    # Create a Python script to send via TelegramBot
+    local python_script="
+import sys
+sys.path.insert(0, '/opt/polymarket-autotrader')
+from bot.telegram_handler import TelegramBot
+
+bot = TelegramBot()
+if not bot.enabled:
+    print('Telegram not enabled')
+    sys.exit(1)
+
+result = bot.send_message_sync('''$escaped_message''', parse_mode='HTML', silent=$silent)
+if result:
+    print('Message sent successfully')
+    sys.exit(0)
+else:
+    print('Failed to send message')
+    sys.exit(1)
+"
+
+    # Execute on VPS
+    local result
+    result=$(ssh -i "$SSH_KEY" -o ConnectTimeout="$SSH_TIMEOUT" -o BatchMode=yes \
+        "$VPS_HOST" "cd /opt/polymarket-autotrader && python3 -c \"$python_script\"" 2>&1)
+
+    local exit_code=$?
+
+    if [[ $exit_code -eq 0 ]]; then
+        log "INFO" "Telegram notification sent successfully"
+        return 0
+    else
+        log "WARN" "Failed to send Telegram notification: $result"
+        return 1
+    fi
+}
+
+# Format and send halt alert via Telegram
+# This is called before any auto-fix processing
+send_halt_alert() {
+    local event="$1"
+    local analysis_summary="$2"
+    local recommended_action="$3"
+    local confidence="$4"
+
+    local halt_reason
+    local balance
+    local peak_balance
+    local drawdown_pct
+    local timestamp
+
+    halt_reason=$(echo "$event" | jq -r '.halt_reason // "Unknown"')
+    balance=$(echo "$event" | jq -r '.balance // 0')
+    peak_balance=$(echo "$event" | jq -r '.peak_balance // 0')
+    timestamp=$(date -u +"%Y-%m-%d %H:%M UTC")
+
+    # Calculate drawdown percentage
+    if (( $(echo "$peak_balance > 0" | bc -l) )); then
+        drawdown_pct=$(echo "scale=1; ($peak_balance - $balance) / $peak_balance * 100" | bc)
+    else
+        drawdown_pct="0"
+    fi
+
+    # Convert timeout to minutes for display
+    local timeout_minutes=$((TELEGRAM_TIMEOUT_SECONDS / 60))
+
+    # Build the message with proper formatting
+    local message="🚨 <b>SENTINEL ALERT</b> 🚨
+
+<b>Bot Status:</b> HALTED
+<b>Reason:</b> $halt_reason
+<b>Time:</b> $timestamp
+
+<b>💰 Financial Status</b>
+Balance: \$$balance
+Peak: \$$peak_balance
+Drawdown: ${drawdown_pct}%
+
+<b>🤖 Analysis Summary</b>
+$analysis_summary
+
+<b>📋 Recommended Action</b>
+<code>$recommended_action</code> (${confidence}% confidence)
+
+<b>⏰ Response Options</b>
+/approve - Execute recommended action
+/deny - Leave bot halted
+/custom &lt;action&gt; - Specify alternative
+
+⚠️ Auto-fix in $timeout_minutes minutes if no response"
+
+    # Send synchronously to confirm delivery
+    send_telegram_notification "$message" "false"
+    return $?
 }
 
 # Gather diagnostics for Claude
@@ -392,6 +500,18 @@ process_event() {
 
     log "INFO" "Claude decision: $decision_type (action: $action, confidence: $confidence%)"
     log "INFO" "Reason: $reason"
+
+    # Send Telegram notification before any action (unless dry run)
+    if [[ "$DRY_RUN" != "true" ]]; then
+        log "INFO" "Sending Telegram halt alert..."
+        if send_halt_alert "$event" "$reason" "$action" "$confidence"; then
+            log "INFO" "Telegram notification sent - waiting for user response..."
+            # Note: Response polling will be implemented in US-007
+            # For now, we proceed to process the decision
+        else
+            log "WARN" "Failed to send Telegram notification - continuing anyway"
+        fi
+    fi
 
     # Handle escalate decision
     if [[ "$decision_type" == "escalate" ]]; then

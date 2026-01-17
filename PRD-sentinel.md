@@ -110,17 +110,17 @@ Sentinel is an event-driven autonomous monitoring system that watches the tradin
 **Description:** As a user, I want to receive a Telegram message when a halt is detected so I can review the situation and respond.
 
 **Acceptance Criteria:**
-- [ ] sentinel.sh sends Telegram message on halt detection (before any auto-fix)
-- [ ] Message format includes:
+- [x] sentinel.sh sends Telegram message on halt detection (before any auto-fix)
+- [x] Message format includes:
   - Emoji alert header (🚨 SENTINEL ALERT)
   - Halt reason
   - Current balance and drawdown
   - Claude's analysis summary
   - Response options: /approve, /deny, /custom
   - Timeout warning (15 min)
-- [ ] Uses existing `bot/telegram_handler.py` infrastructure (via SSH to VPS)
-- [ ] Message sent synchronously to confirm delivery before starting timeout
-- [ ] Test: Manually trigger and verify Telegram message received
+- [x] Uses existing `bot/telegram_handler.py` infrastructure (via SSH to VPS)
+- [x] Message sent synchronously to confirm delivery before starting timeout
+- [x] Test: Manually trigger and verify Telegram message received
 
 ---
 
