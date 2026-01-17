@@ -25,6 +25,8 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Dict, List, Optional, Tuple
 from dotenv import load_dotenv
+from web3 import Web3
+from eth_account import Account
 
 # Add parent for imports
 sys.path.insert(0, str(Path(__file__).parent.parent))
@@ -71,6 +73,26 @@ CRYPTOS = ['BTC', 'ETH', 'SOL', 'XRP']
 # State file
 STATE_FILE = Path(__file__).parent.parent / "state" / "intra_epoch_state.json"
 
+# Web3 / Redemption constants
+RPC_URL = "https://polygon-rpc.com"
+CTF_ADDRESS = "0x4D97DCd97eC945f40cF65F87097ACe5EA0476045"
+USDC_ADDRESS = "0x2791Bca1f2de4661ED88A30C99A7a9449Aa84174"
+CTF_ABI = [{
+    "name": "redeemPositions",
+    "type": "function",
+    "inputs": [
+        {"name": "collateralToken", "type": "address"},
+        {"name": "parentCollectionId", "type": "bytes32"},
+        {"name": "conditionId", "type": "bytes32"},
+        {"name": "indexSets", "type": "uint256[]"}
+    ]
+}]
+
+# Telegram configuration
+TELEGRAM_BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN", "")
+TELEGRAM_CHAT_ID = os.getenv("TELEGRAM_AUTHORIZED_USER_ID", "")
+TELEGRAM_ENABLED = os.getenv("TELEGRAM_NOTIFICATIONS_ENABLED", "false").lower() == "true"
+
 # =============================================================================
 # LOGGING
 # =============================================================================
@@ -90,6 +112,169 @@ file_handler.setFormatter(logging.Formatter(
     '%(asctime)s | %(levelname)s | %(message)s'
 ))
 log.addHandler(file_handler)
+
+# =============================================================================
+# TELEGRAM NOTIFICATIONS
+# =============================================================================
+
+def send_telegram(message: str, silent: bool = False) -> bool:
+    """Send a message to Telegram."""
+    if not TELEGRAM_ENABLED or not TELEGRAM_BOT_TOKEN or not TELEGRAM_CHAT_ID:
+        return False
+
+    try:
+        url = f"https://api.telegram.org/bot{TELEGRAM_BOT_TOKEN}/sendMessage"
+        resp = requests.post(url, json={
+            "chat_id": TELEGRAM_CHAT_ID,
+            "text": message,
+            "parse_mode": "HTML",
+            "disable_notification": silent
+        }, timeout=10)
+        return resp.status_code == 200
+    except Exception as e:
+        log.warning(f"Telegram send failed: {e}")
+        return False
+
+
+def notify_trade(crypto: str, direction: str, entry_price: float, size: float, is_averaging: bool = False):
+    """Send trade notification."""
+    action = "📈 AVERAGING" if is_averaging else "🎯 NEW TRADE"
+    msg = (
+        f"{action}\n"
+        f"<b>{crypto} {direction}</b>\n"
+        f"Entry: ${entry_price:.2f}\n"
+        f"Size: ${size:.2f}"
+    )
+    send_telegram(msg)
+
+
+def notify_result(crypto: str, direction: str, is_win: bool, profit: float, balance: float):
+    """Send trade result notification."""
+    emoji = "✅ WIN" if is_win else "❌ LOSS"
+    msg = (
+        f"{emoji}\n"
+        f"<b>{crypto} {direction}</b>\n"
+        f"P&L: ${profit:+.2f}\n"
+        f"Balance: ${balance:.2f}"
+    )
+    send_telegram(msg)
+
+
+def notify_alert(message: str):
+    """Send alert notification (not silent)."""
+    send_telegram(f"⚠️ ALERT\n{message}", silent=False)
+
+
+# =============================================================================
+# AUTO REDEEMER
+# =============================================================================
+
+class AutoRedeemer:
+    """Automatically redeem winning positions."""
+
+    def __init__(self):
+        private_key = os.getenv("POLYMARKET_PRIVATE_KEY")
+        if not private_key:
+            self.enabled = False
+            log.warning("AutoRedeemer disabled: No private key")
+            return
+
+        self.enabled = True
+        self.w3 = Web3(Web3.HTTPProvider(RPC_URL))
+        self.account = Account.from_key(private_key)
+        self.ctf = self.w3.eth.contract(address=CTF_ADDRESS, abi=CTF_ABI)
+        self.wallet = os.getenv("POLYMARKET_WALLET", self.account.address)
+
+    def get_redeemable_positions(self) -> List[Dict]:
+        """Fetch positions marked as redeemable."""
+        if not self.enabled:
+            return []
+
+        try:
+            resp = requests.get(
+                "https://data-api.polymarket.com/positions",
+                params={"user": self.wallet, "redeemable": "true", "limit": 20},
+                timeout=10
+            )
+            return resp.json() if resp.status_code == 200 else []
+        except Exception as e:
+            log.warning(f"Failed to fetch redeemable positions: {e}")
+            return []
+
+    def redeem_position(self, condition_id: str, nonce: int) -> bool:
+        """Redeem a single position on-chain."""
+        if not self.enabled:
+            return False
+
+        try:
+            gas_price = int(self.w3.eth.gas_price * 1.5)
+
+            txn = self.ctf.functions.redeemPositions(
+                USDC_ADDRESS,
+                bytes(32),
+                bytes.fromhex(condition_id[2:] if condition_id.startswith('0x') else condition_id),
+                [1, 2]
+            ).build_transaction({
+                'from': self.account.address,
+                'nonce': nonce,
+                'gas': 300000,
+                'gasPrice': gas_price,
+                'chainId': 137
+            })
+
+            signed = self.account.sign_transaction(txn)
+            tx_hash = self.w3.eth.send_raw_transaction(signed.raw_transaction)
+            receipt = self.w3.eth.wait_for_transaction_receipt(tx_hash, timeout=120)
+
+            if receipt.status == 1:
+                log.info(f"Redeemed position {condition_id[:10]}... tx: {tx_hash.hex()[:16]}...")
+                return True
+            else:
+                log.warning(f"Redemption tx failed for {condition_id[:10]}...")
+                return False
+
+        except Exception as e:
+            log.error(f"Redemption error: {e}")
+            return False
+
+    def check_and_redeem(self) -> Tuple[int, float]:
+        """
+        Check for redeemable positions and redeem them.
+
+        Returns:
+            (count_redeemed, total_value)
+        """
+        if not self.enabled:
+            return 0, 0.0
+
+        positions = self.get_redeemable_positions()
+        if not positions:
+            return 0, 0.0
+
+        log.info(f"Found {len(positions)} redeemable positions")
+
+        nonce = self.w3.eth.get_transaction_count(self.account.address)
+        redeemed = 0
+        total_value = 0.0
+
+        for pos in positions:
+            condition_id = pos.get('conditionId') or pos.get('condition_id')
+            size = float(pos.get('size', 0))
+
+            if not condition_id:
+                continue
+
+            if self.redeem_position(condition_id, nonce):
+                redeemed += 1
+                total_value += size
+                nonce += 1
+
+        if redeemed > 0:
+            log.info(f"Redeemed {redeemed} positions for ${total_value:.2f}")
+            send_telegram(f"💰 Redeemed {redeemed} positions for ${total_value:.2f}")
+
+        return redeemed, total_value
+
 
 # =============================================================================
 # STATE MANAGEMENT
@@ -573,6 +758,9 @@ def resolve_completed_positions(state: BotState) -> None:
                 log.info(f"  Balance: ${state.current_balance:.2f}")
                 log.info(f"{'='*50}")
 
+                # Telegram notification
+                notify_result(crypto, direction, True, profit, state.current_balance)
+
             else:
                 # LOSS - position is worthless
                 state.total_losses += 1
@@ -586,6 +774,9 @@ def resolve_completed_positions(state: BotState) -> None:
                 log.info(f"  Loss: -${size:.2f}")
                 log.info(f"  Balance: ${state.current_balance:.2f}")
                 log.info(f"{'='*50}")
+
+                # Telegram notification
+                notify_result(crypto, direction, False, -size, state.current_balance)
 
             positions_to_remove.append(crypto)
 
@@ -649,6 +840,7 @@ def check_risk_limits(state: BotState) -> bool:
             state.halted = True
             state.halt_reason = f"Drawdown {drawdown:.1%} exceeds {MAX_DRAWDOWN_PCT:.0%}"
             log.error(f"HALTED: {state.halt_reason}")
+            notify_alert(f"Bot HALTED!\n{state.halt_reason}\nBalance: ${state.current_balance:.2f}")
             return False
 
     # Check daily loss
@@ -656,6 +848,7 @@ def check_risk_limits(state: BotState) -> bool:
         state.halted = True
         state.halt_reason = f"Daily loss ${abs(state.daily_pnl):.2f} exceeds ${MAX_DAILY_LOSS_USD}"
         log.error(f"HALTED: {state.halt_reason}")
+        notify_alert(f"Bot HALTED!\n{state.halt_reason}\nBalance: ${state.current_balance:.2f}")
         return False
 
     return True
@@ -674,6 +867,7 @@ def run_bot():
         log.info(f"Position Averaging: ENABLED (>{PRICE_IMPROVE_THRESHOLD:.0%} improvement, max {MAX_ADDS_PER_POSITION} adds)")
     else:
         log.info(f"Position Averaging: DISABLED")
+    log.info(f"Telegram Alerts: {'ENABLED' if TELEGRAM_ENABLED else 'DISABLED'}")
     log.info("=" * 60)
 
     # Initialize state
@@ -701,7 +895,21 @@ def run_bot():
         log.error("Failed to initialize trading client. Exiting.")
         return
 
-    log.info("CLOB client initialized. Starting main loop...")
+    log.info("CLOB client initialized.")
+
+    # Initialize auto-redeemer
+    redeemer = AutoRedeemer()
+    log.info(f"Auto-Redeemer: {'ENABLED' if redeemer.enabled else 'DISABLED'}")
+
+    log.info("Starting main loop...")
+
+    # Send startup notification
+    if TELEGRAM_ENABLED:
+        send_telegram(
+            f"🤖 <b>Intra-Epoch Bot Started</b>\n"
+            f"Balance: ${state.current_balance:.2f}\n"
+            f"Trades: {state.total_trades} ({state.total_wins}W/{state.total_losses}L)"
+        )
 
     last_epoch = 0
 
@@ -724,6 +932,19 @@ def run_bot():
 
                 # Resolve any completed positions from last epoch
                 resolve_completed_positions(state)
+
+                # Auto-redeem any winning positions
+                if redeemer.enabled:
+                    redeemed, value = redeemer.check_and_redeem()
+                    if redeemed > 0:
+                        # Update balance after redemption
+                        time.sleep(2)  # Wait for chain to settle
+                        balance = get_wallet_balance()
+                        if balance > 0:
+                            state.current_balance = balance
+                            if balance > state.peak_balance:
+                                state.peak_balance = balance
+                            state.save()
 
                 # Update balance at epoch start
                 balance = get_wallet_balance()
@@ -858,6 +1079,7 @@ def run_bot():
                         state.save()
 
                         log.info(f"Position AVERAGED: ${total_cost:.2f} @ ${avg_entry:.2f} (was ${existing_pos['entry_price']:.2f})")
+                        notify_trade(crypto, direction, entry_price, filled_size, is_averaging=True)
                     else:
                         log.warning(f"{crypto}: Averaging order did not fill")
 
@@ -907,6 +1129,7 @@ def run_bot():
                     state.save()
 
                     log.info(f"Position recorded: ${filled_size:.2f}. Total positions: {len(state.positions)}")
+                    notify_trade(crypto, direction, entry_price, filled_size, is_averaging=False)
                 else:
                     log.warning(f"{crypto}: Order did not fill - no position recorded")
 
