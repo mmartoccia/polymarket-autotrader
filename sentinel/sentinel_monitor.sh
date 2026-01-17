@@ -7,6 +7,7 @@
 #   ./sentinel_monitor.sh start   - Start polling daemon in background
 #   ./sentinel_monitor.sh stop    - Stop the polling daemon
 #   ./sentinel_monitor.sh status  - Show current status
+#   ./sentinel_monitor.sh health  - Check health and attempt self-recovery if unhealthy
 #
 
 set -o pipefail
@@ -591,6 +592,264 @@ cmd_status() {
     fi
 }
 
+# Health check constants
+HEARTBEAT_MAX_AGE_SECONDS=120  # 2 minutes
+
+# Check if heartbeat is recent (within last 2 minutes)
+# Returns: 0 if healthy, 1 if stale/missing
+check_heartbeat() {
+    if [[ ! -f "$HEARTBEAT_FILE" ]]; then
+        echo "Heartbeat: MISSING"
+        return 1
+    fi
+
+    local last_heartbeat
+    last_heartbeat=$(cat "$HEARTBEAT_FILE" 2>/dev/null)
+
+    if [[ -z "$last_heartbeat" ]]; then
+        echo "Heartbeat: INVALID (empty file)"
+        return 1
+    fi
+
+    local current_time
+    current_time=$(date +%s)
+    local age=$((current_time - last_heartbeat))
+
+    if [[ $age -gt $HEARTBEAT_MAX_AGE_SECONDS ]]; then
+        echo "Heartbeat: STALE (${age}s ago, max ${HEARTBEAT_MAX_AGE_SECONDS}s)"
+        return 1
+    fi
+
+    echo "Heartbeat: OK (${age}s ago)"
+    return 0
+}
+
+# Check if PID file matches a running process
+# Returns: 0 if healthy, 1 if unhealthy
+check_pid_health() {
+    if [[ ! -f "$PID_FILE" ]]; then
+        echo "PID file: MISSING"
+        return 1
+    fi
+
+    local pid
+    pid=$(cat "$PID_FILE" 2>/dev/null)
+
+    if [[ -z "$pid" ]]; then
+        echo "PID file: INVALID (empty)"
+        return 1
+    fi
+
+    if ! kill -0 "$pid" 2>/dev/null; then
+        echo "PID file: STALE (process $pid not running)"
+        return 1
+    fi
+
+    echo "PID file: OK (process $pid running)"
+    return 0
+}
+
+# Check SSH failure count from error log (approximation based on recent errors)
+# Returns: 0 if healthy, 1 if too many failures
+check_ssh_health() {
+    # Count SSH failure messages in error log from last 10 minutes
+    if [[ ! -f "$ERROR_LOG_FILE" ]]; then
+        echo "SSH errors: OK (no error log)"
+        return 0
+    fi
+
+    local cutoff_time
+    cutoff_time=$(date -v-10M +%s 2>/dev/null || date -d '10 minutes ago' +%s 2>/dev/null)
+    local current_time
+    current_time=$(date +%s)
+
+    # Count recent SSH errors (look for "SSH connection failed" in recent log entries)
+    local recent_ssh_errors=0
+    while IFS= read -r line; do
+        # Extract timestamp from log line format: [YYYY-MM-DD HH:MM:SS] ERROR:
+        if [[ "$line" =~ ^\[([0-9]{4}-[0-9]{2}-[0-9]{2}\ [0-9]{2}:[0-9]{2}:[0-9]{2})\] ]]; then
+            local log_timestamp="${BASH_REMATCH[1]}"
+            local log_epoch
+            log_epoch=$(date -j -f "%Y-%m-%d %H:%M:%S" "$log_timestamp" +%s 2>/dev/null || \
+                       date -d "$log_timestamp" +%s 2>/dev/null)
+            if [[ -n "$log_epoch" ]] && [[ $log_epoch -ge $cutoff_time ]]; then
+                if [[ "$line" == *"SSH connection failed"* ]]; then
+                    ((recent_ssh_errors++))
+                fi
+            fi
+        fi
+    done < <(grep -E "^\[.*\].*SSH connection failed" "$ERROR_LOG_FILE" 2>/dev/null | tail -20)
+
+    if [[ $recent_ssh_errors -ge $MAX_SSH_FAILURES ]]; then
+        echo "SSH errors: UNHEALTHY ($recent_ssh_errors failures in last 10 min, max $MAX_SSH_FAILURES)"
+        return 1
+    fi
+
+    echo "SSH errors: OK ($recent_ssh_errors recent failures)"
+    return 0
+}
+
+# Attempt self-recovery (stop then start)
+# Returns: 0 on success, 1 on failure
+attempt_self_recovery() {
+    log "WARN" "Attempting self-recovery..."
+    echo "Attempting self-recovery..."
+
+    # Stop (quietly, ignoring errors)
+    if [[ -f "$PID_FILE" ]]; then
+        local old_pid
+        old_pid=$(cat "$PID_FILE" 2>/dev/null)
+        if [[ -n "$old_pid" ]]; then
+            kill "$old_pid" 2>/dev/null || true
+            sleep 1
+            # Force kill if still running
+            kill -9 "$old_pid" 2>/dev/null || true
+        fi
+        rm -f "$PID_FILE"
+    fi
+
+    # Clear heartbeat to force fresh start
+    rm -f "$HEARTBEAT_FILE"
+
+    # Wait a moment for cleanup
+    sleep 2
+
+    # Start fresh
+    load_config
+    poll_loop &
+    local new_pid=$!
+    echo "$new_pid" > "$PID_FILE"
+
+    # Wait for first heartbeat (up to 10 seconds)
+    local wait_count=0
+    while [[ $wait_count -lt 10 ]]; do
+        sleep 1
+        ((wait_count++))
+        if [[ -f "$HEARTBEAT_FILE" ]]; then
+            local hb
+            hb=$(cat "$HEARTBEAT_FILE" 2>/dev/null)
+            local now
+            now=$(date +%s)
+            if [[ -n "$hb" ]] && [[ $((now - hb)) -lt 5 ]]; then
+                log "INFO" "Self-recovery successful - monitor restarted with PID $new_pid"
+                echo "Self-recovery SUCCESSFUL - new PID: $new_pid"
+                return 0
+            fi
+        fi
+    done
+
+    log_error "Self-recovery failed - no heartbeat after restart"
+    echo "Self-recovery FAILED - no heartbeat detected"
+    return 1
+}
+
+# Send recovery failure notification via Telegram
+send_recovery_failure_notification() {
+    local health_summary="$1"
+
+    local message="🔴 <b>SENTINEL SELF-RECOVERY FAILED</b>
+
+The Sentinel monitor attempted self-recovery but failed.
+Manual intervention is required.
+
+<b>Health Check Summary:</b>
+<code>$health_summary</code>
+
+<b>Time:</b> $(date -u '+%Y-%m-%d %H:%M UTC')
+
+<b>Actions to try:</b>
+• SSH to Mac and check: <code>./sentinel/sentinel_monitor.sh status</code>
+• Check logs: <code>cat sentinel/state/error.log | tail -20</code>
+• Manual restart: <code>./sentinel/sentinel_monitor.sh start</code>"
+
+    # Escape for Python string
+    local escaped_message
+    escaped_message=$(echo "$message" | sed 's/\\/\\\\/g; s/"/\\"/g')
+
+    # Load config if not already loaded
+    if [[ -z "${VPS_HOST:-}" ]]; then
+        load_config
+    fi
+
+    # Send via VPS telegram_handler (best effort)
+    local python_script="
+import sys
+sys.path.insert(0, '/opt/polymarket-autotrader')
+from bot.telegram_handler import TelegramBot
+
+bot = TelegramBot()
+if bot.enabled:
+    bot.send_message_sync('''$escaped_message''', parse_mode='HTML', silent=False)
+"
+
+    ssh -i "$SSH_KEY" -o ConnectTimeout=5 -o BatchMode=yes \
+        "$VPS_HOST" "cd /opt/polymarket-autotrader && python3 -c \"$python_script\"" 2>/dev/null || true
+}
+
+# Health command - comprehensive health check with optional self-recovery
+cmd_health() {
+    echo "=== Sentinel Monitor Health Check ==="
+    echo ""
+
+    local health_issues=0
+    local health_summary=""
+
+    # Load config for SSH checks
+    load_config 2>/dev/null || true
+
+    # Check 1: PID file matches running process
+    local pid_status
+    pid_status=$(check_pid_health)
+    echo "$pid_status"
+    health_summary+="$pid_status"$'\n'
+    if [[ $? -ne 0 ]] || [[ "$pid_status" != *"OK"* ]]; then
+        ((health_issues++))
+    fi
+
+    # Check 2: Heartbeat within last 2 minutes
+    local heartbeat_status
+    heartbeat_status=$(check_heartbeat)
+    echo "$heartbeat_status"
+    health_summary+="$heartbeat_status"$'\n'
+    if [[ $? -ne 0 ]] || [[ "$heartbeat_status" != *"OK"* ]]; then
+        ((health_issues++))
+    fi
+
+    # Check 3: No repeated SSH failures
+    local ssh_status
+    ssh_status=$(check_ssh_health)
+    echo "$ssh_status"
+    health_summary+="$ssh_status"$'\n'
+    if [[ $? -ne 0 ]] || [[ "$ssh_status" != *"OK"* ]]; then
+        ((health_issues++))
+    fi
+
+    echo ""
+
+    if [[ $health_issues -eq 0 ]]; then
+        echo "Overall: HEALTHY ✓"
+        return 0
+    fi
+
+    echo "Overall: UNHEALTHY ($health_issues issues detected)"
+    echo ""
+
+    # Attempt self-recovery
+    echo "Initiating self-recovery..."
+    if attempt_self_recovery; then
+        echo ""
+        echo "Monitor recovered successfully."
+        log "INFO" "Health check triggered self-recovery - success"
+        return 0
+    else
+        echo ""
+        echo "Self-recovery failed. Sending Telegram alert..."
+        send_recovery_failure_notification "$health_summary"
+        log_error "Health check triggered self-recovery - FAILED"
+        return 1
+    fi
+}
+
 # Main entry point
 main() {
     case "${1:-}" in
@@ -603,8 +862,11 @@ main() {
         status)
             cmd_status
             ;;
+        health)
+            cmd_health
+            ;;
         *)
-            echo "Usage: $0 {start|stop|status}"
+            echo "Usage: $0 {start|stop|status|health}"
             exit 1
             ;;
     esac

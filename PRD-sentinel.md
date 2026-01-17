@@ -278,15 +278,15 @@ Sentinel is an event-driven autonomous monitoring system that watches the tradin
 **Description:** As a user, I want the monitor to detect if it's unhealthy and attempt self-recovery so it stays running reliably.
 
 **Acceptance Criteria:**
-- [ ] Monitor writes heartbeat timestamp to `state/heartbeat` on each poll
-- [ ] Add `health` subcommand to sentinel_monitor.sh
-- [ ] Health check verifies:
+- [x] Monitor writes heartbeat timestamp to `state/heartbeat` on each poll
+- [x] Add `health` subcommand to sentinel_monitor.sh
+- [x] Health check verifies:
   - Heartbeat within last 2 minutes
   - No repeated SSH failures (>5 consecutive)
   - PID file matches running process
-- [ ] If unhealthy, attempt restart (stop then start)
-- [ ] Send Telegram alert if self-recovery fails
-- [ ] Test: Kill monitor process, verify health check detects it
+- [x] If unhealthy, attempt restart (stop then start)
+- [x] Send Telegram alert if self-recovery fails
+- [x] Test: Kill monitor process, verify health check detects it
 
 ---
 
