@@ -147,6 +147,63 @@ class TelegramBot:
             log.warning(f"Telegram send unexpected error: {e}")
             return False
 
+    # =========================================================================
+    # TRADE NOTIFICATIONS
+    # =========================================================================
+
+    def notify_trade(
+        self,
+        crypto: str,
+        direction: str,
+        entry_price: float,
+        size: float,
+        accuracy: float,
+        magnitude_pct: float = 0.0,
+        confluence_count: int = 0,
+        is_averaging: bool = False,
+    ) -> bool:
+        """
+        Send notification when a new trade is placed.
+
+        Args:
+            crypto: Cryptocurrency symbol (BTC, ETH, SOL, XRP)
+            direction: Trade direction (Up or Down)
+            entry_price: Entry price paid per share
+            size: Position size in USD
+            accuracy: Base pattern accuracy (0-100)
+            magnitude_pct: Magnitude boost percentage (0-100)
+            confluence_count: Number of exchanges agreeing (0-3)
+            is_averaging: True if this is an averaging trade into existing position
+
+        Returns:
+            True if notification was queued successfully
+        """
+        action = "AVERAGING" if is_averaging else "NEW TRADE"
+        emoji = "\U0001F4C8" if is_averaging else "\U0001F3AF"  # 📈 or 🎯
+
+        # Build accuracy breakdown
+        if magnitude_pct > 0:
+            base_accuracy = accuracy - magnitude_pct
+            accuracy_text = f"{accuracy:.0f}% ({base_accuracy:.0f}% + {magnitude_pct:.0f}% magnitude)"
+        else:
+            accuracy_text = f"{accuracy:.0f}%"
+
+        # Build confluence text
+        if confluence_count > 0:
+            confluence_text = f"{confluence_count}/3 exchanges agree"
+        else:
+            confluence_text = "No confluence data"
+
+        message = (
+            f"{emoji} {action}\n"
+            f"<b>{crypto} {direction}</b>\n"
+            f"Entry: ${entry_price:.2f} | Size: ${size:.2f}\n"
+            f"Accuracy: {accuracy_text}\n"
+            f"Confluence: {confluence_text}"
+        )
+
+        return self.send_message(message)
+
 
 # Module-level singleton for convenience
 _bot_instance: Optional[TelegramBot] = None

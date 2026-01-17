@@ -20,6 +20,7 @@ import sys
 import time
 import json
 import logging
+import sqlite3
 import requests
 from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime, timezone
@@ -168,16 +169,32 @@ def send_telegram(message: str, silent: bool = False) -> bool:
         return False
 
 
-def notify_trade(crypto: str, direction: str, entry_price: float, size: float, is_averaging: bool = False):
-    """Send trade notification."""
-    action = "📈 AVERAGING" if is_averaging else "🎯 NEW TRADE"
-    msg = (
-        f"{action}\n"
-        f"<b>{crypto} {direction}</b>\n"
-        f"Entry: ${entry_price:.2f}\n"
-        f"Size: ${size:.2f}"
+def notify_trade(
+    crypto: str,
+    direction: str,
+    entry_price: float,
+    size: float,
+    accuracy: float = 0.0,
+    magnitude_boost: float = 0.0,
+    confluence_count: int = 0,
+    is_averaging: bool = False
+):
+    """Send trade notification via telegram_handler."""
+    from telegram_handler import get_telegram_bot
+    bot = get_telegram_bot()
+    # Convert accuracy from decimal to percentage for telegram_handler
+    accuracy_pct = accuracy * 100 if accuracy <= 1 else accuracy
+    magnitude_pct = magnitude_boost * 100 if magnitude_boost <= 1 else magnitude_boost
+    bot.notify_trade(
+        crypto=crypto,
+        direction=direction,
+        entry_price=entry_price,
+        size=size,
+        accuracy=accuracy_pct,
+        magnitude_pct=magnitude_pct,
+        confluence_count=confluence_count,
+        is_averaging=is_averaging
     )
-    send_telegram(msg)
 
 
 def notify_result(crypto: str, direction: str, is_win: bool, profit: float, balance: float):
@@ -1039,6 +1056,210 @@ def log_granular_comparison(
     )
 
 
+# =============================================================================
+# SIGNALS DATABASE - Structured storage for analysis
+# =============================================================================
+
+# Database connection (module-level, initialized on first use)
+_signals_db: Optional[sqlite3.Connection] = None
+
+
+def _init_signals_db() -> sqlite3.Connection:
+    """Initialize the signals database, creating tables if needed."""
+    global _signals_db
+    if _signals_db is not None:
+        return _signals_db
+
+    db_path = Path(__file__).parent.parent / "state" / "intra_signals.db"
+    db_path.parent.mkdir(parents=True, exist_ok=True)
+
+    conn = sqlite3.connect(str(db_path), check_same_thread=False)
+    conn.row_factory = sqlite3.Row
+
+    # Create signals table - stores ALL signals for analysis
+    conn.execute("""
+        CREATE TABLE IF NOT EXISTS signals (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            timestamp REAL NOT NULL,
+            crypto TEXT NOT NULL,
+            epoch INTEGER NOT NULL,
+            direction TEXT,
+            pattern_accuracy REAL,
+            magnitude_pct REAL,
+            magnitude_boost REAL,
+            confluence_direction TEXT,
+            confluence_count INTEGER,
+            confluence_change REAL,
+            final_accuracy REAL,
+            entry_price REAL,
+            decision TEXT NOT NULL,
+            reason TEXT,
+            UNIQUE(crypto, epoch)
+        )
+    """)
+
+    # Create trades table - stores actual trades placed
+    conn.execute("""
+        CREATE TABLE IF NOT EXISTS trades (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            signal_id INTEGER,
+            timestamp REAL NOT NULL,
+            crypto TEXT NOT NULL,
+            epoch INTEGER NOT NULL,
+            direction TEXT NOT NULL,
+            entry_price REAL NOT NULL,
+            size REAL NOT NULL,
+            pattern_accuracy REAL,
+            magnitude_pct REAL,
+            confluence_count INTEGER,
+            outcome TEXT,
+            pnl REAL,
+            FOREIGN KEY (signal_id) REFERENCES signals(id),
+            UNIQUE(crypto, epoch)
+        )
+    """)
+
+    # Create indexes
+    conn.execute("CREATE INDEX IF NOT EXISTS idx_signals_epoch ON signals(epoch)")
+    conn.execute("CREATE INDEX IF NOT EXISTS idx_signals_decision ON signals(decision)")
+    conn.execute("CREATE INDEX IF NOT EXISTS idx_trades_epoch ON trades(epoch)")
+    conn.execute("CREATE INDEX IF NOT EXISTS idx_trades_outcome ON trades(outcome)")
+
+    conn.commit()
+    _signals_db = conn
+    log.info(f"Signals database initialized: {db_path}")
+    return conn
+
+
+def log_signal_to_db(
+    crypto: str,
+    epoch: int,
+    direction: Optional[str],
+    pattern_accuracy: float,
+    magnitude_pct: float,
+    magnitude_boost: float,
+    confluence_direction: Optional[str],
+    confluence_count: int,
+    confluence_change: float,
+    final_accuracy: float,
+    entry_price: Optional[float],
+    decision: str,
+    reason: str
+) -> int:
+    """
+    Log a signal to the database for later analysis.
+
+    Args:
+        crypto: Cryptocurrency symbol
+        epoch: Epoch timestamp
+        direction: Pattern direction ('Up', 'Down', or None)
+        pattern_accuracy: Base pattern accuracy (0-1)
+        magnitude_pct: Cumulative magnitude percentage
+        magnitude_boost: Accuracy boost from magnitude (0-1)
+        confluence_direction: Direction from confluence ('Up', 'Down', or None)
+        confluence_count: Number of exchanges agreeing (0-3)
+        confluence_change: Average change percent across exchanges
+        final_accuracy: Final accuracy with all boosts (0-1)
+        entry_price: Polymarket entry price if available
+        decision: 'TRADE', 'SKIP_WEAK', 'SKIP_CONFLUENCE', 'SKIP_ENTRY', etc.
+        reason: Human-readable reason for decision
+
+    Returns:
+        signal_id: ID of inserted signal, or -1 on error
+    """
+    try:
+        conn = _init_signals_db()
+        cursor = conn.execute("""
+            INSERT OR REPLACE INTO signals
+            (timestamp, crypto, epoch, direction, pattern_accuracy, magnitude_pct,
+             magnitude_boost, confluence_direction, confluence_count, confluence_change,
+             final_accuracy, entry_price, decision, reason)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        """, (
+            time.time(), crypto, epoch, direction, pattern_accuracy, magnitude_pct,
+            magnitude_boost, confluence_direction, confluence_count, confluence_change,
+            final_accuracy, entry_price, decision, reason
+        ))
+        conn.commit()
+        return cursor.lastrowid
+    except Exception as e:
+        log.error(f"Error logging signal to DB: {e}")
+        return -1
+
+
+def log_trade_to_db(
+    crypto: str,
+    epoch: int,
+    direction: str,
+    entry_price: float,
+    size: float,
+    pattern_accuracy: float,
+    magnitude_pct: float,
+    confluence_count: int
+) -> int:
+    """
+    Log a trade to the database.
+
+    Args:
+        crypto: Cryptocurrency symbol
+        epoch: Epoch timestamp
+        direction: Trade direction ('Up' or 'Down')
+        entry_price: Entry price
+        size: Trade size in USD
+        pattern_accuracy: Pattern accuracy at time of trade
+        magnitude_pct: Magnitude percentage
+        confluence_count: Number of exchanges agreeing
+
+    Returns:
+        trade_id: ID of inserted trade, or -1 on error
+    """
+    try:
+        conn = _init_signals_db()
+
+        # Find the corresponding signal
+        signal_row = conn.execute(
+            "SELECT id FROM signals WHERE crypto=? AND epoch=?",
+            (crypto, epoch)
+        ).fetchone()
+        signal_id = signal_row[0] if signal_row else None
+
+        cursor = conn.execute("""
+            INSERT OR REPLACE INTO trades
+            (signal_id, timestamp, crypto, epoch, direction, entry_price, size,
+             pattern_accuracy, magnitude_pct, confluence_count)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        """, (
+            signal_id, time.time(), crypto, epoch, direction, entry_price, size,
+            pattern_accuracy, magnitude_pct, confluence_count
+        ))
+        conn.commit()
+        return cursor.lastrowid
+    except Exception as e:
+        log.error(f"Error logging trade to DB: {e}")
+        return -1
+
+
+def update_trade_outcome(crypto: str, epoch: int, outcome: str, pnl: float):
+    """
+    Update a trade with its outcome after resolution.
+
+    Args:
+        crypto: Cryptocurrency symbol
+        epoch: Epoch timestamp
+        outcome: 'WIN' or 'LOSS'
+        pnl: Profit/loss in USD
+    """
+    try:
+        conn = _init_signals_db()
+        conn.execute(
+            "UPDATE trades SET outcome=?, pnl=? WHERE crypto=? AND epoch=?",
+            (outcome, pnl, crypto, epoch)
+        )
+        conn.commit()
+    except Exception as e:
+        log.error(f"Error updating trade outcome: {e}")
+
+
 def fetch_polymarket_prices(crypto: str, epoch_start: int) -> Optional[Dict]:
     """Fetch current Polymarket prices for Up/Down markets."""
     try:
@@ -1497,6 +1718,9 @@ def resolve_completed_positions(state: BotState) -> None:
                 # Telegram notification
                 notify_result(crypto, direction, True, profit, state.current_balance)
 
+                # Update trade outcome in signals database
+                update_trade_outcome(crypto, pos_epoch, "WIN", profit)
+
             else:
                 # LOSS - position is worthless
                 state.total_losses += 1
@@ -1513,6 +1737,9 @@ def resolve_completed_positions(state: BotState) -> None:
 
                 # Telegram notification
                 notify_result(crypto, direction, False, -size, state.current_balance)
+
+                # Update trade outcome in signals database
+                update_trade_outcome(crypto, pos_epoch, "LOSS", -size)
 
             positions_to_remove.append(crypto)
 
@@ -1825,6 +2052,27 @@ def run_bot():
                     ups = sum(1 for m in minutes if m == 'Up')
                     downs = len(minutes) - ups
                     scan_results.append(f"{crypto}:{ups}↑{downs}↓(weak)")
+                    # Log granular comparison even for weak patterns (for analysis)
+                    if candles and ENABLE_GRANULAR_SHADOW_LOG:
+                        # Determine dominant direction for logging
+                        weak_dir = "Up" if ups > downs else "Down" if downs > ups else None
+                        if weak_dir:
+                            magnitude_boost = calculate_magnitude_boost(candles, weak_dir)
+                            magnitude_pct = sum(abs(c.get('change_pct', 0)) for c in candles if c.get('direction') == weak_dir)
+                            log_granular_comparison(
+                                crypto=crypto, epoch=epoch_start,
+                                pattern_direction=weak_dir, old_accuracy=accuracy, new_accuracy=accuracy,
+                                magnitude_pct=magnitude_pct, magnitude_boost=magnitude_boost,
+                                confluence_direction=None, confluence_count=0, confluence_change=0.0
+                            )
+                            # Log to database
+                            log_signal_to_db(
+                                crypto=crypto, epoch=epoch_start, direction=weak_dir,
+                                pattern_accuracy=accuracy, magnitude_pct=magnitude_pct, magnitude_boost=magnitude_boost,
+                                confluence_direction=None, confluence_count=0, confluence_change=0.0,
+                                final_accuracy=accuracy, entry_price=None,
+                                decision="SKIP_WEAK", reason=f"Pattern too weak: {ups}↑{downs}↓"
+                            )
                     continue
 
                 # Fetch Polymarket prices
@@ -1902,7 +2150,11 @@ def run_bot():
                         state.save()
 
                         log.info(f"Position AVERAGED: ${total_cost:.2f} @ ${avg_entry:.2f} (was ${existing_pos['entry_price']:.2f})")
-                        notify_trade(crypto, direction, entry_price, filled_size, is_averaging=True)
+                        notify_trade(
+                            crypto, direction, entry_price, filled_size,
+                            accuracy=accuracy, magnitude_boost=0.0,
+                            confluence_count=0, is_averaging=True
+                        )
                     else:
                         log.warning(f"{crypto}: Averaging order did not fill")
 
@@ -1911,6 +2163,10 @@ def run_bot():
                 # New position logic (no existing position)
 
                 # Check exchange confluence before placing trade
+                confluence_dir: Optional[str] = None
+                agree_count: int = 0
+                avg_change: float = 0.0
+
                 if ENABLE_MULTI_EXCHANGE:
                     confluence_dir, agree_count, avg_change = get_exchange_confluence(crypto, epoch_start)
                     if confluence_dir is not None:
@@ -1919,19 +2175,74 @@ def run_bot():
                         else:
                             log.info(f"SKIP: Pattern={direction} but confluence={confluence_dir} ({agree_count}/3 exchanges, {avg_change:+.2f}%)")
                             scan_results.append(f"{crypto}:{direction}(conf_mismatch)")
+                            # Log granular comparison even for skipped trades
+                            magnitude_boost = calculate_magnitude_boost(candles, direction) if candles else 0.0
+                            magnitude_pct = sum(abs(c.get('change_pct', 0)) for c in candles if c.get('direction') == direction) if candles else 0.0
+                            old_accuracy = accuracy - magnitude_boost  # Original accuracy without boost
+                            log_granular_comparison(
+                                crypto=crypto, epoch=epoch_start,
+                                pattern_direction=direction, old_accuracy=old_accuracy, new_accuracy=accuracy,
+                                magnitude_pct=magnitude_pct, magnitude_boost=magnitude_boost,
+                                confluence_direction=confluence_dir, confluence_count=agree_count, confluence_change=avg_change
+                            )
+                            # Log to database
+                            log_signal_to_db(
+                                crypto=crypto, epoch=epoch_start, direction=direction,
+                                pattern_accuracy=old_accuracy, magnitude_pct=magnitude_pct, magnitude_boost=magnitude_boost,
+                                confluence_direction=confluence_dir, confluence_count=agree_count, confluence_change=avg_change,
+                                final_accuracy=accuracy, entry_price=entry_price,
+                                decision="SKIP_CONF_MISMATCH", reason=f"Pattern={direction} but confluence={confluence_dir}"
+                            )
                             continue
                     else:
                         # No consensus = choppy market, BLOCK the trade
                         log.info(f"SKIP: No confluence - only {agree_count}/3 exchanges agree ({avg_change:+.2f}%) - market too choppy")
                         scan_results.append(f"{crypto}:{direction}(no_conf)")
+                        # Log granular comparison even for skipped trades
+                        magnitude_boost = calculate_magnitude_boost(candles, direction) if candles else 0.0
+                        magnitude_pct = sum(abs(c.get('change_pct', 0)) for c in candles if c.get('direction') == direction) if candles else 0.0
+                        old_accuracy = accuracy - magnitude_boost
+                        log_granular_comparison(
+                            crypto=crypto, epoch=epoch_start,
+                            pattern_direction=direction, old_accuracy=old_accuracy, new_accuracy=accuracy,
+                            magnitude_pct=magnitude_pct, magnitude_boost=magnitude_boost,
+                            confluence_direction=confluence_dir, confluence_count=agree_count, confluence_change=avg_change
+                        )
+                        # Log to database
+                        log_signal_to_db(
+                            crypto=crypto, epoch=epoch_start, direction=direction,
+                            pattern_accuracy=old_accuracy, magnitude_pct=magnitude_pct, magnitude_boost=magnitude_boost,
+                            confluence_direction=confluence_dir, confluence_count=agree_count, confluence_change=avg_change,
+                            final_accuracy=accuracy, entry_price=entry_price,
+                            decision="SKIP_NO_CONFLUENCE", reason=f"No confluence - only {agree_count}/3 exchanges agree"
+                        )
                         continue
 
                 scan_results.append(f"{crypto}:{direction}({accuracy*100:.0f}%)")
+
+                # Log granular signal data for ALL patterns that pass initial checks
+                magnitude_boost = calculate_magnitude_boost(candles, direction) if candles else 0.0
+                magnitude_pct = sum(abs(c.get('change_pct', 0)) for c in candles if c.get('direction') == direction) if candles else 0.0
+                old_accuracy = accuracy - magnitude_boost
+                log_granular_comparison(
+                    crypto=crypto, epoch=epoch_start,
+                    pattern_direction=direction, old_accuracy=old_accuracy, new_accuracy=accuracy,
+                    magnitude_pct=magnitude_pct, magnitude_boost=magnitude_boost,
+                    confluence_direction=confluence_dir, confluence_count=agree_count, confluence_change=avg_change
+                )
 
                 # Check entry price - must have edge over break-even
                 max_entry = accuracy - EDGE_BUFFER  # e.g., 74% accuracy -> max $0.69 entry
                 if entry_price > max_entry:
                     log.info(f"{crypto}: {direction} ({accuracy*100:.0f}%) but entry ${entry_price:.2f} > ${max_entry:.2f} max (no edge)")
+                    # Log to database
+                    log_signal_to_db(
+                        crypto=crypto, epoch=epoch_start, direction=direction,
+                        pattern_accuracy=old_accuracy, magnitude_pct=magnitude_pct, magnitude_boost=magnitude_boost,
+                        confluence_direction=confluence_dir, confluence_count=agree_count, confluence_change=avg_change,
+                        final_accuracy=accuracy, entry_price=entry_price,
+                        decision="SKIP_ENTRY_PRICE", reason=f"Entry ${entry_price:.2f} > ${max_entry:.2f} max"
+                    )
                     continue
 
                 # Calculate position size
@@ -1940,6 +2251,15 @@ def run_bot():
                 if size < MIN_BET_USD:
                     log.warning(f"{crypto}: Position size ${size:.2f} below minimum")
                     continue
+
+                # Log the signal to database BEFORE placing trade
+                signal_id = log_signal_to_db(
+                    crypto=crypto, epoch=epoch_start, direction=direction,
+                    pattern_accuracy=old_accuracy, magnitude_pct=magnitude_pct, magnitude_boost=magnitude_boost,
+                    confluence_direction=confluence_dir, confluence_count=agree_count, confluence_change=avg_change,
+                    final_accuracy=accuracy, entry_price=entry_price,
+                    decision="TRADE", reason=reason
+                )
 
                 # Log the signal
                 log.info(f"")
@@ -1968,8 +2288,19 @@ def run_bot():
                     state.total_trades += 1
                     state.save()
 
+                    # Log trade to database
+                    log_trade_to_db(
+                        crypto=crypto, epoch=epoch_start, direction=direction,
+                        entry_price=entry_price, size=filled_size,
+                        pattern_accuracy=accuracy, magnitude_pct=magnitude_pct, confluence_count=agree_count
+                    )
+
                     log.info(f"Position recorded: ${filled_size:.2f}. Total positions: {len(state.positions)}")
-                    notify_trade(crypto, direction, entry_price, filled_size, is_averaging=False)
+                    notify_trade(
+                        crypto, direction, entry_price, filled_size,
+                        accuracy=accuracy, magnitude_boost=magnitude_boost,
+                        confluence_count=agree_count, is_averaging=False
+                    )
                 else:
                     log.warning(f"{crypto}: Order did not fill - no position recorded")
 

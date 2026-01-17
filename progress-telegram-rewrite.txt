@@ -18,3 +18,23 @@
   - Need to support both old and new env var names for backwards compatibility
   - Module provides both async (thread) and sync versions of send for flexibility
 ---
+
+## Iteration 2 - US-TG-002: Trade Entry Notifications
+- Added `notify_trade()` method to TelegramBot class in `bot/telegram_handler.py`
+- Method accepts: crypto, direction, entry_price, size, accuracy, magnitude_pct, confluence_count, is_averaging
+- Message formatting:
+  - 🎯 NEW TRADE or 📈 AVERAGING based on is_averaging flag
+  - Bold crypto + direction (e.g., <b>BTC Down</b>)
+  - Entry price and size on same line
+  - Accuracy with magnitude breakdown (e.g., "77% (74% + 3% magnitude)")
+  - Confluence count (e.g., "3/3 exchanges agree")
+- Updated `notify_trade()` wrapper in `intra_epoch_bot.py` to use telegram_handler
+- Updated both call sites in intra_epoch_bot.py to pass accuracy, magnitude_boost, confluence_count
+- Files changed: bot/telegram_handler.py, bot/intra_epoch_bot.py
+- Learnings for future iterations:
+  - intra_epoch_bot.py uses decimal accuracy (0.77) while telegram_handler expects percentage (77%)
+  - Added automatic conversion: `accuracy * 100 if accuracy <= 1 else accuracy`
+  - Averaging trades don't have fresh magnitude/confluence data - pass 0 for those params
+  - Variables available at new trade call: accuracy, magnitude_boost, agree_count
+  - Variables available at averaging call: accuracy only (no fresh magnitude/confluence)
+---

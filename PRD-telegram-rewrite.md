@@ -84,14 +84,14 @@ telegram.start_polling()  # Called at bot startup
 **Description:** Notify when a new trade is placed with full signal context.
 
 **Acceptance Criteria:**
-- [ ] Implement `notify_trade(crypto, direction, entry_price, size, accuracy, magnitude_pct, confluence_count, is_averaging=False)`
-- [ ] Format message with:
+- [x] Implement `notify_trade(crypto, direction, entry_price, size, accuracy, magnitude_pct, confluence_count, is_averaging=False)`
+- [x] Format message with:
   - Action emoji: "🎯 NEW TRADE" or "📈 AVERAGING"
   - Crypto and direction in bold
   - Entry price and size
   - Pattern accuracy with magnitude boost breakdown
   - Confluence status (e.g., "3/3 exchanges agree")
-- [ ] Example format:
+- [x] Example format:
   ```
   🎯 NEW TRADE
   <b>BTC Down</b>
@@ -99,7 +99,7 @@ telegram.start_polling()  # Called at bot startup
   Accuracy: 77% (74% + 3% magnitude)
   Confluence: 3/3 exchanges agree
   ```
-- [ ] Call from main loop when trade is placed
+- [x] Call from main loop when trade is placed
 
 ---
 
