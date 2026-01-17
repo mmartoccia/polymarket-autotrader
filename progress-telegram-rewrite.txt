@@ -1,0 +1,20 @@
+# Progress: Telegram Bot Rewrite
+
+## Iteration 1 - US-TG-001: Core Telegram Handler Module
+- Created `bot/telegram_handler.py` with TelegramBot class
+- Implemented:
+  - Config loading from env (TELEGRAM_BOT_TOKEN, TELEGRAM_CHAT_ID, TELEGRAM_ENABLED)
+  - Also supports legacy env vars (TELEGRAM_AUTHORIZED_USER_ID, TELEGRAM_NOTIFICATIONS_ENABLED)
+  - `send_message()` with background thread execution (non-blocking)
+  - `send_message_sync()` for synchronous sends when needed
+  - `is_authorized(user_id)` check against configured chat_id
+  - `get_telegram_bot()` singleton helper function
+- All sends wrapped in try/except, never raise exceptions
+- Startup logging shows "Telegram: ENABLED" or "Telegram: DISABLED"
+- Files changed: bot/telegram_handler.py (new)
+- Learnings for future iterations:
+  - The intra_epoch_bot.py already has inline telegram functions that will need to be migrated
+  - Existing env vars: TELEGRAM_BOT_TOKEN, TELEGRAM_AUTHORIZED_USER_ID, TELEGRAM_NOTIFICATIONS_ENABLED
+  - Need to support both old and new env var names for backwards compatibility
+  - Module provides both async (thread) and sync versions of send for flexibility
+---
