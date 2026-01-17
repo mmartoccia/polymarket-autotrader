@@ -83,6 +83,15 @@ polymarket-autotrader/
 │   ├── analyze.py                # CLI analysis tool
 │   ├── export.py                 # CSV export utility
 │   └── trade_journal.db          # SQLite database (gitignored)
+├── sentinel/                     # Autonomous monitoring system (NEW!)
+│   ├── sentinel_monitor.sh       # Background polling daemon
+│   ├── sentinel.sh               # Main orchestrator
+│   ├── sentinel_diagnose.md      # Claude prompt template
+│   ├── sentinel_config.json      # Configuration
+│   ├── test_sentinel.sh          # Integration tests
+│   ├── events/                   # Event queue
+│   ├── history/                  # Audit trail
+│   └── state/                    # Runtime state (gitignored)
 └── CLAUDE.md                     # This file
 ```
 
@@ -295,6 +304,333 @@ Shadow trading is **non-invasive**:
 - Can be disabled anytime via config flag
 
 Live bot broadcasts market data to orchestrator on each scan cycle. Shadow strategies make independent decisions and track virtual positions. Outcomes are resolved after epoch ends (when live bot redeems positions).
+
+---
+
+## Sentinel Monitoring System
+
+**NEW in Jan 17, 2026**: Sentinel is an event-driven autonomous monitoring system that watches the trading bot for halt events, performance degradation, and configurable alerts.
+
+### Overview
+
+Sentinel runs **locally on the Mac**, polling the VPS state every 30 seconds:
+- Detects bot halts within 30 seconds of occurrence
+- Notifies user via Telegram with diagnostic summary
+- Auto-fixes safe issues if user doesn't respond within 15 minutes
+- Prevents fix loops by escalating after 2 consecutive auto-fixes
+- Supports configurable alert rules (balance, win rate, drawdown, etc.)
+
+### Architecture
+
+```
+┌─────────────────┐     SSH (every 30s)     ┌─────────────────┐
+│   Mac (Local)   │ ──────────────────────▶ │   VPS (Remote)  │
+│                 │                          │                 │
+│ sentinel_       │ ◀────── State JSON ───── │ Bot State Files │
+│ monitor.sh      │                          │ Bot Logs        │
+│                 │                          │                 │
+└────────┬────────┘                          └─────────────────┘
+         │
+         │ On halt detected
+         ▼
+┌─────────────────┐
+│ sentinel.sh     │ ──────▶ Claude Code (diagnostic analysis)
+│ (orchestrator)  │
+└────────┬────────┘
+         │
+         ▼
+┌─────────────────┐
+│    Telegram     │ ◀────── Notification ──── User Response
+│   (notify user) │ ────────────────────────▶ /approve, /deny
+└─────────────────┘
+```
+
+### Directory Structure
+
+```
+sentinel/
+├── sentinel_monitor.sh     # Background polling daemon
+├── sentinel.sh             # Main orchestrator script
+├── sentinel_diagnose.md    # Claude prompt template
+├── sentinel_config.json    # Configuration file
+├── test_sentinel.sh        # Integration test suite
+├── events/
+│   └── queue.json          # Pending events queue
+├── history/
+│   └── actions.log         # Audit trail of all actions
+└── state/                  # Runtime state (gitignored)
+    ├── monitor.pid         # Daemon process ID
+    ├── monitor.log         # Daemon logs
+    ├── last_state.json     # Last polled VPS state
+    ├── heartbeat           # Health check timestamp
+    ├── recent_fixes.json   # Fix loop tracking
+    ├── rate_limit.json     # Hourly rate tracking
+    ├── alert_cooldowns.json # Alert spam prevention
+    └── error.log           # Error details with stack traces
+```
+
+### Starting and Stopping the Monitor
+
+```bash
+# Start the background monitor
+./sentinel/sentinel_monitor.sh start
+
+# Check if monitor is running
+./sentinel/sentinel_monitor.sh status
+
+# Stop the monitor
+./sentinel/sentinel_monitor.sh stop
+
+# Check monitor health (heartbeat, SSH failures, PID)
+./sentinel/sentinel_monitor.sh health
+```
+
+**Sample Status Output:**
+```
+Sentinel Monitor Status
+=======================
+Status: RUNNING (PID 12345)
+Started: 2026-01-17 10:30:00
+Last poll: 2026-01-17 10:31:30
+Uptime: 1 minute
+```
+
+### Using the /auto-manage Skill
+
+The `/auto-manage` skill provides manual interaction with Sentinel from Claude Code.
+
+**Default (no args) - Run manual diagnostic:**
+```
+/auto-manage
+```
+Gathers VPS state, recent logs, and on-chain balance, then runs Claude analysis.
+
+**Subcommands:**
+```bash
+/auto-manage status    # Monitor status, pending events, rate limits
+/auto-manage start     # Start the monitor daemon
+/auto-manage stop      # Stop the monitor daemon
+/auto-manage history   # Show last 20 actions from audit log
+/auto-manage config    # Display current configuration
+```
+
+**Example `/auto-manage status` Output:**
+```
+📊 Sentinel Status
+==================
+Monitor: RUNNING (PID 12345)
+Last Poll: 2026-01-17 10:31:30 UTC
+
+Last VPS State:
+- Mode: normal
+- Balance: $185.50
+- Peak: $200.00
+- Drawdown: 7.3%
+
+Pending Events: 0
+Rate Limit: 1/3 fixes used this hour
+```
+
+### Configuration Options
+
+All settings in `sentinel/sentinel_config.json`:
+
+| Setting | Default | Description |
+|---------|---------|-------------|
+| `polling.interval_seconds` | 30 | How often to check VPS state |
+| `polling.ssh_timeout_seconds` | 10 | SSH connection timeout |
+| `rate_limits.max_auto_fixes_per_hour` | 3 | Max auto-fixes before pause |
+| `rate_limits.consecutive_fix_limit` | 2 | Max same-issue fixes before escalate |
+| `safety.balance_floor` | 50.0 | Never auto-fix if balance < $50 |
+| `safety.min_confidence_for_auto_fix` | 70 | Require 70%+ confidence to auto-fix |
+| `escalation.telegram_timeout_seconds` | 900 | Wait 15 min for user response |
+
+**Configurable Alert Rules:**
+
+```json
+"alerts": [
+  {"name": "low_balance", "condition": "balance < 75", "severity": "warning", "cooldown_minutes": 60},
+  {"name": "critical_balance", "condition": "balance < 30", "severity": "critical", "cooldown_minutes": 30},
+  {"name": "high_drawdown", "condition": "drawdown_pct > 25", "severity": "warning", "cooldown_minutes": 60},
+  {"name": "losing_streak", "condition": "consecutive_losses >= 3", "severity": "warning", "cooldown_minutes": 30}
+]
+```
+
+### Safety Guardrails
+
+Sentinel has multiple layers of protection:
+
+1. **Kill Switch** - Create `sentinel/state/KILL_SWITCH` file to stop all processing
+   ```bash
+   touch sentinel/state/KILL_SWITCH   # Enable kill switch
+   rm sentinel/state/KILL_SWITCH      # Disable kill switch
+   ```
+
+2. **Balance Floor** - Never auto-fix if balance < $50 (always escalate to user)
+
+3. **Rate Limiting** - Max 3 auto-fixes per hour
+
+4. **Fix Loop Detection** - Escalate after 2 consecutive fixes for same issue type
+
+5. **Confidence Threshold** - Only auto-fix if Claude confidence >= 70%
+
+6. **Manual Override** - User can always /deny or /halt to stop actions
+
+### Available Auto-Fix Actions
+
+| Action | What It Does |
+|--------|--------------|
+| `reset_peak_balance` | Sets peak_balance = current_balance, mode = "normal" |
+| `resume_trading` | Sets mode = "normal", clears halt_reason |
+| `reset_loss_streak` | Sets consecutive_losses = 0, mode = "normal" |
+| `restart_bot` | Runs `systemctl restart polymarket-bot` |
+
+### Example Telegram Messages
+
+**Halt Alert:**
+```
+🚨 SENTINEL ALERT
+
+Bot Status: HALTED
+Reason: Drawdown 35.0% exceeds 30.0%
+Detected: 2026-01-17 10:30:15 UTC
+
+📊 Financial Status:
+• Balance: $130.00
+• Peak: $200.00
+• Drawdown: 35.0%
+
+🔍 Analysis:
+Peak balance appears stale from unredeemed positions.
+Current drawdown is due to tracking issue, not actual losses.
+
+💡 Recommendation:
+Action: reset_peak_balance
+Confidence: 85%
+
+⏰ Respond within 15 minutes or auto-fix will execute.
+
+Commands:
+• /approve - Execute recommended action
+• /deny - Leave bot halted
+• /custom <action> - Specify different action
+```
+
+**Auto-Fix Notification (after timeout):**
+```
+✅ SENTINEL AUTO-FIX
+
+Action Executed: reset_peak_balance
+Time: 2026-01-17 10:45:15 UTC
+
+📋 Details:
+• Reason: Peak balance stale from unredeemed positions
+• Confidence: 85%
+• Peak: $200.00 → $130.00
+• Mode: halted → normal
+
+Reply /halt to stop if needed.
+```
+
+**Alert Notification:**
+```
+⚠️ SENTINEL WARNING
+
+Alert: losing_streak
+Condition: consecutive_losses >= 3
+
+📊 Current State:
+• Balance: $145.00
+• Consecutive Losses: 3
+• Mode: normal
+
+This is an informational alert. No action required.
+```
+
+### Troubleshooting
+
+**Monitor not starting:**
+```bash
+# Check if already running
+./sentinel/sentinel_monitor.sh status
+
+# Check for stale PID file
+cat sentinel/state/monitor.pid
+ps aux | grep sentinel
+
+# Remove stale PID and restart
+rm sentinel/state/monitor.pid
+./sentinel/sentinel_monitor.sh start
+```
+
+**Not receiving Telegram notifications:**
+```bash
+# Test Telegram connection
+ssh -i ~/.ssh/polymarket_vultr root@216.238.85.11 "cd /opt/polymarket-autotrader && python3 -c \"
+from bot.telegram_handler import TelegramBot
+bot = TelegramBot()
+print('Enabled:', bot.enabled)
+bot.send_message_sync('Test from Sentinel')
+\""
+```
+
+**SSH failures:**
+```bash
+# Check SSH connection
+ssh -i ~/.ssh/polymarket_vultr -o ConnectTimeout=10 root@216.238.85.11 "echo OK"
+
+# Check error log for details
+tail -20 sentinel/state/error.log
+```
+
+**Events not processing:**
+```bash
+# Check pending events
+cat sentinel/events/queue.json | python3 -m json.tool
+
+# Check if orchestrator is locked
+ls -la sentinel/state/sentinel.lock
+
+# Manual process pending events
+./sentinel/sentinel.sh
+```
+
+**Health check failed:**
+```bash
+# Run health check
+./sentinel/sentinel_monitor.sh health
+
+# Check heartbeat age
+cat sentinel/state/heartbeat
+
+# Force restart
+./sentinel/sentinel_monitor.sh stop
+./sentinel/sentinel_monitor.sh start
+```
+
+### Running Integration Tests
+
+```bash
+./sentinel/test_sentinel.sh
+
+# Sample output:
+# =============================================
+#        SENTINEL INTEGRATION TESTS
+# =============================================
+#
+# [PASS] jq is installed
+# [PASS] Directory structure exists
+# [PASS] Config file is valid JSON
+# ...
+#
+# =============================================
+#              TEST SUMMARY
+# =============================================
+# Passed: 20/20
+# Failed: 0/20
+#
+# All tests passed!
+```
 
 ---
 
@@ -823,8 +1159,8 @@ With 6.3% round-trip fees at 50% probability:
 1. **No orderbook analysis** - Could improve entry timing
 2. **Single exchange per crypto** - Could aggregate more sources
 3. **No position hedging** - Once in, committed to outcome
-4. **Manual state resets** - Peak balance tracking needs improvement
-5. **No mobile alerts** - Would be useful for halts/big wins
+4. **Manual state resets** - Peak balance tracking needs improvement (Sentinel can auto-fix)
+5. **Sentinel requires Mac online** - Runs locally, not on VPS
 
 ---
 

@@ -315,17 +315,17 @@ Sentinel is an event-driven autonomous monitoring system that watches the tradin
 **Description:** As a user, I want Sentinel documented in CLAUDE.md so future Claude sessions understand how to use and maintain it.
 
 **Acceptance Criteria:**
-- [ ] Add "Sentinel Monitoring System" section to CLAUDE.md
-- [ ] Document:
+- [x] Add "Sentinel Monitoring System" section to CLAUDE.md
+- [x] Document:
   - Purpose and architecture overview
   - How to start/stop the monitor
   - How to use /auto-manage skill
   - Configuration options
   - Safety guardrails (kill switch, rate limits)
   - Troubleshooting common issues
-- [ ] Include example Telegram message formats
-- [ ] Include example commands and expected output
-- [ ] Typecheck passes (N/A - markdown file)
+- [x] Include example Telegram message formats
+- [x] Include example commands and expected output
+- [x] Typecheck passes (N/A - markdown file)
 
 ---
 
