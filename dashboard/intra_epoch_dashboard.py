@@ -4,6 +4,7 @@ Intra-Epoch Momentum Dashboard
 
 Real-time visualization of 1-minute candle patterns within each 15-minute epoch.
 Shows momentum buildup and predicted outcome probability for BTC, ETH, SOL, XRP.
+Includes live Polymarket prices for Up/Down markets.
 """
 
 import os
@@ -22,6 +23,7 @@ RED = "\033[91m"
 GREEN = "\033[92m"
 YELLOW = "\033[93m"
 CYAN = "\033[96m"
+WHITE = "\033[97m"
 
 
 def strip_ansi(text: str) -> str:
@@ -96,6 +98,61 @@ def fetch_epoch_minutes(crypto: str, epoch_start: int) -> Optional[List[dict]]:
         return None
 
 
+def fetch_polymarket_prices(crypto: str, epoch_start: int) -> Optional[Dict[str, float]]:
+    """Fetch current Polymarket prices for Up/Down markets."""
+    try:
+        slug = f"{crypto.lower()}-updown-15m-{epoch_start}"
+
+        # Get market from Gamma API
+        resp = requests.get(f"https://gamma-api.polymarket.com/events?slug={slug}", timeout=3)
+        if resp.status_code != 200 or not resp.json():
+            return None
+
+        event = resp.json()[0]
+        markets = event.get("markets", [])
+        if not markets:
+            return None
+
+        # Get CLOB data for prices
+        cid = markets[0].get("conditionId")
+        clob = requests.get(f"https://clob.polymarket.com/markets/{cid}", timeout=3)
+        if clob.status_code != 200:
+            return None
+
+        tokens = clob.json().get("tokens", [])
+        prices = {}
+
+        for t in tokens:
+            outcome = t.get("outcome", "")
+            token_id = t.get("token_id", "")
+            if not token_id:
+                continue
+
+            try:
+                book_resp = requests.get(f"https://clob.polymarket.com/book?token_id={token_id}", timeout=2)
+                book = book_resp.json()
+                asks = book.get("asks", [])
+                bids = book.get("bids", [])
+
+                # Best ask (what you pay to buy)
+                best_ask = float(asks[-1]["price"]) if asks else 0.99
+                # Best bid (what you get to sell)
+                best_bid = float(bids[0]["price"]) if bids else 0.01
+
+                prices[outcome] = {
+                    'ask': best_ask,
+                    'bid': best_bid,
+                    'mid': (best_ask + best_bid) / 2
+                }
+            except Exception:
+                continue
+
+        return prices if prices else None
+
+    except Exception:
+        return None
+
+
 def analyze_pattern(minutes: List[dict]) -> Tuple[Optional[str], float, str]:
     """Analyze minute patterns and return (direction, probability, description)."""
     if not minutes:
@@ -141,8 +198,9 @@ def analyze_pattern(minutes: List[dict]) -> Tuple[Optional[str], float, str]:
     return (None, 0.5, f'Mixed: {ups} up, {downs} down (no signal)')
 
 
-def render_crypto_panel(crypto: str, minutes: List[dict], time_in_epoch: int) -> List[str]:
-    """Render a single crypto panel."""
+def render_crypto_panel(crypto: str, minutes: List[dict], time_in_epoch: int,
+                        prices: Optional[Dict] = None) -> List[str]:
+    """Render a single crypto panel with prices."""
     W = 38  # Panel inner width (excluding borders)
     lines = []
 
@@ -193,6 +251,16 @@ def render_crypto_panel(crypto: str, minutes: List[dict], time_in_epoch: int) ->
     lines.append(f"│ {pad_right(row3, W-2)} │")
     lines.append(f"├{'─' * W}┤")
 
+    # Polymarket prices
+    if prices and 'Up' in prices and 'Down' in prices:
+        up_ask = prices['Up'].get('ask', 0.50)
+        down_ask = prices['Down'].get('ask', 0.50)
+        price_line = f"Market: {GREEN}UP ${up_ask:.2f}{RESET}  {RED}DN ${down_ask:.2f}{RESET}"
+        lines.append(f"│ {pad_right(price_line, W-2)} │")
+    else:
+        price_line = f"{DIM}Market: No prices available{RESET}"
+        lines.append(f"│ {pad_right(price_line, W-2)} │")
+
     # Count
     ups = sum(1 for m in completed if m['direction'] == 'Up')
     downs = len(completed) - ups
@@ -208,9 +276,44 @@ def render_crypto_panel(crypto: str, minutes: List[dict], time_in_epoch: int) ->
         pred_line = f"Predict: {YELLOW}50% ???{RESET}"
     lines.append(f"│ {pad_right(pred_line, W-2)} │")
 
-    # Description
-    desc = description[:W-2]
-    lines.append(f"│ {desc:<{W-2}} │")
+    # Value indicator - show if prediction aligns with cheap entry
+    if direction and prices:
+        entry_price = prices.get(direction, {}).get('ask', 0.99)
+        if entry_price <= 0.25:
+            value_line = f"{GREEN}{BOLD}★ VALUE: ${entry_price:.2f} entry!{RESET}"
+        elif entry_price <= 0.35:
+            value_line = f"{GREEN}● Good: ${entry_price:.2f} entry{RESET}"
+        elif entry_price <= 0.50:
+            value_line = f"{YELLOW}○ Fair: ${entry_price:.2f} entry{RESET}"
+        else:
+            value_line = f"{RED}✗ Expensive: ${entry_price:.2f}{RESET}"
+        lines.append(f"│ {pad_right(value_line, W-2)} │")
+    else:
+        lines.append(f"│ {pad_right(f'{DIM}○ No signal yet{RESET}', W-2)} │")
+
+    # Winning/Losing status - compare current running total to prediction
+    if direction and len(completed) >= 3:
+        # Count all completed minutes (not just first 3-5)
+        total_ups = sum(1 for m in completed if m['direction'] == 'Up')
+        total_downs = len(completed) - total_ups
+
+        if direction == 'Up':
+            if total_ups > total_downs:
+                status_line = f"{GREEN}{BOLD}📈 WINNING{RESET} ({total_ups}▲ vs {total_downs}▼)"
+            elif total_ups < total_downs:
+                status_line = f"{RED}{BOLD}📉 LOSING{RESET} ({total_ups}▲ vs {total_downs}▼)"
+            else:
+                status_line = f"{YELLOW}⚖️  TIED{RESET} ({total_ups}▲ vs {total_downs}▼)"
+        else:  # direction == 'Down'
+            if total_downs > total_ups:
+                status_line = f"{GREEN}{BOLD}📈 WINNING{RESET} ({total_downs}▼ vs {total_ups}▲)"
+            elif total_downs < total_ups:
+                status_line = f"{RED}{BOLD}📉 LOSING{RESET} ({total_downs}▼ vs {total_ups}▲)"
+            else:
+                status_line = f"{YELLOW}⚖️  TIED{RESET} ({total_downs}▼ vs {total_ups}▲)"
+        lines.append(f"│ {pad_right(status_line, W-2)} │")
+    else:
+        lines.append(f"│ {pad_right(f'{DIM}○ Waiting for signal...{RESET}', W-2)} │")
 
     # Window status
     if 180 <= time_in_epoch <= 600:
@@ -226,8 +329,9 @@ def render_crypto_panel(crypto: str, minutes: List[dict], time_in_epoch: int) ->
     return lines
 
 
-def render_dashboard(data: Dict[str, List[dict]], epoch_start: int, time_in_epoch: int):
-    """Render the full dashboard."""
+def render_dashboard(data: Dict[str, List[dict]], prices_data: Dict[str, Dict],
+                     epoch_start: int, time_in_epoch: int):
+    """Render the full dashboard with prices."""
     clear_screen()
 
     epoch_time = datetime.fromtimestamp(epoch_start, tz=timezone.utc)
@@ -269,9 +373,10 @@ def render_dashboard(data: Dict[str, List[dict]], epoch_start: int, time_in_epoc
     print(f"{CYAN}╚{'═' * (W-2)}╝{RESET}")
     print()
 
-    # Render panels
+    # Render panels with prices
     cryptos = ['BTC', 'ETH', 'SOL', 'XRP']
-    panels = [render_crypto_panel(c, data.get(c, []), time_in_epoch) for c in cryptos]
+    panels = [render_crypto_panel(c, data.get(c, []), time_in_epoch, prices_data.get(c))
+              for c in cryptos]
 
     # Print top row (BTC, ETH)
     for i in range(len(panels[0])):
@@ -286,6 +391,7 @@ def render_dashboard(data: Dict[str, List[dict]], epoch_start: int, time_in_epoc
     print()
     print(f"  {DIM}Legend: {GREEN}▲{RESET}{DIM}=Up  {RED}▼{RESET}{DIM}=Down  ·=Pending  [▲]=Current{RESET}")
     print(f"  {DIM}Patterns: 4+/5 same = 74-80%  |  All 3 same = 74-78%  |  3/5 same = ~65%{RESET}")
+    print(f"  {DIM}Value: ★ ≤$0.25 | ● ≤$0.35 | ○ ≤$0.50 | ✗ >$0.50{RESET}")
     print()
     print(f"  {DIM}Refreshing every 5s. Press Ctrl+C to exit.{RESET}")
 
@@ -302,12 +408,20 @@ def main():
             epoch_start, time_in_epoch = get_current_epoch()
 
             data = {}
+            prices_data = {}
+
             for crypto in cryptos:
+                # Fetch minute candles
                 minutes = fetch_epoch_minutes(crypto, epoch_start)
                 if minutes:
                     data[crypto] = minutes
 
-            render_dashboard(data, epoch_start, time_in_epoch)
+                # Fetch Polymarket prices
+                prices = fetch_polymarket_prices(crypto, epoch_start)
+                if prices:
+                    prices_data[crypto] = prices
+
+            render_dashboard(data, prices_data, epoch_start, time_in_epoch)
             time.sleep(5)
 
     except KeyboardInterrupt:
