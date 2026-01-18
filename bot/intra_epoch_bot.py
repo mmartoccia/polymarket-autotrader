@@ -67,7 +67,10 @@ MAX_POSITION_USD = 15.0         # Maximum position size
 MIN_BET_USD = 1.10              # Polymarket minimum
 
 # Position averaging (buying more when price improves)
-ENABLE_POSITION_AVERAGING = True
+# DISABLED Jan 18, 2026: Averaging amplified losses on XRP Down trade from $4.79 to $9.59
+# The logic interpreted dropping prices as "better entry" when it was actually the market
+# signaling our prediction was wrong. This caused a halt-triggering 31% drawdown.
+ENABLE_POSITION_AVERAGING = False
 PRICE_IMPROVE_THRESHOLD = 0.10  # Only add if price is 10%+ cheaper
 MAX_PRICE_DROP_FOR_AVERAGING = 0.25  # STOP averaging if price dropped >25% (signal is likely wrong)
 AVERAGING_SIZE_MULTIPLIER = 0.5  # Only add 50% of normal position (reduce downside risk)
