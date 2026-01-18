@@ -84,32 +84,34 @@ log_error() {
 # This is a simplified version that doesn't retry to avoid loops
 send_critical_error_notification() {
     local error_msg="$1"
+    local timestamp
+    timestamp=$(date -u '+%Y-%m-%d %H:%M UTC')
 
-    # Escape for Python string
-    local escaped_msg
-    escaped_msg=$(echo "$error_msg" | sed 's/\\/\\\\/g; s/"/\\"/g')
-
+    # Build message with escaped error
     local message="🔴 <b>SENTINEL CRITICAL ERROR</b>
 
-<code>$escaped_msg</code>
+<code>$error_msg</code>
 
-Time: $(date -u '+%Y-%m-%d %H:%M UTC')
+Time: $timestamp
 
 ⚠️ Sentinel monitor may require attention"
 
-    # Try to send via VPS telegram_handler (best effort, no retry)
-    local python_script="
-import sys
+    # Base64 encode message to avoid all shell escaping issues
+    local b64_message
+    b64_message=$(printf '%s' "$message" | base64)
+
+    # Send via SSH - decode base64 in Python to get original message
+    ssh -i "$SSH_KEY" -o ConnectTimeout=5 -o BatchMode=yes \
+        "$VPS_HOST" "cd /opt/polymarket-autotrader && python3 -c \"
+import sys, base64
 sys.path.insert(0, '/opt/polymarket-autotrader')
 from bot.telegram_handler import TelegramBot
 
+message = base64.b64decode('$b64_message').decode('utf-8')
 bot = TelegramBot()
 if bot.enabled:
-    bot.send_message_sync('''$message''', parse_mode='HTML', silent=False)
-"
-
-    ssh -i "$SSH_KEY" -o ConnectTimeout=5 -o BatchMode=yes \
-        "$VPS_HOST" "cd /opt/polymarket-autotrader && python3 -c \"$python_script\"" 2>/dev/null || true
+    bot.send_message_sync(message, parse_mode='HTML', silent=False)
+\"" 2>/dev/null || true
 }
 
 # Get VPS state via SSH with retry logic
@@ -170,25 +172,28 @@ get_vps_state() {
 }
 
 # Check if mode transitioned to halted
+# Note: The intra_epoch_bot uses a boolean "halted" field, not a "mode" field
 check_halt_transition() {
     local current_state="$1"
-    local current_mode
-    local last_mode
+    local current_halted
+    local last_halted
 
-    current_mode=$(echo "$current_state" | jq -r '.mode // "unknown"')
+    # Check the "halted" boolean field (intra_epoch_bot uses this)
+    # Falls back to checking "mode" for backwards compatibility with momentum_bot
+    current_halted=$(echo "$current_state" | jq -r 'if .halted == true then "halted" elif .mode == "halted" then "halted" else "running" end')
 
-    # Get last known mode
+    # Get last known state
     if [[ -f "$LAST_STATE_FILE" ]]; then
-        last_mode=$(jq -r '.mode // "unknown"' "$LAST_STATE_FILE")
+        last_halted=$(jq -r 'if .halted == true then "halted" elif .mode == "halted" then "halted" else "running" end' "$LAST_STATE_FILE")
     else
-        last_mode="unknown"
+        last_halted="unknown"
     fi
 
     # Save current state for next comparison
     echo "$current_state" > "$LAST_STATE_FILE"
 
-    # Check for halt transition (mode changed TO halted)
-    if [[ "$current_mode" == "halted" ]] && [[ "$last_mode" != "halted" ]]; then
+    # Check for halt transition (state changed TO halted)
+    if [[ "$current_halted" == "halted" ]] && [[ "$last_halted" != "halted" ]]; then
         return 0  # Halt transition detected
     fi
 
@@ -356,11 +361,15 @@ send_alert_notification() {
     local timestamp
     timestamp=$(date -u +"%Y-%m-%d %H:%M UTC")
 
+    # HTML-escape the condition (< and > are common in alert conditions)
+    local escaped_condition
+    escaped_condition=$(echo "$condition" | sed 's/</\&lt;/g; s/>/\&gt;/g')
+
     # Build message
     local message="$emoji <b>SENTINEL ALERT: ${alert_name}</b>
 
 <b>Severity:</b> $(echo "$severity" | tr '[:lower:]' '[:upper:]')
-<b>Condition:</b> <code>$condition</code>
+<b>Condition:</b> <code>$escaped_condition</code>
 <b>Time:</b> $timestamp
 
 <b>Current State:</b>
@@ -368,28 +377,27 @@ send_alert_notification() {
 • Drawdown: ${drawdown_pct}%
 • Consecutive Losses: $consecutive_losses"
 
-    # Escape for Python string
-    local escaped_message
-    escaped_message=$(echo "$message" | sed 's/\\/\\\\/g; s/"/\\"/g')
+    # Base64 encode message to avoid all shell escaping issues
+    local b64_message
+    b64_message=$(printf '%s' "$message" | base64)
 
-    # Send via SSH to VPS telegram_handler with retry
-    local python_script="
-import sys
+    # Send via SSH to VPS telegram_handler with retry - using base64 to avoid escaping
+    local retry=0
+    while [[ $retry -lt $max_retries ]]; do
+        ssh -i "$SSH_KEY" -o ConnectTimeout="$SSH_TIMEOUT" -o BatchMode=yes \
+            "$VPS_HOST" "cd /opt/polymarket-autotrader && python3 -c \"
+import sys, base64
 sys.path.insert(0, '/opt/polymarket-autotrader')
 from bot.telegram_handler import TelegramBot
 
+message = base64.b64decode('$b64_message').decode('utf-8')
 bot = TelegramBot()
 if not bot.enabled:
     sys.exit(1)
 
-result = bot.send_message_sync('''$escaped_message''', parse_mode='HTML', silent=False)
+result = bot.send_message_sync(message, parse_mode='HTML', silent=False)
 sys.exit(0 if result else 1)
-"
-
-    local retry=0
-    while [[ $retry -lt $max_retries ]]; do
-        ssh -i "$SSH_KEY" -o ConnectTimeout="$SSH_TIMEOUT" -o BatchMode=yes \
-            "$VPS_HOST" "cd /opt/polymarket-autotrader && python3 -c \"$python_script\"" 2>/dev/null
+\"" 2>/dev/null
 
         if [[ $? -eq 0 ]]; then
             return 0
@@ -492,7 +500,7 @@ poll_loop() {
             log "WARN" "Alert evaluation encountered issues (non-critical)"
         fi
 
-        log "DEBUG" "Poll complete, mode=$(echo "$state" | jq -r '.mode // "unknown"')"
+        log "DEBUG" "Poll complete, halted=$(echo "$state" | jq -r 'if .halted == true then "true" elif .mode == "halted" then "true" else "false" end')"
 
         sleep "$POLL_INTERVAL"
     done
@@ -568,9 +576,9 @@ cmd_status() {
                    stat -c "%y" "$LAST_STATE_FILE" 2>/dev/null | cut -d'.' -f1)
         echo "Last poll: $last_mod"
 
-        local last_mode
-        last_mode=$(jq -r '.mode // "unknown"' "$LAST_STATE_FILE")
-        echo "Last mode: $last_mode"
+        local last_halted
+        last_halted=$(jq -r 'if .halted == true then "HALTED" elif .mode == "halted" then "HALTED" else "running" end' "$LAST_STATE_FILE")
+        echo "Last status: $last_halted"
     else
         echo "Last poll: Never"
     fi
@@ -762,28 +770,27 @@ Manual intervention is required.
 • Check logs: <code>cat sentinel/state/error.log | tail -20</code>
 • Manual restart: <code>./sentinel/sentinel_monitor.sh start</code>"
 
-    # Escape for Python string
-    local escaped_message
-    escaped_message=$(echo "$message" | sed 's/\\/\\\\/g; s/"/\\"/g')
-
     # Load config if not already loaded
     if [[ -z "${VPS_HOST:-}" ]]; then
         load_config
     fi
 
+    # Base64 encode message to avoid all shell escaping issues
+    local b64_message
+    b64_message=$(printf '%s' "$message" | base64)
+
     # Send via VPS telegram_handler (best effort)
-    local python_script="
-import sys
+    ssh -i "$SSH_KEY" -o ConnectTimeout=5 -o BatchMode=yes \
+        "$VPS_HOST" "cd /opt/polymarket-autotrader && python3 -c \"
+import sys, base64
 sys.path.insert(0, '/opt/polymarket-autotrader')
 from bot.telegram_handler import TelegramBot
 
+message = base64.b64decode('$b64_message').decode('utf-8')
 bot = TelegramBot()
 if bot.enabled:
-    bot.send_message_sync('''$escaped_message''', parse_mode='HTML', silent=False)
-"
-
-    ssh -i "$SSH_KEY" -o ConnectTimeout=5 -o BatchMode=yes \
-        "$VPS_HOST" "cd /opt/polymarket-autotrader && python3 -c \"$python_script\"" 2>/dev/null || true
+    bot.send_message_sync(message, parse_mode='HTML', silent=False)
+\"" 2>/dev/null || true
 }
 
 # Health command - comprehensive health check with optional self-recovery

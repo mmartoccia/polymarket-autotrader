@@ -41,6 +41,23 @@ from py_clob_client.constants import POLYGON
 load_dotenv()
 
 # =============================================================================
+# SHADOW TRADING SYSTEM
+# =============================================================================
+# Try to import shadow trading components
+SHADOW_TRADING_AVAILABLE = False
+SimulationOrchestrator = None
+STRATEGY_LIBRARY = None
+
+try:
+    from simulation.orchestrator import SimulationOrchestrator
+    from simulation.strategy_configs import STRATEGY_LIBRARY
+    from config import agent_config
+    SHADOW_TRADING_AVAILABLE = True
+except ImportError as e:
+    log_msg = f"Shadow trading not available: {e}"
+    # Can't use log here yet, will log later
+
+# =============================================================================
 # CONFIGURATION
 # =============================================================================
 
@@ -1694,7 +1711,7 @@ def place_trade(client: ClobClient, crypto: str, direction: str,
 # MAIN BOT LOOP
 # =============================================================================
 
-def resolve_completed_positions(state: BotState) -> None:
+def resolve_completed_positions(state: BotState, orchestrator=None) -> None:
     """Check and resolve any positions from completed epochs."""
     if not state.positions:
         return
@@ -1715,6 +1732,13 @@ def resolve_completed_positions(state: BotState) -> None:
             # Fetch the final outcome from that epoch
             # We check if the price moved in our direction
             outcome = check_epoch_outcome(crypto, pos_epoch)
+
+            # Notify shadow trading orchestrator of the outcome
+            if orchestrator and outcome:
+                try:
+                    orchestrator.on_epoch_resolution(crypto.lower(), pos_epoch, outcome)
+                except Exception as e:
+                    log.error(f"Shadow trading resolution error: {e}")
 
             if outcome is None:
                 log.warning(f"{crypto}: Could not determine outcome for epoch {pos_epoch}")
@@ -1962,6 +1986,35 @@ def run_bot():
         losses=state.total_losses,
     )
 
+    # Initialize shadow trading orchestrator
+    orchestrator = None
+    if SHADOW_TRADING_AVAILABLE and hasattr(agent_config, 'ENABLE_SHADOW_TRADING') and agent_config.ENABLE_SHADOW_TRADING:
+        try:
+            # Build shadow strategy configs from library
+            shadow_configs = [
+                STRATEGY_LIBRARY[name]
+                for name in agent_config.SHADOW_STRATEGIES
+                if name in STRATEGY_LIBRARY
+            ]
+
+            orchestrator = SimulationOrchestrator(
+                strategies=shadow_configs,
+                db_path=agent_config.SHADOW_DB_PATH,
+                starting_balance=agent_config.SHADOW_STARTING_BALANCE
+            )
+            log.info(f"📊 Shadow Trading: {len(orchestrator.strategies)} strategies running")
+            for name in orchestrator.strategies.keys():
+                log.info(f"  • {name}")
+        except Exception as e:
+            log.error(f"Shadow trading init failed: {e}")
+            import traceback
+            traceback.print_exc()
+            orchestrator = None
+    elif SHADOW_TRADING_AVAILABLE:
+        log.info("Shadow trading disabled in config")
+    else:
+        log.warning("Shadow trading module not available")
+
     last_epoch = 0
     last_redeem_check = 0
 
@@ -2007,7 +2060,7 @@ def run_bot():
                 log.info(f"--- New Epoch: {epoch_time.strftime('%H:%M')} UTC ---")
 
                 # Resolve any completed positions from last epoch
-                resolve_completed_positions(state)
+                resolve_completed_positions(state, orchestrator)
 
                 # Update balance at epoch start
                 balance = get_wallet_balance()
@@ -2043,6 +2096,35 @@ def run_bot():
                 state.save()
                 time.sleep(60)
                 continue
+
+            # SHADOW TRADING: Broadcast market data to all shadow strategies
+            if orchestrator:
+                try:
+                    for crypto in CRYPTOS:
+                        # Fetch prices for shadow strategies
+                        shadow_prices = fetch_polymarket_prices(crypto, epoch_start)
+                        if not shadow_prices:
+                            continue
+
+                        # Build market data dict for shadow strategies
+                        market_data = {
+                            'prices': {
+                                'btc': 0, 'eth': 0, 'sol': 0, 'xrp': 0  # Not used by shadow
+                            },
+                            'orderbook': {
+                                'yes': {'price': shadow_prices.get('Up', {}).get('ask', 0.5)},
+                                'no': {'price': shadow_prices.get('Down', {}).get('ask', 0.5)}
+                            },
+                            'positions': state.positions,
+                            'balance': state.current_balance,
+                            'time_in_epoch': time_in_epoch,
+                            'rsi': 50.0,  # Placeholder - shadow strategies don't rely on this
+                            'regime': 0.0,  # Neutral regime
+                            'mode': 'normal' if not state.halted else 'halted'
+                        }
+                        orchestrator.on_market_data(crypto.lower(), epoch_start, market_data)
+                except Exception as e:
+                    log.error(f"Shadow trading error: {e}")
 
             # Scan each crypto
             scan_results = []  # Track what happened with each crypto
