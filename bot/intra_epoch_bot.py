@@ -1997,9 +1997,14 @@ def run_bot():
                 if name in STRATEGY_LIBRARY
             ]
 
+            # Resolve DB path relative to project root
+            import os
+            project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+            db_path = os.path.join(project_root, agent_config.SHADOW_DB_PATH)
+
             orchestrator = SimulationOrchestrator(
                 strategies=shadow_configs,
-                db_path=agent_config.SHADOW_DB_PATH,
+                db_path=db_path,
                 starting_balance=agent_config.SHADOW_STARTING_BALANCE
             )
             log.info(f"📊 Shadow Trading: {len(orchestrator.strategies)} strategies running")
