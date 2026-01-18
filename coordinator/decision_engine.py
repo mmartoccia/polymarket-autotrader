@@ -344,13 +344,15 @@ class DecisionEngine:
         # This ensures only quality trades execute while managing position risk
 
         # Check if consensus meets minimum threshold
-        self.log.debug(f"Consensus threshold check: score={prediction.weighted_score:.3f} vs threshold={CONSENSUS_THRESHOLD:.2f}")
-        if prediction.weighted_score < CONSENSUS_THRESHOLD:
-            self.log.debug(f"❌ Below threshold: {prediction.weighted_score:.3f} < {CONSENSUS_THRESHOLD:.2f}")
+        # Use instance threshold (self.consensus_threshold) not global CONSENSUS_THRESHOLD
+        # This allows shadow strategies to use their own thresholds
+        self.log.debug(f"Consensus threshold check: score={prediction.weighted_score:.3f} vs threshold={self.consensus_threshold:.2f}")
+        if prediction.weighted_score < self.consensus_threshold:
+            self.log.debug(f"❌ Below threshold: {prediction.weighted_score:.3f} < {self.consensus_threshold:.2f}")
             return TradeDecision(
                 should_trade=False,
                 direction=None,
-                reason=f"Consensus too weak to trade ({prediction.weighted_score:.3f} < {CONSENSUS_THRESHOLD})",
+                reason=f"Consensus too weak to trade ({prediction.weighted_score:.3f} < {self.consensus_threshold})",
                 prediction=prediction,
                 weighted_score=prediction.weighted_score,
                 confidence=prediction.confidence,
@@ -358,16 +360,17 @@ class DecisionEngine:
                 epoch=epoch
             )
         else:
-            self.log.debug(f"✅ Above threshold: {prediction.weighted_score:.3f} >= {CONSENSUS_THRESHOLD:.2f}")
+            self.log.debug(f"✅ Above threshold: {prediction.weighted_score:.3f} >= {self.consensus_threshold:.2f}")
 
         # Check if average agent confidence meets minimum
-        self.log.debug(f"Confidence threshold check: confidence={prediction.confidence:.3f} vs min={MIN_CONFIDENCE:.2f}")
-        if prediction.confidence < MIN_CONFIDENCE:
-            self.log.debug(f"❌ Below minimum: {prediction.confidence:.3f} < {MIN_CONFIDENCE:.2f}")
+        # Use instance min_confidence (self.min_confidence) not global MIN_CONFIDENCE
+        self.log.debug(f"Confidence threshold check: confidence={prediction.confidence:.3f} vs min={self.min_confidence:.2f}")
+        if prediction.confidence < self.min_confidence:
+            self.log.debug(f"❌ Below minimum: {prediction.confidence:.3f} < {self.min_confidence:.2f}")
             return TradeDecision(
                 should_trade=False,
                 direction=None,
-                reason=f"Average confidence {prediction.confidence:.1%} below minimum {MIN_CONFIDENCE:.1%}",
+                reason=f"Average confidence {prediction.confidence:.1%} below minimum {self.min_confidence:.1%}",
                 prediction=prediction,
                 weighted_score=prediction.weighted_score,
                 confidence=prediction.confidence,
@@ -375,7 +378,7 @@ class DecisionEngine:
                 epoch=epoch
             )
         else:
-            self.log.debug(f"✅ Above minimum: {prediction.confidence:.3f} >= {MIN_CONFIDENCE:.2f}")
+            self.log.debug(f"✅ Above minimum: {prediction.confidence:.3f} >= {self.min_confidence:.2f}")
 
         # Step 7: Check for Neutral consensus (no trade)
         if prediction.direction == "Neutral":
