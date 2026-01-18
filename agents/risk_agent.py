@@ -388,11 +388,15 @@ class RiskAgent(VetoAgent):
         """
         Check if trade conflicts with strong market regime.
 
-        Prevents counter-trend trades in strong trends:
-        - In strong bull trend (>0.5): Don't allow Down bets
-        - In strong bear trend (<-0.5): Don't allow Up bets
+        Prevents counter-trend trades in VERY strong trends:
+        - In very strong bull trend (>0.75): Don't allow Down bets
+        - In very strong bear trend (<-0.75): Don't allow Up bets
 
         This prevents contrarian strategies from fighting strong trends.
+
+        Threshold was widened from 0.5 to 0.75 on Jan 17, 2026 to allow more
+        trades. A score of 0.75+ requires 4+ of 5 timeframes aligned, indicating
+        a genuinely strong trend worth respecting.
         """
         regime = data.get('regime', 0.0)
 
@@ -400,19 +404,21 @@ class RiskAgent(VetoAgent):
         if isinstance(regime, str):
             regime_lower = regime.lower()
             if 'bull' in regime_lower:
-                regime = 0.7  # Strong bull
+                regime = 0.85  # Very strong bull
             elif 'bear' in regime_lower:
-                regime = -0.7  # Strong bear
+                regime = -0.85  # Very strong bear
             else:
                 regime = 0.0  # Neutral
 
-        # Strong bull trend - veto Down bets
-        if regime > 0.5 and direction == "Down":
-            return True, f"Strong bull trend ({regime:.2f}) - blocking Down bet"
+        # Very strong bull trend - veto Down bets
+        # Requires 4+ of 5 timeframes aligned (1h, 4h, 1d, 1w, 1M)
+        if regime > 0.75 and direction == "Down":
+            return True, f"Very strong bull trend ({regime:.2f}) - blocking Down bet"
 
-        # Strong bear trend - veto Up bets
-        if regime < -0.5 and direction == "Up":
-            return True, f"Strong bear trend ({regime:.2f}) - blocking Up bet"
+        # Very strong bear trend - veto Up bets
+        # Requires 4+ of 5 timeframes aligned
+        if regime < -0.75 and direction == "Up":
+            return True, f"Very strong bear trend ({regime:.2f}) - blocking Up bet"
 
         return False, ""
 
